@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
+import { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { authService } from '../services/authService';
 import { useNotification } from './NotificationContext';
 import { ROLES, ROLE_HIERARCHY } from '../config/api';
@@ -166,7 +166,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Login
-  const login = async (credentials) => {
+  const login = useCallback(async (credentials) => {
     dispatch({ type: AUTH_ACTIONS.LOGIN_START });
 
     const result = await authService.login(credentials);
@@ -193,35 +193,35 @@ export const AuthProvider = ({ children }) => {
 
       return { success: false, message: result.message };
     }
-  };
+  }, [notification]);
 
   // Logout
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await authService.logout();
     dispatch({ type: AUTH_ACTIONS.LOGOUT });
     notification.showInfo('Sesión cerrada correctamente', { duration: 2000 });
     router.push('/login');
-  };
+  }, [notification, router]);
 
   // Actualizar usuario
-  const updateUser = (userData) => {
+  const updateUser = useCallback((userData) => {
     dispatch({
       type: AUTH_ACTIONS.UPDATE_USER,
       payload: { user: userData }
     });
-  };
+  }, []);
 
   // Limpiar errores
-  const clearError = () => {
+  const clearError = useCallback(() => {
     dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-  };
+  }, []);
 
   // Helper functions para roles
-  const hasRole = (role) => {
+  const hasRole = useCallback((role) => {
     return state.user?.rol === role;
-  };
+  }, [state.user?.rol]);
 
-  const hasMinimumRole = (minimumRole) => {
+  const hasMinimumRole = useCallback((minimumRole) => {
     if (!state.user?.rol || !ROLE_HIERARCHY[minimumRole]) {
       return false;
     }
@@ -230,12 +230,12 @@ export const AuthProvider = ({ children }) => {
     const minimumRoleLevel = ROLE_HIERARCHY[minimumRole];
 
     return userRoleLevel >= minimumRoleLevel;
-  };
+  }, [state.user?.rol]);
 
-  const isAdmin = () => hasRole(ROLES.ADMIN);
-  const isGerente = () => hasRole(ROLES.GERENTE) || isAdmin();
-  const isCajero = () => hasRole(ROLES.CAJERO) || isGerente();
-  const isCocina = () => hasRole(ROLES.COCINA);
+  const isAdmin = useCallback(() => state.user?.rol === ROLES.ADMIN, [state.user?.rol]);
+  const isGerente = useCallback(() => state.user?.rol === ROLES.GERENTE || state.user?.rol === ROLES.ADMIN, [state.user?.rol]);
+  const isCajero = useCallback(() => [ROLES.CAJERO, ROLES.GERENTE, ROLES.ADMIN].includes(state.user?.rol), [state.user?.rol]);
+  const isCocina = useCallback(() => state.user?.rol === ROLES.COCINA, [state.user?.rol]);
 
   const value = {
     ...state,

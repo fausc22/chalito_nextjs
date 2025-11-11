@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useAuth } from '../src/contexts/AuthContext';
-import { ROUTES } from '../src/config/routes';
+import { useAuth } from '../contexts/AuthContext';
+import { ROUTES } from '../config/routes';
 
 export default function Home() {
   const router = useRouter();
@@ -23,3 +23,4 @@ export default function Home() {
     </div>
   );
 }
+

@@ -38,6 +38,7 @@ export function NavBar() {
                 src="/logo-empresa.png"
                 alt="Logo El Chalito"
                 fill
+                sizes="(max-width: 768px) 128px, 160px"
                 className="object-contain"
                 priority
               />

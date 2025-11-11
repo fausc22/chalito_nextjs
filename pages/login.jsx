@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useAuth } from '../src/contexts/AuthContext';
-import { LoginForm } from '../src/components/auth/LoginForm';
-import { ROUTES } from '../src/config/routes';
+import { useAuth } from '../contexts/AuthContext';
+import { LoginForm } from '../components/auth/LoginForm';
+import { ROUTES } from '../config/routes';
 import Head from 'next/head';
 import Image from 'next/image';
 
@@ -55,6 +55,7 @@ export default function LoginPage() {
                 src="/logo-empresa.png"
                 alt="Logo El Chalito"
                 fill
+                sizes="(max-width: 768px) 100vw, 256px"
                 className="object-contain drop-shadow-2xl"
                 priority
               />
@@ -85,3 +86,4 @@ export default function LoginPage() {
     </>
   );
 }
+
