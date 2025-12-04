@@ -6,7 +6,8 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   PEDIDOS: '/pedidos',
   VENTAS: '/ventas',
-  ARTICULOS: '/articulos',
+  INVENTARIO: '/inventario',
+  ARTICULOS: '/inventario', // Alias para compatibilidad
   REPORTES: '/reportes',
   PERFIL: '/perfil',
 };
@@ -19,7 +20,7 @@ export const PROTECTED_ROUTES = [
   ROUTES.DASHBOARD,
   ROUTES.PEDIDOS,
   ROUTES.VENTAS,
-  ROUTES.ARTICULOS,
+  ROUTES.INVENTARIO,
   ROUTES.REPORTES,
   ROUTES.PERFIL,
 ];
@@ -29,7 +30,7 @@ export const ROUTE_TITLES = {
   [ROUTES.DASHBOARD]: 'Dashboard',
   [ROUTES.PEDIDOS]: 'Pedidos',
   [ROUTES.VENTAS]: 'Ventas',
-  [ROUTES.ARTICULOS]: 'Artículos',
+  [ROUTES.INVENTARIO]: 'Inventario',
   [ROUTES.REPORTES]: 'Reportes',
   [ROUTES.PERFIL]: 'Perfil',
 };

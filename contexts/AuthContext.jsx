@@ -177,11 +177,6 @@ export const AuthProvider = ({ children }) => {
         payload: { user: result.user }
       });
 
-      notification.showSuccess(
-        `¡Bienvenido ${result.user.nombre}!`,
-        { duration: 3000 }
-      );
-
       return { success: true, user: result.user };
     } else {
       dispatch({

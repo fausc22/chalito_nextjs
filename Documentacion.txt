@@ -1,0 +1,230 @@
+================================================================================
+  DOCUMENTACIÓN DE CAMBIOS - EL CHALITO FRONTEND
+================================================================================
+
+Cambié la columna "activo" en la tabla categorias de enum a tinyint para
+valores booleanos en mysql
+
+RESUMEN GENERAL
+---------------
+Se realizó una refactorización completa del frontend con migración a shadcn/ui,
+implementación del módulo de Inventario y Pedidos (estático), y reorganización de la
+estructura del proyecto.
+
+
+CAMBIOS ESTRUCTURALES PRINCIPALES
+----------------------------------
+
+1. MIGRACIÓN A SHADCN/UI
+   - Se agregó shadcn/ui como sistema de componentes base
+   - Componentes instalados en /components/ui/ (17 componentes)
+   - Configuración: components.json, jsconfig.json
+   - Archivo SHADCN_UI_GUIA.md con guía de uso
+   - archivo componentes-demo.jsx con componentes de shadcn
+
+2. REORGANIZACIÓN DE CARPETAS
+   - /components/
+     ├── auth/           → LoginForm y ProtectedRoute
+     ├── dashboard/      → InfoCards, ModuleCard
+     ├── inventario/     → Artículos, Ingredientes, Categorías (tabs)
+     ├── layout/         → NavBar, Footer, Layout
+     └── ui/             → Componentes shadcn/ui
+
+   - /hooks/
+     - Todos renombrados de .jsx a .js
+     - Nuevo: useInventario.js (manejo de estado del inventario)
+     - Nuevo: use-toast.js (notificaciones shadcn)
+
+   - /lib/              → utils.js (shadcn), formatters, validators
+   - /pages/
+     ├── dashboard/     → Página principal con 8 módulos
+     ├── inventario/    → Módulo completo de inventario
+     ├── pedidos/       → Sistema de gestión de pedidos (antes ventas/)
+     └── login/         → Autenticación
+
+3. SERVICIOS API
+   - articulosService.js   → CRUD de artículos
+   - categoriasService.js  → CRUD de categorías
+   - ingredientesService.js → CRUD de ingredientes
+
+
+MÓDULO INVENTARIO (NUEVO - COMPLETO)
+-------------------------------------
+Ubicación: /pages/inventario/index.jsx
+
+Tabs implementados:
+1. ARTÍCULOS
+   - Listado con filtros (categoría, búsqueda, estado)
+   - Formulario de creación/edición
+   - Card de detalles con estadísticas
+   - Tabla con paginación
+   - Campos: nombre, descripción, precio, categoría, estado, imagen
+
+2. INGREDIENTES
+   - Gestión completa de ingredientes
+   - Filtros por nombre y estado
+   - Control de stock y unidad de medida
+   - Alertas de stock bajo
+   - Campos: nombre, descripción, unidad, stock, stock mínimo
+
+3. CATEGORÍAS
+   - CRUD de categorías para artículos
+   - Filtros y búsqueda
+   - Campos: nombre, descripción, color, icono
+
+Características:
+- Diseño compacto y profesional
+- Sistema de filtros avanzado
+- Paginación en todas las tablas
+- Modales para crear/editar
+- Notificaciones con toast
+- Responsive design
+
+
+MÓDULO PEDIDOS (NUEVO - COMPLETO - ESTÁTICO)
+----------------------------------
+Ubicación: /pages/pedidos/index.jsx
+
+Sistema completo de gestión de pedidos en tiempo real:
+
+Columnas:
+1. RECIBIDOS       → Pedidos nuevos sin procesar
+2. EN PREPARACIÓN  → Pedidos marchados a cocina
+
+Características principales:
+- Interfaz tipo Kanban con 2 columnas
+- TopBar con estado del local y demora de cocina
+- OrderCard compacto con toda la información del pedido
+- Sistema de flujo: Recibido → Marchar → En Cocina → Listo
+- Colores minimalistas
+
+Modal: Nuevo Pedido (2 pasos)
+- Paso 1: Selección de productos + carrito
+  · Grid de productos por categorías
+  · Carrito con extras personalizables por unidad
+  · Cálculo automático de totales
+- Paso 2: Datos del cliente
+  · Origen: local/delivery/pickup
+  · Cliente y datos de contacto
+  · Dirección para delivery
+
+Modal: Cobro
+- Resumen del pedido con desglose
+- Múltiples métodos de pago (efectivo, débito, crédito, transfer)
+- Cálculo de vuelto
+- Soporte para pago parcial/completo
+- Estados: PAGADO / DEBE
+
+Diseño:
+- Altura fija con scroll interno en modales
+- UI compacta optimizada para 50+ pedidos/día
+- Ancho max-w-7xl (consistente con inventario)
+- Paginación en columnas
+
+
+NAVEGACIÓN Y DASHBOARD
+-----------------------
+
+NavBar (/components/layout/NavBar.jsx):
+- Enlaces actualizados:
+  · Inicio    → /dashboard
+  · Pedidos   → /pedidos
+  · Inventario → /inventario
+- Dropdown de usuario con avatar
+- Versión móvil con Sheet
+
+Dashboard (/pages/dashboard/index.jsx):
+- 4 Info Cards: Fecha/Hora, Ventas, Pedidos, Usuario
+- 8 Módulos del sistema:
+  ✓ Pedidos (activo)     → /pedidos
+  ✓ Inventario (activo)  → /inventario
+  ✗ Gastos, Finanzas, Estadísticas, Empleados, Proveedores (inactivos)
+
+
+CONFIGURACIÓN Y RUTAS
+---------------------
+
+/config/routes.js:
+- ROUTES.DASHBOARD    → /dashboard
+- ROUTES.PEDIDOS      → /pedidos
+- ROUTES.INVENTARIO   → /inventario
+- ROUTES.VENTAS       → /ventas (legacy, para uso futuro)
+
+/config/api.js:
+- API_BASE_URL, API_ENDPOINTS
+- ROLE_NAMES, ROLE_ICONS
+- Configuración de roles y permisos
+
+
+DEPENDENCIAS AGREGADAS
+-----------------------
+- @radix-ui/* (primitivos para shadcn/ui)
+- class-variance-authority
+- clsx
+- tailwind-merge
+- lucide-react (iconos)
+
+
+ESTILOS GLOBALES
+----------------
+/styles/globals.css:
+- Variables CSS personalizadas para temas
+- Clases utility: .container-custom, .main-content
+- Estilos base de shadcn/ui
+
+
+CONSIDERACIONES TÉCNICAS
+-------------------------
+
+1. ESTRUCTURA DE COMPONENTES
+   - Todos los componentes usan shadcn/ui como base
+   - Hooks personalizados para lógica de negocio
+   - Separación clara de concerns (UI, lógica, servicios)
+
+2. GESTIÓN DE ESTADO
+   - useState/useEffect para estado local
+   - Context API para auth (AuthContext)
+   - Notificaciones con NotificationContext + shadcn toast
+
+3. ESTILOS
+   - Tailwind CSS con configuración personalizada
+   - Paleta de colores minimalista
+   - Responsive design en todos los módulos
+
+4. API
+   - Servicios centralizados en /services/
+   - Manejo de errores consistente
+   - Tokens JWT en localStorage
+
+
+PRÓXIMOS PASOS SUGERIDOS
+-------------------------
+1. Completar backend para módulos Pedidos e Inventario
+2. Implementar WebSockets para actualización en tiempo real de pedidos
+3. Activar módulos restantes del dashboard
+4. Agregar sistema de reportes y estadísticas
+5. Implementar gestión de empleados y roles
+
+
+ARCHIVOS CLAVE PARA REVISAR
+----------------------------
+- /pages/pedidos/index.jsx         → Sistema completo de pedidos
+- /pages/inventario/index.jsx      → Módulo de inventario
+- /pages/dashboard/index.jsx       → Dashboard principal
+- /components/layout/NavBar.jsx    → Navegación
+- /config/routes.js                → Rutas del sistema
+- SHADCN_UI_GUIA.md               → Guía de componentes shadcn
+
+
+NOTAS IMPORTANTES
+-----------------
+- El módulo "Ventas" quedó inactivo para uso futuro (punto de venta físico)
+- "Pedidos" es el módulo principal para gestión de comandas
+- Todos los modales tienen altura fija (85vh) con scroll interno
+- El diseño está optimizado para pantallas de 16" a 24" (pensado para el monitor del negocio)
+- Se mantiene compatibilidad con la API existente
+
+
+================================================================================
+Fecha de última actualización: Diciembre 2025
+================================================================================

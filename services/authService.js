@@ -17,8 +17,26 @@ export const authService = {
         loginData
       );
 
+      // Verificar si el interceptor transformó un error en respuesta exitosa
+      if (response.data.error === true || response.data.success === false) {
+        return {
+          success: false,
+          message: response.data.mensaje || response.data.message || 'Error al iniciar sesión',
+          error: response.data
+        };
+      }
+
       // El backend devuelve 'token' y 'usuario', no 'accessToken' y 'user'
       const { token, refreshToken, usuario } = response.data;
+
+      // Validar que recibimos los datos necesarios
+      if (!token || !usuario) {
+        return {
+          success: false,
+          message: 'Respuesta inválida del servidor',
+          error: response.data
+        };
+      }
 
       // Guardar tokens y datos del usuario
       tokenManager.setTokens(token, refreshToken);
@@ -70,7 +88,10 @@ export const authService = {
         message: 'Token inválido'
       };
     } catch (error) {
-      console.error('Error verificando token:', error);
+      // No loguear errores 401 en verificación ya que son esperados cuando no hay sesión
+      if (error.response?.status !== 401) {
+        console.error('Error verificando token:', error);
+      }
       return {
         success: false,
         message: 'Error de verificación',

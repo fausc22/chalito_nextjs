@@ -1,0 +1,529 @@
+-------------- shadcn/ui -----------------
+Para su proyecto El Chalito, shadcn/ui es ideal porque:
+Tablas complejas - Tienen un componente DataTable excelente
+Formularios robustos - Con validación integrada
+Modales profesionales - Dialog component muy pulido
+Filtros avanzados - Select, Combobox con búsqueda
+Personalización total - Pueden adaptarlo a la identidad de "El Chalito"
+¿Quieren que les ayude a instalarlo y configurarlo? Puedo:
+Instalar shadcn/ui en su proyecto
+Configurarlo con sus colores actuales (naranja #f2750b)
+Agregar los componentes base que necesitan
+Mostrarles cómo integrarlos con sus páginas existentes
+¿Les parece bien shadcn/ui o prefieren probar otra opción?
+
+
+--------------
+
+21/11
+Cambié la columna activo en la tabla categorias de enum a tinyint para
+valores booleanos en mysql
+
+
+--------------
+
+DISEÑOS y chat de lo que seria modulo ventas:
+
+Análisis del Sistema Actual
+Estructura principal:
+Área de ingreso (izquierda superior):
+Input para buscar por código de barras o nombre
+Control de cantidad con spinner
+Botón "Agregar (F5)" - mucha dependencia de atajos de teclado
+Tabla central de productos:
+Columnas: Código Barras | Detalle | Cant. | Precio | Subtotal
+Indicadores importantes:
+✅ Check verde
+🔴 Punto rojo
+(¿Estos indican disponibilidad o si es elaborado/no elaborado?)
+Panel de totales (derecha):
+Subtotal, Recargo, Descuento, Impuestos, Percepción
+TOTAL bien visible en grande
+Dropdown para descuentos
+Datos del cliente:
+DNI/CUIT, Nombre
+Búsqueda con F4
+Ver ficha con F7
+Métodos de pago:
+"Ingresar PAGO (F2)" - modal para elegir método
+"Ingresar PAGO EXACTO EFECTIVO (F3)" - atajo rápido
+Condición de venta:
+Radio buttons: CONTADO / CUENTA CORRIENTE
+Propuesta de Diseño Modernizado
+Podemos hacer un híbrido que combine:
+✅ La familiaridad del layout actual (mantener la estructura general)
+✅ El estilo moderno de shadcn/ui que ya usamos
+✅ La funcionalidad táctil para tablets/móviles (además del teclado)
+Preguntas clave antes de diseñar:
+Los indicadores (✅ check verde / 🔴 punto rojo): ¿Qué significan exactamente?
+¿Disponibilidad del producto?
+¿Tipo elaborado vs no elaborado?
+¿Estado de preparación?
+Flujo de comandas: Cuando agregás un producto elaborado (ej: hamburguesa), ¿debería:
+✅ Agregarse automáticamente a la comanda de cocina
+✅ Poder elegir si va a comanda o no
+✅ Mostrar algún indicador de que fue enviado a cocina
+Diseño responsive: ¿La interfaz será usada principalmente en:
+Desktop (caja registradora)
+Tablet (meseros tomando pedidos)
+Ambos
+¿Te parece que empecemos diseñando la estructura general o preferís que primero aclaremos estos puntos?
+Excelente. Los indicadores marcan la DISPONIBILIDAD del producto.
+Cuando agregas un producto elaborado podria ser o que se agregue automaticamente a una comanda nueva de cocina, o que se pueda elegir si va a comanda o no. 
+La interfaz sera utilizada principalmente en desktop pero también en moviles para levantar pedidos facilmente.
+Perfecto! Ahora tengo todo claro. Te propongo la siguiente arquitectura:
+Propuesta de Diseño - Módulo de Ventas/Comandas
+1. Flujo Completo
+VENTA/PEDIDO
+    ↓
+Se agregan productos → Sistema detecta cuáles son ELABORADOS
+    ↓
+AUTOMÁTICAMENTE se crea una COMANDA con solo los elaborados
+    ↓
+COMANDA se muestra en pantalla de cocina
+Estados: Recibido → En Preparación → Listo → Entregado
+    ↓
+Cuando todo está listo → Se finaliza la VENTA
+2. Estructura de Datos
+Tabla VENTAS:
+- id
+- numero_venta
+- fecha
+- cliente_id (opcional)
+- tipo_comprobante (A, B, C)
+- condicion_pago (CONTADO / CUENTA_CORRIENTE)
+- subtotal
+- descuento
+- recargo
+- impuestos
+- percepcion
+- total
+- estado (PENDIENTE / PAGADA / CANCELADA)
+- metodo_pago
+- observaciones
+- usuario_id
+Tabla VENTA_ITEMS:
+- id
+- venta_id
+- articulo_id
+- cantidad
+- precio_unitario
+- subtotal
+- es_elaborado (boolean)
+- comanda_id (si aplica)
+Tabla COMANDAS:
+- id
+- venta_id
+- numero_comanda
+- fecha_creacion
+- estado (RECIBIDO / EN_PREPARACION / LISTO / ENTREGADO / CANCELADO)
+- prioridad (NORMAL / URGENTE)
+- observaciones
+- usuario_creo_id
+- fecha_actualizado
+Tabla COMANDA_ITEMS:
+- id
+- comanda_id
+- articulo_id (del producto elaborado)
+- cantidad
+- estado (PENDIENTE / EN_PROCESO / LISTO)
+- ingredientes_json (detalle de ingredientes si aplica)
+3. Layout Propuesto (Desktop)
+┌─────────────────────────────────────────────────────────┐
+│ PUNTO DE VENTA - Caja 1                    Usuario: Admin│
+├─────────────────────────────────────────────────────────┤
+│                                                           │
+│  [Buscar producto...] [🔍] Cant: [1] [+] [-] [Agregar]  │
+│                                                           │
+│  ┌────────────────────────────┐  ┌──────────────────┐  │
+│  │ CARRITO                    │  │  RESUMEN         │  │
+│  │ ┌────────────────────────┐ │  │                  │  │
+│  │ │✅ Hamburguesa Clásica  │ │  │  Subtotal:       │  │
+│  │ │   1 x $850.00  $850.00 │ │  │    $1,223.00     │  │
+│  │ │   [ELABORADO] 🍳       │ │  │                  │  │
+│  │ │                        │ │  │  Descuento:      │  │
+│  │ │✅ Papas Fritas         │ │  │    $0.00         │  │
+│  │ │   1 x $250.00  $250.00 │ │  │                  │  │
+│  │ │   [ELABORADO] 🍳       │ │  │  Recargo:        │  │
+│  │ │                        │ │  │    $0.00         │  │
+│  │ │✅ Coca Cola 500ml      │ │  │                  │  │
+│  │ │   1 x $350.00  $350.00 │ │  │  ──────────────  │  │
+│  │ │                        │ │  │  TOTAL:          │  │
+│  │ │🔴 Lays (Sin stock)     │ │  │  $1,223.00       │  │
+│  │ │   Buscar alternativa   │ │  │                  │  │
+│  │ └────────────────────────┘ │  │  [💳 Pagar]      │  │
+│  │                            │  │  [🗑️ Cancelar]    │  │
+│  │ 📝 Comanda #45 creada      │  └──────────────────┘  │
+│  │    - Hamburguesa           │                         │
+│  │    - Papas Fritas          │  ┌──────────────────┐  │
+│  │                            │  │  CLIENTE         │  │
+│  └────────────────────────────┘  │  [Buscar...]     │  │
+│                                   │                  │  │
+│  Tipo: [B ▼] Condición: [CONTADO] │  Sin cliente    │  │
+│                                   └──────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+4. Componentes a Crear
+pages/ventas/
+  ├── index.jsx                    # Página principal POS
+  └── comandas.jsx                 # Pantalla de cocina
+
+components/ventas/
+  ├── BuscadorProductos.jsx        # Input + lista de resultados
+  ├── CarritoVenta.jsx             # Lista de productos agregados
+  ├── ItemCarrito.jsx              # Producto individual con badge de estado
+  ├── ResumenVenta.jsx             # Panel derecho con totales
+  ├── ClienteSelector.jsx          # Búsqueda y selección de cliente
+  ├── PagoModal.jsx                # Modal para procesar pago
+  ├── ComandaAlert.jsx             # Alert mostrando comanda creada
+  └── ComandaKitchen.jsx           # Vista de cocina (pantalla TV)
+
+hooks/
+  └── useVentas.jsx                # Hook para manejo de ventas
+
+services/
+  ├── ventasService.js             # API de ventas
+  └── comandasService.js           # API de comandas
+5. Características Clave
+Búsqueda inteligente:
+Buscar por nombre, código de barras
+Autocompletar con shadcn/ui Command
+Atajos de teclado (F5 agregar, F8 quitar, etc.)
+Indicadores visuales:
+Badge verde ✅ = Disponible
+Badge rojo 🔴 = Sin stock (con sugerencia de alternativa)
+Badge azul 🍳 = Elaborado (irá a comanda)
+Sistema de comandas:
+Auto-generación al agregar primer item elaborado
+Número de comanda visible
+Notificación: "Comanda #45 enviada a cocina"
+Link para ver detalle de comanda
+Pantalla de cocina (comandas.jsx):
+Diseño tipo kanban con columnas de estado
+Cards con productos a preparar
+Timer desde que se recibió
+Botones para cambiar estado
+6. Mobile (Meseros)
+Layout simplificado para tomar pedidos:
+┌──────────────────┐
+│ 🔍 Buscar...     │
+├──────────────────┤
+│ CATEGORÍAS       │
+│ [Hamburguesas]   │
+│ [Bebidas]        │
+│ [Guarniciones]   │
+├──────────────────┤
+│ CARRITO (3) 💰   │
+│ - Hamburguesa    │
+│ - Coca Cola      │
+│ - Papas          │
+├──────────────────┤
+│ [Enviar Pedido]  │
+└──────────────────┘
+¿Te gusta esta propuesta? ¿Empezamos a implementarla o querés ajustar algo antes de comenzar?
+Aver, no me disgusta pero tampoco me agrada. No te lo comenté pero nuestro sistema tendra otra entrada que sera para los usuarios que verán una tienda online donde podran elegir los productos, armar un carrito y esta comanda deberia conectarse con el sistema. Seria como un pedix. Tambien puede ser que venga un cliente al local y pida una coca cola y solo eso y eso seria una venta tambien, pero no seria una comanda (hay que tener en cuenta esto tambien)
+Ahh perfecto! Esto cambia todo el enfoque. Ahora entiendo mejor:
+Arquitectura Real del Sistema
+1. Tres Módulos Principales
+┌─────────────────────────────────────────────────────────┐
+│                    VENTAS (CORE)                        │
+│              Sistema central de ventas                   │
+└─────────────────────────────────────────────────────────┘
+           ↑              ↑              ↑
+           │              │              │
+    ┌──────┴──────┐  ┌───┴────┐  ┌──────┴──────┐
+    │   TIENDA    │  │  POS   │  │   TELÉFONO  │
+    │   ONLINE    │  │ (Local)│  │  (Manual)   │
+    │  (Pedix)    │  │        │  │             │
+    └─────────────┘  └────────┘  └─────────────┘
+           │              │              │
+           └──────────────┴──────────────┘
+                         ↓
+              ┌──────────────────┐
+              │ ¿Tiene ELABORADOS?│
+              └──────────────────┘
+                    ↓      ↓
+               SÍ ──┘      └── NO
+               ↓                ↓
+         ┌─────────┐      ┌──────────┐
+         │ COMANDA │      │   VENTA  │
+         │ (Cocina)│      │  DIRECTA │
+         └─────────┘      └──────────┘
+2. Flujo Correcto
+Escenario 1: Cliente viene al local y pide solo Coca Cola
+POS → Agregar Coca Cola → VENTA creada
+                       → NO genera comanda
+                       → Cobrar directo
+Escenario 2: Cliente pide Hamburguesa + Coca Cola
+POS → Agregar Hamburguesa + Coca Cola → VENTA creada
+                                      → COMANDA generada (solo Hamburguesa)
+                                      → Coca Cola lista para despacho
+                                      → Se entrega Coca Cola inmediato
+                                      → Esperar hamburguesa de cocina
+Escenario 3: Pedido desde Tienda Online
+Tienda Online → Cliente arma carrito → Confirma pedido → VENTA creada
+                                                       → Si tiene elaborados: COMANDA
+                                                       → Sistema notifica cocina
+3. Estructura de Datos Actualizada
+VENTAS (tabla principal)
+- id
+- numero_venta
+- origen (POS / ONLINE / TELEFONO / MOSTRADOR)
+- fecha
+- cliente_id
+- estado (PENDIENTE / EN_PROCESO / LISTA / ENTREGADA / PAGADA / CANCELADA)
+- requiere_comanda (boolean) ← IMPORTANTE
+- comanda_id (si aplica)
+- tipo_comprobante
+- total
+- metodo_pago
+VENTA_ITEMS
+- id
+- venta_id
+- articulo_id
+- cantidad
+- precio_unitario
+- requiere_preparacion (boolean) ← detecta si es elaborado
+- incluido_en_comanda (boolean)
+- estado (PENDIENTE / EN_COMANDA / LISTO / DESPACHADO)
+COMANDAS
+- id
+- venta_id
+- numero_comanda
+- origen (POS / ONLINE / TELEFONO)
+- estado (RECIBIDO / EN_PREPARACION / LISTO / ENTREGADO)
+- prioridad (NORMAL / URGENTE)
+- tiempo_estimado
+- observaciones
+4. Nueva Propuesta de Interfaz POS
+Más simple, enfocada en velocidad:
+┌────────────────────────────────────────────────────────┐
+│ 🏪 PUNTO DE VENTA                    Usuario: Admin    │
+├────────────────────────────────────────────────────────┤
+│                                                         │
+│  🔍 [Buscar producto o escanear código...]  [F1]       │
+│                                                         │
+│  ┌──────────────────────────────┐  ┌─────────────────┐│
+│  │  🛒 CARRITO                  │  │  💰 TOTAL       ││
+│  │                              │  │                 ││
+│  │  1. Hamburguesa Clásica  🍳  │  │  $ 1,200.00     ││
+│  │     $850.00          [X]     │  │                 ││
+│  │                              │  │  ────────────   ││
+│  │  2. Coca Cola 500ml          │  │                 ││
+│  │     $350.00          [X]     │  │  [💳 COBRAR]    ││
+│  │                              │  │                 ││
+│  │  ─────────────────────────── │  │  [🗑️ Cancelar]  ││
+│  │                              │  │                 ││
+│  │  ⚠️  Se generará COMANDA #46 │  └─────────────────┘│
+│  │      → Hamburguesa           │                      │
+│  │                              │  ┌─────────────────┐│
+│  │  ✅ Listo para despacho:     │  │ 👤 Cliente      ││
+│  │      → Coca Cola             │  │                 ││
+│  │                              │  │ [Buscar F2]     ││
+│  └──────────────────────────────┘  │ Sin asignar     ││
+│                                     └─────────────────┘│
+│  Tipo: [B] Pago: [Efectivo ▼]                         │
+└────────────────────────────────────────────────────────┘
+5. Tienda Online (Nueva)
+Página separada para clientes:
+pages/
+  └── tienda/
+      ├── index.jsx          # Catálogo de productos
+      ├── carrito.jsx        # Carrito de compras
+      ├── checkout.jsx       # Finalizar pedido
+      └── mis-pedidos.jsx    # Historial del cliente
+6. Sistema Unificado de Estados
+Para VENTAS sin comanda:
+PENDIENTE → PAGADA → ENTREGADA
+Para VENTAS con comanda:
+PENDIENTE → EN_PROCESO (comanda en cocina) → LISTA (comanda terminada) → ENTREGADA → PAGADA
+7. Prioridades de Implementación
+Fase 1 (Ahora):
+Módulo POS básico
+Sistema de detección automática de elaborados
+Generación de comandas
+Fase 2: 4. Pantalla de cocina (ver comandas) 5. Estados de comanda Fase 3: 6. Tienda Online (e-commerce) 7. Integración pedidos online → comandas
+¿Ahora sí te cierra mejor? ¿Por dónde querés que empecemos? Te sugiero:
+Primero el POS básico (agregar productos, calcular total)
+Después el sistema de comandas
+Finalmente la tienda online
+Dame una o dos opciones mas de prototipoz de interfaz asi dibujadas
+Opción 2: Layout Horizontal con Productos Disponibles
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 🏪 PUNTO DE VENTA - Caja 1                          Admin │ Cerrar Sesión │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  🔍 [Buscar producto, código o categoría...]            [Esc para limpiar]│
+│                                                                            │
+├─────────────────────────────────┬──────────────────────────────────────────┤
+│  📦 PRODUCTOS DISPONIBLES       │  🛒 CARRITO (3 items)                   │
+│                                 │                                          │
+│  ┌───────────┬───────────┐      │  ┌────────────────────────────────────┐ │
+│  │ 🍔        │ 🍟        │      │  │ 1. Hamburguesa Clásica         🍳 │ │
+│  │ H.Clásica │ Papas     │      │  │    x1  $850.00        [+][-][X]   │ │
+│  │ $850      │ $250      │      │  │                                    │ │
+│  │ [Agregar] │ [Agregar] │      │  │ 2. Papas Fritas                🍳 │ │
+│  └───────────┴───────────┘      │  │    x2  $500.00        [+][-][X]   │ │
+│                                 │  │                                    │ │
+│  ┌───────────┬───────────┐      │  │ 3. Coca Cola 500ml                │ │
+│  │ 🥤        │ 🍫        │      │  │    x1  $350.00        [+][-][X]   │ │
+│  │ Coca Cola │ Chocolate │      │  └────────────────────────────────────┘ │
+│  │ $350  ✅  │ $180  🔴  │      │                                          │
+│  │ [Agregar] │ Sin stock │      │  ⚡ ACCIONES RÁPIDAS                    │
+│  └───────────┴───────────┘      │  ┌────────────────────────────────────┐ │
+│                                 │  │ [F5] Último producto x2            │ │
+│  📁 Categorías:                 │  │ [F6] Aplicar descuento            │ │
+│  [Hamburguesas] [Bebidas]       │  │ [F7] Buscar cliente               │ │
+│  [Guarniciones] [Snacks]        │  │ [F8] Limpiar carrito              │ │
+│  [Postres]                      │  └────────────────────────────────────┘ │
+│                                 │                                          │
+│                                 │  💡 AVISO                                │
+│                                 │  Se generará COMANDA #46 con:            │
+│                                 │  • Hamburguesa Clásica x1                │
+│                                 │  • Papas Fritas x2                       │
+│                                 │                                          │
+├─────────────────────────────────┼──────────────────────────────────────────┤
+│  👤 Cliente: Sin asignar        │  💰 RESUMEN DE PAGO                     │
+│     [F7 - Buscar Cliente]       │                                          │
+│                                 │  Subtotal:            $ 1,700.00         │
+│  📄 Comprobante: [B ▼]          │  Descuento:           $     0.00         │
+│  💳 Condición: [CONTADO ▼]      │  Recargo:             $     0.00         │
+│                                 │                                          │
+│  📝 Observaciones:              │  ═══════════════════════════════════     │
+│  [________________]             │  TOTAL:               $ 1,700.00         │
+│                                 │                                          │
+│                                 │  ┌──────────────┬──────────────┐        │
+│                                 │  │ 💳 COBRAR    │ 🗑️ CANCELAR  │        │
+│                                 │  │     (F2)     │     (F9)     │        │
+│                                 │  └──────────────┴──────────────┘        │
+└─────────────────────────────────┴──────────────────────────────────────────┘
+Opción 3: Layout Minimalista con Grid de Categorías
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 🏪 POS - Caja 1                                           Admin 14:32:15  │
+└──────────────────────────────────────────────────────────────────────────┘
+
+  🔍  [Código de barras o nombre del producto...]         [F1]  Limpiar
+  
+┌──────────────────────────────────────┬───────────────────────────────────┐
+│                                      │   🛒 PEDIDO #1024                 │
+│  CATEGORÍAS                          │   ───────────────────────────     │
+│  ┏━━━━━━━━━━━┯━━━━━━━━━━━┯━━━━━━━━━┓│                                   │
+│  ┃ 🍔        │ 🍟        │ 🥤      ┃│   1  Hamburguesa Clásica    🍳    │
+│  ┃ HAMBURGE- │ GUARNI-   │ BEBIDAS ┃│      $850.00           [+][-][X] │
+│  ┃ SAS       │ CIONES    │         ┃│                                   │
+│  ┗━━━━━━━━━━━┷━━━━━━━━━━━┷━━━━━━━━━┛│   2  Papas Fritas           🍳    │
+│  ┏━━━━━━━━━━━┯━━━━━━━━━━━┯━━━━━━━━━┓│      x2 $500.00        [+][-][X] │
+│  ┃ 🍫        │ 🍰        │ 🌯      ┃│                                   │
+│  ┃ SNACKS    │ POSTRES   │ PROMO-  ┃│   3  Coca Cola 500ml              │
+│  ┃           │           │ CIONES  ┃│      $350.00           [+][-][X] │
+│  ┗━━━━━━━━━━━┷━━━━━━━━━━━┷━━━━━━━━━┛│                                   │
+│                                      │   ────────────────────────────    │
+│                                      │                                   │
+│  🔥 MÁS VENDIDOS                     │   Items: 4            Cant: 4    │
+│  ┌─────────────────────────────────┐│                                   │
+│  │ • Hamburguesa Clásica    $850   ││   👤 [Buscar cliente...]          │
+│  │ • Papas Fritas           $250   ││                                   │
+│  │ • Coca Cola 2L           $550   ││   📄 Tipo: B    💳 Pago: Efectivo │
+│  │ • Combo Clásico         $1200   ││                                   │
+│  └─────────────────────────────────┘│   ────────────────────────────    │
+│                                      │                                   │
+│  🆕 ÚLTIMOS AGREGADOS                │   Subtotal:          $ 1,700.00  │
+│  ┌─────────────────────────────────┐│   Descuento:         $     0.00  │
+│  │ • Milanesa Napolitana   $1200   ││   ═══════════════════════════    │
+│  │ • Ensalada César         $680   ││   TOTAL:             $ 1,700.00  │
+│  │ • Pizza Muzzarella       $950   ││                                   │
+│  └─────────────────────────────────┘│   ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓  │
+│                                      │   ┃    💳 COBRAR (F2)        ┃  │
+│                                      │   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛  │
+│                                      │   [🗑️ Cancelar (F9)]              │
+│                                      │                                   │
+│  ⚠️  COMANDA #46 será generada      │                                   │
+│      para cocina con 2 items        │                                   │
+└──────────────────────────────────────┴───────────────────────────────────┘
+Opción 4: Layout Compacto con Calculadora Visual
+┌─────────────────────────────────────────────────────────────┐
+│ 🏪 PUNTO DE VENTA                              Caja 1 │ Admin│
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ 🔍 [____________________________________________] [Buscar F1]│
+│                                                              │
+├──────────────────────────────┬───────────────────────────────┤
+│ 🛒 CARRITO                   │ 💰 CALCULADORA                │
+│                              │                               │
+│ ┌──────────────────────────┐ │  ┌─────────────────────────┐ │
+│ │                          │ │  │     $ 1,700.00          │ │
+│ │  Hamburguesa Clásica  🍳 │ │  └─────────────────────────┘ │
+│ │  1 x $850.00             │ │                               │
+│ │            [-][🗑️][+]    │ │  Subtotal:      $ 1,700.00   │
+│ │                          │ │  ─────────────────────────    │
+│ │  Papas Fritas        🍳 │ │  Descuento:     $     0.00   │
+│ │  2 x $500.00             │ │  Recargo:       $     0.00   │
+│ │            [-][🗑️][+]    │ │  ─────────────────────────    │
+│ │                          │ │                               │
+│ │  Coca Cola 500ml         │ │  TOTAL A PAGAR:              │
+│ │  1 x $350.00             │ │  $ 1,700.00                  │
+│ │            [-][🗑️][+]    │ │                               │
+│ │                          │ │  ┌───────────────────────┐   │
+│ └──────────────────────────┘ │  │  Con cuánto paga?     │   │
+│                              │  │  [________________]    │   │
+│ ⚡ TOTAL: 4 items             │  └───────────────────────┘   │
+│                              │                               │
+│ 💡 Comanda #46               │  Vuelto: $ 0.00              │
+│    • Hamburguesa x1          │                               │
+│    • Papas x2                │  ┌─────────┬─────────────┐   │
+│                              │  │    7    │      8      │   │
+│ ┌──────────┬───────────────┐ │  ├─────────┼─────────────┤   │
+│ │ 🗑️ Limpiar│ ➕ Agregar   │ │  │    4    │      5      │   │
+│ │   (F8)   │    (F5)      │ │  ├─────────┼─────────────┤   │
+│ └──────────┴───────────────┘ │  │    1    │      2      │   │
+│                              │  └─────────┴─────────────┘   │
+│ 👤 Cliente:                  │                               │
+│    [Sin asignar]    [F7]     │  ┏━━━━━━━━━━━━━━━━━━━━━┓    │
+│                              │  ┃   💳 COBRAR (F2)    ┃    │
+│ 📄 Tipo: [B ▼]               │  ┗━━━━━━━━━━━━━━━━━━━━━┛    │
+│ 💳 Pago: [Efectivo ▼]        │  [Cancelar venta]            │
+│                              │                               │
+└──────────────────────────────┴───────────────────────────────┘
+Comparación rápida:
+Opción 2: Más visual, muestra productos disponibles con imágenes, ideal para pantallas grandes
+Opción 3: Navegación por categorías tipo grid, muy táctil, buena para tablets
+Opción 4: Más compacta, con calculadora integrada, estilo tradicional de POS
+
+----------------------- Prompt mio ----------------
+Espectacular. Ahora continuemos con el modulo de ventas. Para darte mas contexto, este modulo es el mas influyente en el sistema ya que combina: facturacion (flujo de dinero entrante), generacion de comandas, pedidos, ventas de x item. Me gustaria si pudiesemos diseñar otra interfaz estatica, pero con otra distribucion. Tené en cuenta que la arquitectura de mi base de datos tiene las tablas Pedidos, Ventas y Comandas. Una venta es cuando se realiza el pago o transaccion del cliente al negocio, independientemente de si es un producto x, un pedido tipo comida o lo que sea. Cuando entra un registro nuevo a la tabla Ventas es porque se facturó. Luego un pedido es lo que el consumidor pide al local: hamburguesa + papas fritas + sandwich de vacio por ejemplo. Y la comanda es lo que se genera para la cocina donde puede ser impresa y un personal traslada la comanda a la cocina pero tambien puede ser digital que se vea en una pantalla monitor o TV. Existe la tabla Pedidos y Pedidos_Contenido; Ventas y Ventas_Contenido; y también Comandas y Comandas_Contenido.
+Comandas_Contenido tiene las columnas o campos: id, comanda_id, articulo_id, articulo_nombre, cantidad y personalizaciones (ejemplo de personalizaciones: extra queso, extra bacon, etc).
+Comandas tiene las columnas: id, pedido_id, fecha, cliente_nombre, cliente_direccion, cliente_telefono, cliente_email, modalidad (retiro o delivery), horario_entrega, estado, observaciones (por ejemplo: el punto de la carne tiene que estar cocido y las papas fritas sin sal), usuario_id y usuario_nombre.
+Pedidos_Contenido tiene las columnas: id, pedido_id, articulo_id, articulo_nombre, cantidad, precio, subtotal y personalizaciones (quizás aqui va el ejemplo de: la carne a tal punto, las papas sin sal, etc).
+Pedidos tiene las columnas: id, fecha, cliente_nombre, cliente_direccion, cliente_telefono, cliente_email, subtotal, iva_total, medio_pago, modalidad, horario_entrega, estado, observaciones, usuario_id, usuario_nombre.
+Ventas_Contenido tiene las columnas: id, venta_id, articulo_id, articulo_nombre, cantidad, precio, subtotal.
+Ventas tiene las columnas: id, fecha, cliente_nombre, cliente_direccion, cliente_telefono, cliente_email, subtotal, iva_total, descuento, total, tipo_facturacion, medio_pago, cuenta_id (si esa facturacion es para cuenta en pesos, o la cuenta bancaria del negocio y asi), estado, observaciones, usuario_id, usuario_nombre, cae_id, cae_fecha.
+
+Con toda esta info y proporcionandote la arquitectura de la base de datos y como manejamos los datos, analizá todo y la idea seria una interfaz que pueda suplir todos los aspectos de las ventas. Ya hicimos una interfaz pero me gustaria alguna otra opcion distinta (obvio que sea estatica). Pero analizá primero toda la informacion y decime si entendes el flujo del negocio y como hemos dividido las "entidades" como pedidos, ventas, comandas, etc.
+
+
+Aclaración sobre Pedidos y Ventas:
+Por lo que explicás, entiendo que:
+Llamada 1: Cliente pide lomito → Se crea PEDIDO #1 → Paga → Se genera VENTA #1
+Llamada 2 (5 min después): Mismo cliente pide algo más → Se crea PEDIDO #2 (nuevo) → Paga → Se genera VENTA #2 (nueva)
+Entonces la relación es: 1 PEDIDO = 1 VENTA (cuando se completa el pago)
+Propuesta de arquitectura de módulos:
+Basándome en tu estructura de DB, te sugiero 3 módulos separados:
+1. VENTAS (POS) ← El que estamos diseñando ahora
+Propósito: Tomar pedidos y cobrar
+Funcionalidad:
+Seleccionar productos
+Cargar datos del cliente
+Personalizar items (extra queso, punto carne, etc.)
+Cobrar y facturar
+Generar comanda automáticamente (si hay items elaborados)
+Usuario: Cajero/vendedor en mostrador o por teléfono
+2. PEDIDOS (Tracking)
+Propósito: Seguimiento de todos los pedidos
+Funcionalidad: Ver estados, cancelar, modificar
+Estados: RECIBIDO → EN_PREPARACION → LISTO → ENTREGADO/CANCELADO
+Usuario: Administrador o encargado
+3. COCINA (Kitchen Display System)
+Propósito: Mostrar comandas pendientes
+Funcionalidad: Ver qué cocinar, marcar como listo
+Usuario: Cocinero (pantalla en cocina)
+------------------------------------------------------------------------------
+
