@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from '@/hooks/use-toast';
 
 const NotificationContext = createContext();
 
@@ -12,39 +12,20 @@ export const useNotification = () => {
 };
 
 export const NotificationProvider = ({ children }) => {
-  const showSuccess = (message, options = {}) => {
-    toast.success(message, {
-      duration: options.duration || 3000,
-      ...options
-    });
-  };
+  const showSuccess = (message, options = {}) =>
+    toast.success(message, { icon: options.icon ?? '✅', ...options });
 
-  const showError = (message, options = {}) => {
-    toast.error(message, {
-      duration: options.duration || 4000,
-      ...options
-    });
-  };
+  const showError = (message, options = {}) =>
+    toast.error(message, { icon: options.icon ?? '⚠️', ...options });
 
-  const showInfo = (message, options = {}) => {
-    toast(message, {
-      icon: 'ℹ️',
-      duration: options.duration || 3000,
-      ...options
-    });
-  };
+  const showInfo = (message, options = {}) =>
+    toast.info(message, { icon: options.icon ?? 'ℹ️', ...options });
 
-  const showWarning = (message, options = {}) => {
-    toast(message, {
-      icon: '⚠️',
-      duration: options.duration || 3000,
-      ...options
-    });
-  };
+  const showWarning = (message, options = {}) =>
+    toast.warning(message, { icon: options.icon ?? '⚠️', ...options });
 
-  const showLoading = (message) => {
-    return toast.loading(message);
-  };
+  const showLoading = (message, options = {}) =>
+    toast.loading(message, options);
 
   const dismiss = (toastId) => {
     toast.dismiss(toastId);

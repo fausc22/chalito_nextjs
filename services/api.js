@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { API_CONFIG } from '../config/api';
-import toast from 'react-hot-toast';
+import { toast } from '@/hooks/use-toast';
 
 // Token Manager
 export const tokenManager = {
@@ -90,11 +90,12 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Si es error 401 y no es login/refresh
+    // Si es error 401 y no es login/refresh/verify
     if (error.response?.status === 401 &&
         !originalRequest._retry &&
         !originalRequest.url.includes('/login') &&
-        !originalRequest.url.includes('/refresh-token')) {
+        !originalRequest.url.includes('/refresh-token') &&
+        !originalRequest.url.includes('/verify-token')) {
 
       const refreshToken = tokenManager.getRefreshToken();
 
@@ -149,9 +150,31 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Manejar otros errores
+    // Manejar errores del servidor (500+)
     if (error.response?.status >= 500) {
       toast.error('Error del servidor. Intenta nuevamente.');
+      return Promise.reject(error);
+    }
+
+    // Para errores 4xx (excepto 401 que ya se maneja arriba),
+    // NO rechazamos la promesa para evitar el error overlay de Next.js
+    // En su lugar, devolvemos un objeto con la información del error
+    if (error.response?.status >= 400 && error.response?.status < 500) {
+      // Transformamos el error en una respuesta "exitosa" que contenga el error
+      // Esto evita que Next.js muestre el error overlay
+      return Promise.resolve({
+        data: {
+          success: false,
+          error: true,
+          status: error.response.status,
+          mensaje: error.response?.data?.mensaje || error.response?.data?.message,
+          data: error.response?.data
+        },
+        status: error.response.status,
+        statusText: error.response.statusText,
+        headers: error.response.headers,
+        config: error.config
+      });
     }
 
     return Promise.reject(error);

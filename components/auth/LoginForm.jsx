@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
 import { ROUTES } from '../../config/routes';
+import { toast } from '@/hooks/use-toast';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export function LoginForm() {
   const [formData, setFormData] = useState({
@@ -46,6 +52,18 @@ export function LoginForm() {
     const result = await login(formData);
 
     if (result.success) {
+      const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return '¡Buenos días';
+        if (hour < 20) return '¡Buenas tardes';
+        return '¡Buenas noches';
+      };
+
+      toast.success(`${getGreeting()}! Bienvenido al sistema`, {
+        duration: 4000,
+        icon: '👋',
+      });
+
       router.push(ROUTES.DASHBOARD);
     }
   };
@@ -55,125 +73,126 @@ export function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-6 animate-fade-in">
-      <div className="card">
-        <div className="mb-8 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Iniciar Sesión</h2>
-          <p className="text-gray-600">Ingresa tus credenciales para acceder al sistema</p>
+    <div className="w-full animate-fade-in">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Iniciar Sesión</h2>
+        <p className="text-gray-600 text-sm">Ingresa tus credenciales para acceder al sistema</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Usuario */}
+        <div className="space-y-2">
+          <Label htmlFor="usuario">Usuario</Label>
+          <Input
+            type="text"
+            id="usuario"
+            name="usuario"
+            placeholder="Ingresa tu usuario"
+            value={formData.usuario}
+            onChange={handleInputChange}
+            disabled={isLoading}
+            required
+            autoComplete="username"
+            className={error ? 'border-red-500 focus-visible:ring-red-500' : ''}
+          />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Usuario */}
-          <div>
-            <label htmlFor="usuario" className="label">
-              Usuario
-            </label>
-            <input
-              type="text"
-              id="usuario"
-              name="usuario"
-              placeholder="Ingresa tu usuario"
-              value={formData.usuario}
+        {/* Contraseña */}
+        <div className="space-y-2">
+          <Label htmlFor="password">Contraseña</Label>
+          <div className="relative">
+            <Input
+              type={showPassword ? "text" : "password"}
+              id="password"
+              name="password"
+              placeholder="Ingresa tu contraseña"
+              value={formData.password}
               onChange={handleInputChange}
               disabled={isLoading}
               required
-              autoComplete="username"
-              className={`input ${error ? 'input-error' : ''}`}
+              autoComplete="current-password"
+              className={`pr-10 ${error ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
             />
-          </div>
-
-          {/* Contraseña */}
-          <div>
-            <label htmlFor="password" className="label">
-              Contraseña
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                name="password"
-                placeholder="Ingresa tu contraseña"
-                value={formData.password}
-                onChange={handleInputChange}
-                disabled={isLoading}
-                required
-                autoComplete="current-password"
-                className={`input pr-12 ${error ? 'input-error' : ''}`}
-              />
-              <button
-                type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-                onClick={togglePasswordVisibility}
-                disabled={isLoading}
-                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-              >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
-              </button>
-            </div>
-          </div>
-
-          {/* Recordar sesión */}
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="remember"
-              name="remember"
-              checked={formData.remember}
-              onChange={handleInputChange}
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+              onClick={togglePasswordVisibility}
               disabled={isLoading}
-              className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500"
-            />
-            <label htmlFor="remember" className="ml-2 text-sm text-gray-700 cursor-pointer">
-              Recordar sesión (7 días)
-            </label>
+              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
           </div>
+        </div>
 
-          {/* Error message */}
-          {error && (
-            <div className="bg-danger-50 border border-danger-200 text-danger-700 px-4 py-3 rounded-lg flex items-start space-x-2 animate-bounce-in">
-              <span className="text-lg">⚠️</span>
-              <span className="text-sm font-medium">{error}</span>
-            </div>
-          )}
-
-          {/* Submit button */}
-          <button
-            type="submit"
-            disabled={isLoading || !formData.usuario.trim() || !formData.password.trim()}
-            className="w-full btn-primary btn-lg"
+        {/* Recordar sesión */}
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="remember"
+            checked={formData.remember}
+            onCheckedChange={(checked) =>
+              setFormData(prev => ({ ...prev, remember: checked }))
+            }
+            disabled={isLoading}
+          />
+          <Label
+            htmlFor="remember"
+            className="text-sm font-normal cursor-pointer"
           >
-            {isLoading ? (
-              <div className="flex items-center justify-center space-x-2">
-                <div className="spinner spinner-sm"></div>
-                <span>Iniciando sesión...</span>
-              </div>
-            ) : (
-              'Iniciar Sesión'
-            )}
-          </button>
-        </form>
+            Recordar sesión (7 días)
+          </Label>
+        </div>
 
-        {/* Credenciales de prueba - solo desarrollo */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">Credenciales de prueba:</h4>
-            <div className="space-y-2 text-xs text-gray-600">
-              <div className="bg-gray-50 px-3 py-2 rounded">
-                <strong>Admin:</strong> admin / admin123
-              </div>
-              <div className="bg-gray-50 px-3 py-2 rounded">
-                <strong>Gerente:</strong> gerente / gerente123
-              </div>
-              <div className="bg-gray-50 px-3 py-2 rounded">
-                <strong>Cajero:</strong> cajero / cajero123
-              </div>
-              <div className="bg-gray-50 px-3 py-2 rounded">
-                <strong>Chef:</strong> chef / cocina123
-              </div>
-            </div>
+        {/* Error message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start space-x-2 animate-bounce-in">
+            <span className="text-lg">⚠️</span>
+            <span className="text-sm font-medium">{error}</span>
           </div>
         )}
-      </div>
+
+        {/* Submit button */}
+        <Button
+          type="submit"
+          disabled={isLoading || !formData.usuario.trim() || !formData.password.trim()}
+          className="w-full"
+          size="lg"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Iniciando sesión...
+            </>
+          ) : (
+            'Iniciar Sesión'
+          )}
+        </Button>
+      </form>
+
+      {/* Credenciales de prueba - solo desarrollo */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">Credenciales de prueba:</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div className="bg-gray-50 px-3 py-2 rounded">
+              <strong>Admin:</strong> admin / admin123
+            </div>
+            <div className="bg-gray-50 px-3 py-2 rounded">
+              <strong>Gerente:</strong> gerente / gerente123
+            </div>
+            <div className="bg-gray-50 px-3 py-2 rounded">
+              <strong>Cajero:</strong> cajero / cajero123
+            </div>
+            <div className="bg-gray-50 px-3 py-2 rounded">
+              <strong>Chef:</strong> chef / cocina123
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

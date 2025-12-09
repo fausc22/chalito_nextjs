@@ -66,25 +66,71 @@ export const articulosService = {
   // Crear nuevo artículo
   crearArticulo: async (articuloData) => {
     try {
+      // Mapear campos del frontend al backend
+      const dataToSend = {
+        categoria_id: articuloData.categoria_id,
+        nombre: articuloData.nombre,
+        descripcion: articuloData.descripcion || null,
+        precio: parseFloat(articuloData.precio),
+        codigo_barra: articuloData.codigo || null,
+        stock_actual: articuloData.stock_actual ? parseInt(articuloData.stock_actual) : 0,
+        stock_minimo: articuloData.stock_minimo ? parseInt(articuloData.stock_minimo) : 0,
+        tipo: articuloData.tipo || 'OTRO',
+        imagen_url: null,
+        ingredientes: articuloData.tipo === 'ELABORADO' ? (articuloData.ingredientes || []) : []
+      };
+
       const response = await apiRequest.post(
         API_CONFIG.ENDPOINTS.ARTICULOS.CREATE,
-        {
-          ...articuloData,
-          precio: parseFloat(articuloData.precio),
-          tiempoPreparacion: parseInt(articuloData.tiempoPreparacion)
-        }
+        dataToSend
       );
+
+      // Verificar si la respuesta es un error transformado por el interceptor
+      if (response.data?.error === true) {
+        const status = response.data.status;
+        let errorMessage = 'Error al crear artículo';
+
+        if (status === 409) {
+          errorMessage = response.data.mensaje || 'Ya existe un artículo con ese nombre o código de barras';
+        } else if (status === 400) {
+          errorMessage = response.data.mensaje || 'Datos inválidos. Verifica la información ingresada';
+        } else {
+          errorMessage = response.data.mensaje || `Error ${status}: No se pudo crear el artículo`;
+        }
+
+        return {
+          success: false,
+          error: errorMessage
+        };
+      }
 
       return {
         success: true,
         data: response.data.data || response.data,
-        mensaje: response.data.mensaje || 'Artículo creado exitosamente'
+        mensaje: response.data.mensaje || 'Artículo creado correctamente'
       };
     } catch (error) {
       console.error('Error al crear artículo:', error);
+
+      // Manejo específico para diferentes códigos de error
+      let errorMessage = 'Error al crear artículo';
+
+      if (error.response) {
+        const status = error.response.status;
+        const data = error.response.data;
+
+        if (status === 409) {
+          errorMessage = data?.mensaje || data?.message || 'Ya existe un artículo con ese nombre o código de barras';
+        } else if (status === 400) {
+          errorMessage = data?.mensaje || data?.message || 'Datos inválidos. Verifica la información ingresada';
+        } else {
+          errorMessage = data?.mensaje || data?.message || `Error ${status}: No se pudo crear el artículo`;
+        }
+      }
+
       return {
         success: false,
-        error: error.response?.data?.mensaje || 'Error al crear artículo'
+        error: errorMessage
       };
     }
   },
@@ -92,25 +138,35 @@ export const articulosService = {
   // Actualizar artículo existente
   actualizarArticulo: async (id, articuloData) => {
     try {
+      // Mapear campos del frontend al backend
+      const dataToSend = {
+        categoria_id: articuloData.categoria_id,
+        nombre: articuloData.nombre,
+        descripcion: articuloData.descripcion || null,
+        precio: parseFloat(articuloData.precio),
+        codigo_barra: articuloData.codigo || null,
+        stock_actual: articuloData.stock_actual !== undefined && articuloData.stock_actual !== '' ? parseInt(articuloData.stock_actual) : 0,
+        stock_minimo: articuloData.stock_minimo !== undefined && articuloData.stock_minimo !== '' ? parseInt(articuloData.stock_minimo) : 0,
+        tipo: articuloData.tipo || 'OTRO',
+        activo: articuloData.activo ? 1 : 0,
+        ingredientes: articuloData.tipo === 'ELABORADO' ? (articuloData.ingredientes || []) : []
+      };
+
       const response = await apiRequest.put(
         API_CONFIG.ENDPOINTS.ARTICULOS.BY_ID(id),
-        {
-          ...articuloData,
-          precio: parseFloat(articuloData.precio),
-          tiempoPreparacion: parseInt(articuloData.tiempoPreparacion)
-        }
+        dataToSend
       );
 
       return {
         success: true,
         data: response.data.data || response.data,
-        mensaje: response.data.mensaje || 'Artículo actualizado exitosamente'
+        mensaje: response.data.mensaje || 'Artículo actualizado correctamente'
       };
     } catch (error) {
       console.error('Error al actualizar artículo:', error);
       return {
         success: false,
-        error: error.response?.data?.mensaje || 'Error al actualizar artículo'
+        error: error.response?.data?.mensaje || error.response?.data?.message || 'Error al actualizar artículo'
       };
     }
   },
@@ -123,7 +179,7 @@ export const articulosService = {
       return {
         success: true,
         data: response.data.data || response.data,
-        mensaje: response.data.mensaje || 'Artículo eliminado exitosamente'
+        mensaje: response.data.mensaje || 'Artículo eliminado correctamente'
       };
     } catch (error) {
       console.error('Error al eliminar artículo:', error);
@@ -144,18 +200,14 @@ export const articulosService = {
       }
 
       const articulos = response.data;
-      const categoriasResponse = await articulosService.obtenerCategorias();
-      const categorias = categoriasResponse.data || [];
-
-      // Obtener categorías únicas de los artículos
       const categoriasUnicas = [...new Set(articulos.map(a => a.categoria))];
 
       return {
         success: true,
         data: {
           total: articulos.length,
-          disponibles: articulos.filter(a => a.disponible).length,
-          noDisponibles: articulos.filter(a => !a.disponible).length,
+          disponibles: articulos.filter(a => a.activo).length,
+          noDisponibles: articulos.filter(a => !a.activo).length,
           totalCategorias: categoriasUnicas.length,
           promedioPrecios: articulos.length > 0
             ? (articulos.reduce((sum, a) => sum + a.precio, 0) / articulos.length).toFixed(2)

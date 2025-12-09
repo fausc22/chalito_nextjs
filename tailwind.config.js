@@ -1,25 +1,35 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: ["class"],
   content: [
     './pages/**/*.{js,jsx}',
     './components/**/*.{js,jsx}',
     './src/**/*.{js,jsx}',
   ],
   theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
     extend: {
       colors: {
         // Colores del sistema El Chalito
         primary: {
-          50: '#fef7ee',
-          100: '#fdecd3',
-          200: '#fad5a5',
-          300: '#f7b96d',
-          400: '#f49333',
-          500: '#f2750b',
-          600: '#e35a06',
-          700: '#bc4108',
-          800: '#96340e',
-          900: '#792c0f',
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
+          DEFAULT: '#3b82f6',
+          foreground: '#ffffff',
         },
         secondary: {
           50: '#f0fdf4',
@@ -32,6 +42,8 @@ module.exports = {
           700: '#15803d',
           800: '#166534',
           900: '#14532d',
+          DEFAULT: '#22c55e',
+          foreground: '#ffffff',
         },
         danger: {
           50: '#fef2f2',
@@ -44,6 +56,34 @@ module.exports = {
           700: '#b91c1c',
           800: '#991b1b',
           900: '#7f1d1d',
+          DEFAULT: '#ef4444',
+          foreground: '#ffffff',
+        },
+        // shadcn/ui colors
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
         },
       },
       fontFamily: {
@@ -55,6 +95,9 @@ module.exports = {
         '144': '36rem',
       },
       borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
         '4xl': '2rem',
       },
       boxShadow: {
@@ -84,5 +127,6 @@ module.exports = {
   },
   plugins: [
     require('@tailwindcss/forms'),
+    require("tailwindcss-animate"),
   ],
 };

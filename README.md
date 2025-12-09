@@ -24,25 +24,29 @@ npm run dev
 ```
 frontend/
 ├── components/         # Componentes reutilizables
-│   ├── common/        # Componentes UI base
-│   ├── articulos/     # Componentes de artículos
+│   ├── common/        # Cards, skeletons y boundaries
+│   ├── inventario/    # Componentes del módulo inventario
 │   ├── dashboard/     # Componentes de dashboard
 │   ├── auth/          # Componentes de autenticación
-│   └── layout/        # Componentes de layout
+│   ├── layout/        # Layout y navegación
+│   └── ui/            # Librería shadcn/ui
 │
-├── hooks/             # Hooks personalizados
+├── hooks/             # Hooks personalizados (useInventario, use-toast)
 ├── contexts/          # Contextos de React
 ├── services/          # Servicios y API
 ├── config/            # Configuración
 ├── utils/             # Utilidades
 ├── styles/            # Estilos globales
 │
-├── pages/             # Páginas de Next.js (todas .jsx)
+├── pages/             # Páginas de Next.js
 │   ├── _app.jsx
+│   ├── _document.js
+│   ├── 404.jsx
 │   ├── index.jsx
-│   ├── login.jsx
-│   ├── dashboard.jsx
-│   └── articulos.jsx
+│   ├── login/
+│   ├── dashboard/
+│   ├── inventario/
+│   └── componentes-demo.jsx
 │
 └── public/            # Archivos estáticos
 ```
@@ -57,7 +61,7 @@ frontend/
 - **UI Library**: [React 18](https://react.dev/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Icons**: [React Icons](https://react-icons.github.io/react-icons/)
-- **Notifications**: [React Hot Toast](https://react-hot-toast.com/)
+- **Notifications**: [shadcn/ui Toast](https://ui.shadcn.com/docs/components/toast)
 - **HTTP Client**: [Axios](https://axios-http.com/)
 
 ---
@@ -65,15 +69,15 @@ frontend/
 ## 📦 Componentes Reutilizables
 
 ### Componentes UI Base
-- `Button` - Botones con variantes
-- `Card` - Tarjetas contenedoras
-- `Input`, `Textarea`, `Select`, `Checkbox` - Formularios
-- `Modal` - Modales y diálogos
-- `Badge` - Etiquetas y estados
-- `StatsCard` - Tarjetas de estadísticas
+- `@/components/ui/*` - Colección shadcn/ui (button, card, input, select, dialog, tabs, alert, etc.)
+- `components/common/Card` - Contenedor estilizado para paneles y widgets
+- `components/common/StatsCard` - Tarjetas de estadísticas para KPIs
+- `components/common/LoadingSkeleton` - Skeletons reutilizables para estados de carga
+- `components/common/ErrorBoundary` - Límite de errores para vistas protegidas
+- `@/components/ui/toaster` + `hooks/use-toast` - Sistema de notificaciones basado en shadcn/ui
 
 ### Componentes Específicos
-- **Artículos**: Filtros, Tabla, Formulario, Estadísticas
+- **Inventario**: Filtros, tablas responsivas, formularios y estadísticas
 - **Dashboard**: ModuleCard, WelcomeCard, StatusCard
 - **Auth**: LoginForm, ProtectedRoute
 - **Layout**: NavBar, Footer, Layout
@@ -84,14 +88,10 @@ frontend/
 
 ## 🎣 Hooks Personalizados
 
-- `useModal` - Gestión de modales
-- `useForm` - Formularios con validación
-- `useToggle` - Estados booleanos
-- `useAsync` - Operaciones asíncronas
-- `useArticulos` - Gestión de artículos
-- `useDebounce` - Debounce de valores
-- `useLocalStorage` - Persistencia en localStorage
-- `useMediaQuery` - Media queries responsive
+- `useInventario` - Gestión integral del módulo Inventario (artículos, categorías, ingredientes)
+- `useToast` (`hooks/use-toast`) - Helper para disparar notificaciones consistente con shadcn/ui
+
+> ℹ️ `useInventario` actúa como la única fuente de verdad del módulo: todas las páginas deben consumir sus estados y acciones en lugar de interactuar directamente con los servicios.
 
 ---
 
@@ -142,7 +142,7 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost
 
 ### Nombres de Archivos
 - **Componentes**: PascalCase + `.jsx` (Ej: `Button.jsx`)
-- **Hooks**: camelCase + `.jsx` (Ej: `useModal.jsx`)
+- **Hooks**: camelCase + `.jsx` (Ej: `useInventario.jsx`)
 - **Páginas**: camelCase + `.jsx` (Ej: `login.jsx`)
 - **Servicios**: camelCase + `.js` (Ej: `authService.js`)
 - **Configuración**: camelCase + `.js` (Ej: `api.js`)
@@ -154,10 +154,11 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 
 // 2. Componentes
-import { Button, Card } from '../components/common';
+import { Button } from '@/components/ui/button';
+import { Card } from '../components/common/Card';
 
 // 3. Hooks
-import useArticulos from '../hooks/useArticulos';
+import { useInventario } from '../hooks/useInventario';
 
 // 4. Contextos
 import { useAuth } from '../contexts/AuthContext';
@@ -192,12 +193,16 @@ npm run format       # Formatea código (si está configurado)
 ### 1. Componente Simple
 
 ```jsx
-// components/common/MiComponente.jsx
+// components/dashboard/MiComponente.jsx
+import { Button } from '@/components/ui/button';
+import { Card } from '../common/Card';
+
 export const MiComponente = ({ title, onClick }) => {
   return (
-    <button onClick={onClick} className="btn-primary">
-      {title}
-    </button>
+    <Card className="space-y-4">
+      <h2 className="text-lg font-semibold">{title}</h2>
+      <Button onClick={onClick}>Accionar</Button>
+    </Card>
   );
 };
 ```
@@ -207,13 +212,13 @@ export const MiComponente = ({ title, onClick }) => {
 ```jsx
 // components/mimodulo/MiComponente.jsx
 import { useState } from 'react';
-import { Button } from '../common/Button';
+import { Button } from '@/components/ui/button';
 
 export const MiComponente = () => {
   const [count, setCount] = useState(0);
 
   return (
-    <div>
+    <div className="space-y-3">
       <p>Contador: {count}</p>
       <Button onClick={() => setCount(count + 1)}>
         Incrementar
@@ -358,7 +363,7 @@ Module not found: Can't resolve '../src/...'
 import { Button } from '../src/components/common/Button';
 
 // Ahora
-import { Button } from '../components/common/Button';
+import { Button } from '@/components/ui/button';
 ```
 
 ### Errores de Tailwind
