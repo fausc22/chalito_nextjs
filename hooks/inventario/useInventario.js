@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { articulosService } from '../../services/articulosService';
 import { categoriasService } from '../../services/categoriasService';
 import { ingredientesService } from '../../services/ingredientesService';
+import { adicionalesService } from '../../services/adicionalesService';
 
 export const useInventario = () => {
 
@@ -46,6 +47,22 @@ export const useInventario = () => {
     registros_por_pagina: 10,
     hay_mas: false
   });
+
+  // ==========================================
+  // ESTADOS - ADICIONALES
+  // ==========================================
+  const [adicionales, setAdicionales] = useState([]);
+  const [loadingAdicionales, setLoadingAdicionales] = useState(false);
+  const [errorAdicionales, setErrorAdicionales] = useState(null);
+  const [metaAdicionales, setMetaAdicionales] = useState({
+    pagina_actual: 1,
+    total_registros: 0,
+    total_paginas: 0,
+    registros_por_pagina: 10,
+    hay_mas: false
+  });
+  const [adicionalesDisponibles, setAdicionalesDisponibles] = useState([]);
+  const [loadingAdicionalesDisponibles, setLoadingAdicionalesDisponibles] = useState(false);
 
   // ==========================================
   // FUNCIONES - CATEGORÍAS
@@ -330,6 +347,127 @@ export const useInventario = () => {
     }
   };
 
+  // ==========================================
+  // FUNCIONES - ADICIONALES
+  // ==========================================
+
+  // Funcion para cargar adicionales activos (para selectores)
+  const cargarAdicionalesActivos = useCallback(async () => {
+    setLoadingAdicionalesDisponibles(true);
+
+    try {
+      const response = await adicionalesService.obtenerAdicionalesActivos();
+
+      if (response.success) {
+        setAdicionalesDisponibles(response.data);
+      }
+    } catch (error) {
+      console.error('Error al cargar adicionales:', error);
+    } finally {
+      setLoadingAdicionalesDisponibles(false);
+    }
+  }, []);
+
+  // Funcion para cargar los adicionales
+  const cargarAdicionales = useCallback(async (filtros = {}) => {
+    setLoadingAdicionales(true);
+    setErrorAdicionales(null);
+    try {
+      const response = await adicionalesService.obtenerAdicionales(filtros);
+      if (response.success) {
+        setAdicionales(response.data);
+        if (response.meta) {
+          setMetaAdicionales(response.meta);
+        }
+      } else {
+        setErrorAdicionales(response.error);
+      }
+    } catch (error) {
+      console.log(error)
+      setErrorAdicionales('Error al cargar adicionales');
+    } finally {
+      setLoadingAdicionales(false);
+    }
+  }, []);
+
+  // Crear adicional
+  const crearAdicional = async (adicionalData) => {
+    setLoadingAdicionales(true);
+
+    try {
+      const response = await adicionalesService.crearAdicional(adicionalData);
+      return { success: response.success, data: response.data, error: response.error };
+    } catch (error) {
+      console.log(error)
+      return { success: false, error: 'Error al crear adicional' };
+    } finally {
+      setLoadingAdicionales(false);
+    }
+  };
+
+  // Editar adicional
+  const editarAdicional = async (id, adicionalData) => {
+    setLoadingAdicionales(true);
+
+    try {
+      const response = await adicionalesService.actualizarAdicional(id, adicionalData);
+      return { success: response.success, data: response.data, error: response.error };
+    } catch (error) {
+      console.log(error)
+      return { success: false, error: 'Error al editar adicional' };
+    } finally {
+      setLoadingAdicionales(false);
+    }
+  };
+
+  // Eliminar adicional
+  const eliminarAdicional = async (id) => {
+    setLoadingAdicionales(true);
+
+    try {
+      const response = await adicionalesService.eliminarAdicional(id);
+      return { success: response.success, error: response.error };
+    } catch (error) {
+      console.log(error)
+      return { success: false, error: 'Error al eliminar adicional' };
+    } finally {
+      setLoadingAdicionales(false);
+    }
+  };
+
+  // Obtener adicionales asignados a un artículo
+  const obtenerAdicionalesPorArticulo = async (articuloId) => {
+    try {
+      const response = await adicionalesService.obtenerAdicionalesPorArticulo(articuloId);
+      return { success: response.success, data: response.data || [], error: response.error };
+    } catch (error) {
+      console.error('Error al obtener adicionales del artículo:', error);
+      return { success: false, data: [], error: 'Error al obtener adicionales del artículo' };
+    }
+  };
+
+  // Asignar adicionales a un artículo
+  const asignarAdicionalesAArticulo = async (articuloId, adicionalesIds) => {
+    try {
+      const response = await adicionalesService.asignarAdicionalesAArticulo(articuloId, adicionalesIds);
+      return { success: response.success, data: response.data, error: response.error };
+    } catch (error) {
+      console.error('Error al asignar adicionales:', error);
+      return { success: false, error: 'Error al asignar adicionales' };
+    }
+  };
+
+  // Eliminar adicional de un artículo
+  const eliminarAdicionalDeArticulo = async (articuloId, adicionalId) => {
+    try {
+      const response = await adicionalesService.eliminarAdicionalDeArticulo(articuloId, adicionalId);
+      return { success: response.success, error: response.error };
+    } catch (error) {
+      console.error('Error al eliminar adicional del artículo:', error);
+      return { success: false, error: 'Error al eliminar adicional del artículo' };
+    }
+  };
+
   return {
     // Estados - ARTÍCULOS
     articulos,
@@ -371,6 +509,26 @@ export const useInventario = () => {
     cargarIngredientes,
     crearIngrediente,
     editarIngrediente,
-    eliminarIngrediente
+    eliminarIngrediente,
+
+    // Adicionales (disponibles para selector)
+    adicionalesDisponibles,
+    loadingAdicionalesDisponibles,
+    cargarAdicionalesActivos,
+
+    // Estados - ADICIONALES
+    adicionales,
+    loadingAdicionales,
+    errorAdicionales,
+    metaAdicionales,
+
+    // Acciones - ADICIONALES
+    cargarAdicionales,
+    crearAdicional,
+    editarAdicional,
+    eliminarAdicional,
+    obtenerAdicionalesPorArticulo,
+    asignarAdicionalesAArticulo,
+    eliminarAdicionalDeArticulo
   };
 };

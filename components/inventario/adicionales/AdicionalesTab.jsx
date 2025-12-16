@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Carrot, AlertCircle, AlertTriangle, Pencil, Trash2, X } from 'lucide-react';
+import { Plus, AlertCircle, AlertTriangle, Pencil, Trash2, X, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Pagination,
   PaginationContent,
@@ -23,25 +22,32 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { IngredientesForm } from './IngredientesForm';
-import { IngredientesCard } from './IngredientesCard';
-import { IngredientesTable } from './IngredientesTable';
-import { IngredientesFilters } from './IngredientesFilters';
+import { AdicionalesForm } from './AdicionalesForm';
+import { AdicionalesCard } from './AdicionalesCard';
+import { AdicionalesTable } from './AdicionalesTable';
+import { AdicionalesFilters } from './AdicionalesFilters';
+import { ModalAsignarAdicionales } from './ModalAsignarAdicionales';
+import { ModalSeleccionarArticulo } from './ModalSeleccionarArticulo';
+import { ArticulosConAdicionales } from './ArticulosConAdicionales';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 
-export function IngredientesTab({
-  ingredientes,
-  loadingIngredientes,
-  errorIngredientes,
-  metaIngredientes,
-  onCargarIngredientes,
-  onCrearIngrediente,
-  onEditarIngrediente,
-  onEliminarIngrediente
+export function AdicionalesTab({
+  adicionales,
+  loadingAdicionales,
+  errorAdicionales,
+  metaAdicionales,
+  onCargarAdicionales,
+  onCrearAdicional,
+  onEditarAdicional,
+  onEliminarAdicional,
+  articulos,
+  onObtenerAdicionalesPorArticulo,
+  onAsignarAdicionalesAArticulo
 }) {
   // Estados para el formulario
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [ingredienteEditando, setIngredienteEditando] = useState(null);
+  const [adicionalEditando, setAdicionalEditando] = useState(null);
   const [formulario, setFormulario] = useState({
     nombre: '',
     descripcion: '',
@@ -50,11 +56,16 @@ export function IngredientesTab({
   });
 
   // Estados para confirmación de eliminación
-  const [ingredienteEliminar, setIngredienteEliminar] = useState(null);
+  const [adicionalEliminar, setAdicionalEliminar] = useState(null);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
 
+  // Estado para modales de asignar adicionales
+  const [modalSeleccionarArticulo, setModalSeleccionarArticulo] = useState(false);
+  const [modalAsignarAbierto, setModalAsignarAbierto] = useState(false);
+  const [articuloSeleccionado, setArticuloSeleccionado] = useState(null);
+
   // Estado para items por página según tamaño de pantalla
-  const [itemsPerPage, setItemsPerPage] = useState(6); // Empezar con 6 (mobile-first)
+  const [itemsPerPage, setItemsPerPage] = useState(6);
   const [currentPage, setCurrentPage] = useState(1);
   const containerRef = useRef(null);
 
@@ -68,39 +79,30 @@ export function IngredientesTab({
   useEffect(() => {
     const updateItemsPerPage = () => {
       const width = window.innerWidth;
-
       let newItems;
       if (width < 768) {
-        newItems = 6; // Mobile
+        newItems = 6;
       } else if (width < 1024) {
-        newItems = 8; // Tablet
+        newItems = 8;
       } else {
-        newItems = 10; // Desktop
+        newItems = 10;
       }
-
       setItemsPerPage(prev => {
         if (prev !== newItems) {
-          setCurrentPage(1); // Reset to first page when items per page changes
+          setCurrentPage(1);
           return newItems;
         }
         return prev;
       });
     };
-
-    // Ejecutar inmediatamente en mount
     updateItemsPerPage();
-
-    // Agregar listener para resize
     window.addEventListener('resize', updateItemsPerPage);
-
-    return () => {
-      window.removeEventListener('resize', updateItemsPerPage);
-    };
+    return () => window.removeEventListener('resize', updateItemsPerPage);
   }, []);
 
-  // Cargar ingredientes al montar el componente
+  // Cargar adicionales al montar
   useEffect(() => {
-    onCargarIngredientes();
+    onCargarAdicionales();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -111,7 +113,7 @@ export function IngredientesTab({
 
   // Abrir modal para crear
   const abrirModalCrear = () => {
-    setIngredienteEditando(null);
+    setAdicionalEditando(null);
     setFormulario({
       nombre: '',
       descripcion: '',
@@ -122,13 +124,13 @@ export function IngredientesTab({
   };
 
   // Abrir modal para editar
-  const abrirModalEditar = (ingrediente) => {
-    setIngredienteEditando(ingrediente);
+  const abrirModalEditar = (adicional) => {
+    setAdicionalEditando(adicional);
     setFormulario({
-      nombre: ingrediente.nombre,
-      descripcion: ingrediente.descripcion || '',
-      precio_extra: ingrediente.precio_extra || 0,
-      disponible: ingrediente.disponible,
+      nombre: adicional.nombre,
+      descripcion: adicional.descripcion || '',
+      precio_extra: adicional.precio_extra || 0,
+      disponible: adicional.disponible,
     });
     setModalAbierto(true);
   };
@@ -136,7 +138,7 @@ export function IngredientesTab({
   // Cerrar modal
   const cerrarModal = () => {
     setModalAbierto(false);
-    setIngredienteEditando(null);
+    setAdicionalEditando(null);
     setFormulario({
       nombre: '',
       descripcion: '',
@@ -145,13 +147,23 @@ export function IngredientesTab({
     });
   };
 
+  // Abrir modal para seleccionar artículo
+  const abrirModalSeleccionarArticulo = () => {
+    setModalSeleccionarArticulo(true);
+  };
+
+  // Cuando se selecciona un artículo, abrir modal de asignar adicionales
+  const handleArticuloSeleccionado = (articulo) => {
+    setArticuloSeleccionado(articulo);
+    setModalAsignarAbierto(true);
+  };
+
   // Manejar envío del formulario
   const handleSubmit = async () => {
     setLoadingSubmit(true);
 
-    // Validaciones
     if (!formulario.nombre || formulario.nombre.trim() === '') {
-      toast.error('El nombre del ingrediente es obligatorio');
+      toast.error('El nombre del adicional es obligatorio');
       setLoadingSubmit(false);
       return;
     }
@@ -179,20 +191,20 @@ export function IngredientesTab({
 
       let resultado;
 
-      if (ingredienteEditando) {
-        resultado = await onEditarIngrediente(ingredienteEditando.id, datos);
+      if (adicionalEditando) {
+        resultado = await onEditarAdicional(adicionalEditando.id, datos);
       } else {
-        resultado = await onCrearIngrediente(datos);
+        resultado = await onCrearAdicional(datos);
       }
 
       if (resultado.success) {
-        toast.success(ingredienteEditando
-          ? 'Ingrediente actualizado correctamente'
-          : 'Ingrediente creado correctamente'
+        toast.success(adicionalEditando
+          ? 'Adicional actualizado correctamente'
+          : 'Adicional creado correctamente'
         );
         cerrarModal();
         setCurrentPage(1);
-        onCargarIngredientes();
+        onCargarAdicionales();
       } else {
         toast.error(resultado.error || 'Ha ocurrido un error');
       }
@@ -205,20 +217,19 @@ export function IngredientesTab({
 
   // Confirmar eliminación
   const confirmarEliminacion = async () => {
-    if (!ingredienteEliminar) return;
-
+    if (!adicionalEliminar) return;
     setLoadingSubmit(true);
 
     try {
-      const resultado = await onEliminarIngrediente(ingredienteEliminar.id);
+      const resultado = await onEliminarAdicional(adicionalEliminar.id);
 
       if (resultado.success) {
-        toast.success('Ingrediente eliminado correctamente');
-        setIngredienteEliminar(null);
+        toast.success('Adicional eliminado correctamente');
+        setAdicionalEliminar(null);
         setCurrentPage(1);
-        onCargarIngredientes();
+        onCargarAdicionales();
       } else {
-        toast.error(resultado.error || 'No se pudo eliminar el ingrediente');
+        toast.error(resultado.error || 'No se pudo eliminar el adicional');
       }
     } catch (error) {
       toast.error('Ha ocurrido un error inesperado');
@@ -241,52 +252,47 @@ export function IngredientesTab({
   };
 
   // Aplicar filtros localmente
-  const ingredientesFiltrados = ingredientes.filter(ingrediente => {
-    // Filtro por nombre
-    if (filtros.nombre && !ingrediente.nombre.toLowerCase().includes(filtros.nombre.toLowerCase())) {
+  const adicionalesFiltrados = adicionales.filter(adicional => {
+    if (filtros.nombre && !adicional.nombre.toLowerCase().includes(filtros.nombre.toLowerCase())) {
       return false;
     }
-
-    // Filtro por estado
-    if (filtros.disponible === 'active' && ingrediente.disponible !== 1) {
+    if (filtros.disponible === 'active' && adicional.disponible !== 1) {
       return false;
     }
-    if (filtros.disponible === 'inactive' && ingrediente.disponible === 1) {
+    if (filtros.disponible === 'inactive' && adicional.disponible === 1) {
       return false;
     }
-
     return true;
   });
 
   // Calcular paginación local
-  const totalPages = Math.ceil(ingredientesFiltrados.length / itemsPerPage);
+  const totalPages = Math.ceil(adicionalesFiltrados.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentIngredientes = ingredientesFiltrados.slice(startIndex, endIndex);
+  const currentAdicionales = adicionalesFiltrados.slice(startIndex, endIndex);
 
   const handleCambiarPagina = (nuevaPagina) => {
     setCurrentPage(nuevaPagina);
-    // Scroll suavemente hasta el inicio del contenedor
     containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  if (loadingIngredientes) {
+  if (loadingAdicionales) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center space-y-3">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Cargando ingredientes...</p>
+          <p className="text-muted-foreground">Cargando adicionales...</p>
         </div>
       </div>
     );
   }
 
-  if (errorIngredientes) {
+  if (errorAdicionales) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Error al cargar los ingredientes: {errorIngredientes}
+          Error al cargar los adicionales: {errorAdicionales}
         </AlertDescription>
       </Alert>
     );
@@ -298,45 +304,62 @@ export function IngredientesTab({
       <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4">
         <div className="text-center sm:text-left w-full sm:w-auto">
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center justify-center sm:justify-start gap-2">
-            <Carrot className="h-6 w-6" />
-            Gestión de Ingredientes
+            <Plus className="h-6 w-6" />
+            Gestión de Adicionales
           </h2>
           <p className="text-muted-foreground mt-1">
-            Total: {ingredientes.length} ingredientes
+            Total: {adicionales.length} adicionales
           </p>
         </div>
-        <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto">
-          <Plus className="h-4 w-4" />
-          Nuevo Ingrediente
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 items-center w-full sm:w-auto">
+          <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto">
+            <Plus className="h-4 w-4" />
+            Nuevo Adicional
+          </Button>
+          <Button 
+            onClick={abrirModalSeleccionarArticulo} 
+            className="gap-2 w-[200px] sm:w-auto"
+          >
+            <Link2 className="h-4 w-4" />
+            Asignar a Artículo
+          </Button>
+        </div>
       </div>
 
-      {/* Filtros */}
-      <IngredientesFilters
-        filtros={filtros}
-        onFiltroChange={handleFiltroChange}
-        onLimpiarFiltros={limpiarFiltros}
-      />
+      {/* Tabs para Adicionales y Artículos con Adicionales */}
+      <Tabs defaultValue="adicionales" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="adicionales">Adicionales</TabsTrigger>
+          <TabsTrigger value="articulos">Artículos con Adicionales</TabsTrigger>
+        </TabsList>
 
-      {/* Contenido */}
-      {ingredientes.length === 0 ? (
+        <TabsContent value="adicionales" className="space-y-6">
+          {/* Filtros */}
+          <AdicionalesFilters
+            filtros={filtros}
+            onFiltroChange={handleFiltroChange}
+            onLimpiarFiltros={limpiarFiltros}
+          />
+
+          {/* Contenido */}
+      {adicionales.length === 0 ? (
         <div className="text-center py-12 border-2 border-dashed rounded-lg">
-          <Carrot className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No hay ingredientes</h3>
+          <Plus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No hay adicionales</h3>
           <p className="text-muted-foreground mb-4">
-            Comienza creando tu primer ingrediente
+            Comienza creando tu primer adicional
           </p>
           <Button onClick={abrirModalCrear} variant="outline" className="gap-2">
             <Plus className="h-4 w-4" />
-            Crear Primer Ingrediente
+            Crear Primer Adicional
           </Button>
         </div>
-      ) : ingredientesFiltrados.length === 0 ? (
+      ) : adicionalesFiltrados.length === 0 ? (
         <div className="text-center py-12 border-2 border-dashed rounded-lg">
-          <Carrot className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No se encontraron ingredientes</h3>
+          <Plus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No se encontraron adicionales</h3>
           <p className="text-muted-foreground mb-4">
-            Probá ajustando los filtros o creá un nuevo ingrediente
+            Probá ajustando los filtros o creá un nuevo adicional
           </p>
           <Button onClick={limpiarFiltros} variant="outline" className="gap-2">
             <X className="h-4 w-4 mr-2" />
@@ -346,20 +369,20 @@ export function IngredientesTab({
       ) : (
         <>
           {/* Vista Desktop - Tabla */}
-          <IngredientesTable
-            ingredientes={currentIngredientes}
+          <AdicionalesTable
+            adicionales={currentAdicionales}
             onEditar={abrirModalEditar}
-            onEliminar={setIngredienteEliminar}
+            onEliminar={setAdicionalEliminar}
           />
 
           {/* Vista Mobile/Tablet - Cards */}
           <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {currentIngredientes.map((ingrediente) => (
-              <IngredientesCard
-                key={ingrediente.id}
-                ingrediente={ingrediente}
+            {currentAdicionales.map((adicional) => (
+              <AdicionalesCard
+                key={adicional.id}
+                adicional={adicional}
                 onEditar={abrirModalEditar}
-                onEliminar={setIngredienteEliminar}
+                onEliminar={setAdicionalEliminar}
               />
             ))}
           </div>
@@ -377,7 +400,6 @@ export function IngredientesTab({
                   />
                 </PaginationItem>
 
-                {/* Números de página - Ocultos en móvil pequeño, visibles desde 640px */}
                 <div className="hidden sm:flex items-center gap-1">
                   {[...Array(totalPages)].map((_, index) => (
                     <PaginationItem key={index + 1}>
@@ -392,7 +414,6 @@ export function IngredientesTab({
                   ))}
                 </div>
 
-                {/* Indicador de página actual en móvil pequeño */}
                 <div className="flex sm:hidden items-center px-3 text-sm text-muted-foreground">
                   {currentPage} / {totalPages}
                 </div>
@@ -410,42 +431,88 @@ export function IngredientesTab({
           )}
         </>
       )}
+        </TabsContent>
+
+        <TabsContent value="articulos" className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">
+              Artículos con Adicionales Asignados
+            </h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Aquí puedes ver y editar los adicionales asignados a cada artículo
+            </p>
+            <ArticulosConAdicionales
+              onObtenerAdicionalesPorArticulo={onObtenerAdicionalesPorArticulo}
+              onAsignarAdicionalesAArticulo={onAsignarAdicionalesAArticulo}
+              onEditarArticulo={(articulo) => {
+                setArticuloSeleccionado(articulo);
+                setModalAsignarAbierto(true);
+              }}
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Modal de formulario */}
-      <IngredientesForm
+      <AdicionalesForm
         isOpen={modalAbierto}
         onClose={cerrarModal}
         formulario={formulario}
         setFormulario={setFormulario}
         onSubmit={handleSubmit}
-        isEditing={!!ingredienteEditando}
+        isEditing={!!adicionalEditando}
         loading={loadingSubmit}
       />
 
+      {/* Modal para seleccionar artículo */}
+      <ModalSeleccionarArticulo
+        isOpen={modalSeleccionarArticulo}
+        onClose={() => {
+          setModalSeleccionarArticulo(false);
+        }}
+        onArticuloSeleccionado={handleArticuloSeleccionado}
+      />
+
+      {/* Modal para asignar adicionales a artículo */}
+      {articuloSeleccionado && (
+        <ModalAsignarAdicionales
+          isOpen={modalAsignarAbierto}
+          onClose={() => {
+            setModalAsignarAbierto(false);
+            setArticuloSeleccionado(null);
+            // Disparar evento para actualizar la lista
+            window.dispatchEvent(new CustomEvent('adicionalesActualizados'));
+          }}
+          articulo={articuloSeleccionado}
+          onObtenerAdicionalesPorArticulo={onObtenerAdicionalesPorArticulo}
+          onAsignarAdicionalesAArticulo={onAsignarAdicionalesAArticulo}
+        />
+      )}
+
       {/* Dialog de confirmación de eliminación */}
-      <AlertDialog open={!!ingredienteEliminar} onOpenChange={() => setIngredienteEliminar(null)}>
+      <AlertDialog open={!!adicionalEliminar} onOpenChange={() => setAdicionalEliminar(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
-              Eliminar Ingrediente
+              Eliminar Adicional
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>
-                ¿Estás seguro de que quieres eliminar este ingrediente?
+                ¿Estás seguro de que quieres eliminar este adicional?
               </p>
-              {ingredienteEliminar && (
+              {adicionalEliminar && (
                 <Card className="bg-muted">
                   <CardContent className="p-4">
-                    <p className="font-semibold">{ingredienteEliminar.nombre}</p>
+                    <p className="font-semibold">{adicionalEliminar.nombre}</p>
                     <p className="text-sm text-muted-foreground">
-                      Será marcado como no disponible y no se podrá usar en nuevos artículos.
+                      Será marcado como no disponible y no se podrá asignar a nuevos artículos.
                     </p>
                   </CardContent>
                 </Card>
               )}
               <p className="text-sm">
-                Esta acción se puede revertir editando el ingrediente posteriormente.
+                Esta acción se puede revertir editando el adicional posteriormente.
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -466,3 +533,4 @@ export function IngredientesTab({
     </div>
   );
 }
+

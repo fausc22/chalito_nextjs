@@ -1,4 +1,4 @@
-import { Tag, Check } from 'lucide-react';
+import { Plus, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -14,9 +14,9 @@ import {
 } from '@/components/ui/dialog';
 
 /**
- * Componente de formulario para crear/editar categorías con shadcn/ui
+ * Componente de formulario para crear/editar adicionales con shadcn/ui
  */
-export const CategoriasForm = ({
+export const AdicionalesForm = ({
   isOpen,
   onClose,
   formulario,
@@ -39,13 +39,13 @@ export const CategoriasForm = ({
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0 pb-2">
           <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <Tag className="h-5 w-5" />
-            {isEditing ? 'Editar Categoría' : 'Crear Nueva Categoría'}
+            <Plus className="h-5 w-5" />
+            {isEditing ? 'Editar Adicional' : 'Crear Nuevo Adicional'}
           </DialogTitle>
           <DialogDescription className="sr-only">
             {isEditing
-              ? 'Modifica los datos de la categoría'
-              : 'Completa los datos para agregar una nueva categoría'}
+              ? 'Modifica los datos del adicional'
+              : 'Completa los datos para agregar un nuevo adicional'}
           </DialogDescription>
         </DialogHeader>
 
@@ -59,7 +59,7 @@ export const CategoriasForm = ({
               id="nombre"
               value={formulario.nombre || ''}
               onChange={(e) => handleChange('nombre', e.target.value)}
-              placeholder="Ej: Entradas, Platos Principales, Bebidas..."
+              placeholder="Ej: Extra queso, Extra bacon, Salsa extra..."
               className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
               required
             />
@@ -74,39 +74,59 @@ export const CategoriasForm = ({
               id="descripcion"
               value={formulario.descripcion || ''}
               onChange={(e) => handleChange('descripcion', e.target.value)}
-              placeholder="Descripción opcional de la categoría"
+              placeholder="Descripción opcional del adicional"
               rows={3}
               className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 resize-none"
             />
           </div>
 
-          {/* Checkbox activo */}
-          {isEditing && (formulario.activo === 0 || formulario.activo === false) ? (
+          {/* Precio Extra */}
+          <div className="space-y-2">
+            <Label htmlFor="precio_extra" className="text-sm font-medium">
+              Precio Extra <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="precio_extra"
+              type="number"
+              value={formulario.precio_extra !== undefined ? formulario.precio_extra : ''}
+              onChange={(e) => handleChange('precio_extra', parseFloat(e.target.value) || 0)}
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+              required
+            />
+            <p className="text-sm text-muted-foreground">
+              Precio adicional que se cobrará cuando el cliente agregue este extra
+            </p>
+          </div>
+
+          {/* Checkbox disponible */}
+          {isEditing && (formulario.disponible === 0 || formulario.disponible === false) ? (
             <div className="flex items-center gap-3 p-4 bg-amber-50 border-2 border-amber-500 rounded-lg cursor-pointer hover:bg-amber-100 transition-colors">
               <Checkbox
-                id="activo"
-                checked={formulario.activo !== 0 && formulario.activo !== false}
-                onCheckedChange={(checked) => handleChange('activo', checked ? 1 : 0)}
+                id="disponible"
+                checked={formulario.disponible !== 0 && formulario.disponible !== false}
+                onCheckedChange={(checked) => handleChange('disponible', checked ? 1 : 0)}
                 className="w-5 h-5 border-2"
               />
-              <Label htmlFor="activo" className="cursor-pointer text-amber-900 font-semibold">
-                Reactivar categoría (marcar como activa)
+              <Label htmlFor="disponible" className="cursor-pointer text-amber-900 font-semibold">
+                Reactivar adicional (marcar como disponible)
               </Label>
             </div>
           ) : (
             <div className="flex items-center gap-3 p-4 bg-slate-50 border-2 border-slate-300 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
               <Checkbox
-                id="activo"
-                checked={formulario.activo !== 0 && formulario.activo !== false}
-                onCheckedChange={(checked) => handleChange('activo', checked ? 1 : 0)}
+                id="disponible"
+                checked={formulario.disponible !== 0 && formulario.disponible !== false}
+                onCheckedChange={(checked) => handleChange('disponible', checked ? 1 : 0)}
                 className="w-5 h-5 border-2"
               />
-              <Label htmlFor="activo" className="cursor-pointer font-medium text-slate-700">
-                Categoría activa
+              <Label htmlFor="disponible" className="cursor-pointer font-medium text-slate-700">
+                Disponible para asignar a artículos
               </Label>
             </div>
           )}
-
         </form>
 
         <DialogFooter className="gap-2 flex-shrink-0 pt-4 border-t">

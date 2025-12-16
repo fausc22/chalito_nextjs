@@ -7,21 +7,46 @@ export const articulosService = {
     try {
       const params = new URLSearchParams();
 
-      if (filtros.categoria) params.append('categoria', filtros.categoria);
-      if (filtros.disponible !== undefined) params.append('disponible', filtros.disponible);
+      // Mapear filtros del frontend a los que espera el backend
+      if (filtros.categoria || filtros.categoria_id) {
+        params.append('categoria_id', filtros.categoria || filtros.categoria_id);
+      }
+      // El backend usa 'activo' en lugar de 'disponible'
+      if (filtros.disponible !== undefined) {
+        params.append('activo', filtros.disponible ? 'true' : 'false');
+      }
+      // Si no se especifica, por defecto traer solo activos
+      if (filtros.disponible === undefined) {
+        params.append('activo', 'true');
+      }
 
       const url = API_CONFIG.ENDPOINTS.ARTICULOS.LIST + (params.toString() ? `?${params.toString()}` : '');
       const response = await apiRequest.get(url);
 
+      // Verificar si la respuesta es un error transformado por el interceptor
+      if (response.data?.error === true || response.data?.success === false) {
+        console.error('Error al obtener artículos:', response.data.mensaje || response.data.message);
+        return {
+          success: false,
+          data: [],
+          error: response.data.mensaje || response.data.message || 'Error al obtener artículos'
+        };
+      }
+
+      // El backend devuelve { success: true, data: [...] } o { data: [...] }
+      const articulos = response.data.data || response.data || [];
+      const articulosArray = Array.isArray(articulos) ? articulos : [];
+
       return {
         success: true,
-        data: response.data.data || response.data
+        data: articulosArray
       };
     } catch (error) {
       console.error('Error al obtener artículos:', error);
       return {
         success: false,
-        error: error.response?.data?.mensaje || error.message || 'Error al obtener artículos'
+        error: error.response?.data?.mensaje || error.response?.data?.message || error.message || 'Error al obtener artículos',
+        data: []
       };
     }
   },
@@ -47,17 +72,32 @@ export const articulosService = {
   // Obtener categorías disponibles
   obtenerCategorias: async () => {
     try {
-      const response = await apiRequest.get(`${API_CONFIG.ENDPOINTS.ARTICULOS.LIST}/categorias`);
+      // Usar el endpoint dropdown que devuelve todas las categorías sin paginación
+      const response = await apiRequest.get(`${API_CONFIG.ENDPOINTS.CATEGORIAS.LIST}/dropdown`);
+
+      // Verificar si la respuesta es un error transformado
+      if (response.data?.error === true || response.data?.success === false) {
+        return {
+          success: false,
+          data: [],
+          error: response.data.mensaje || response.data.message || 'Error al obtener categorías'
+        };
+      }
+
+      const categorias = response.data.data || response.data || [];
+      
+      // Asegurar que siempre sea un array
+      const categoriasArray = Array.isArray(categorias) ? categorias : [];
 
       return {
         success: true,
-        data: response.data.data || response.data
+        data: categoriasArray
       };
     } catch (error) {
       console.error('Error al obtener categorías:', error);
       return {
         success: false,
-        data: ['Entrada', 'Plato Principal', 'Postre', 'Bebida', 'Otros'],
+        data: [],
         error: error.message
       };
     }

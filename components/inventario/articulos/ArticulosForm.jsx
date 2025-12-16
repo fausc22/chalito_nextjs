@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
+import { Utensils, Check, Plus, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -152,19 +152,20 @@ export const ArticulosForm = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="pb-4 border-b-2 border-slate-200">
-          <DialogTitle className="text-2xl font-bold">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0 pb-2">
+          <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <Utensils className="h-5 w-5" />
             {isEditing ? 'Editar Artículo' : 'Crear Nuevo Artículo'}
           </DialogTitle>
-          <DialogDescription className="text-base">
+          <DialogDescription className="sr-only">
             {isEditing
               ? 'Modifica los datos del artículo'
               : 'Completa los datos para agregar un nuevo artículo al menú'}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 pt-4">
           {/* Código y Nombre */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -176,7 +177,7 @@ export const ArticulosForm = ({
                 value={formulario.codigo || ''}
                 onChange={(e) => handleChange('codigo', e.target.value)}
                 placeholder="Ej: 7890123456789"
-                className="border-2 focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
               />
             </div>
             <div className="space-y-2">
@@ -188,7 +189,7 @@ export const ArticulosForm = ({
                 value={formulario.nombre || ''}
                 onChange={(e) => handleChange('nombre', e.target.value)}
                 placeholder="Ej: Hamburguesa Clásica"
-                className="border-2 focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                 required
               />
             </div>
@@ -222,7 +223,7 @@ export const ArticulosForm = ({
                 value={formulario.precio || ''}
                 onChange={(e) => handleChange('precio', e.target.value)}
                 placeholder="0.00"
-                className="border-2 focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                 required
               />
             </div>
@@ -300,7 +301,7 @@ export const ArticulosForm = ({
                 <Button
                   type="button"
                   onClick={handleAgregarIngrediente}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium whitespace-nowrap"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium whitespace-nowrap"
                 >
                   <Plus className="h-4 w-4 mr-1" />
                   Agregar
@@ -348,7 +349,7 @@ export const ArticulosForm = ({
                 value={formulario.stock_actual || ''}
                 onChange={(e) => handleChange('stock_actual', e.target.value)}
                 placeholder="0"
-                className="border-2 focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
               />
             </div>
             <div className="space-y-2">
@@ -362,7 +363,7 @@ export const ArticulosForm = ({
                 value={formulario.stock_minimo || ''}
                 onChange={(e) => handleChange('stock_minimo', e.target.value)}
                 placeholder="0"
-                className="border-2 focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
               />
             </div>
           </div>
@@ -420,25 +421,28 @@ export const ArticulosForm = ({
             </div>
           )}
 
-          <DialogFooter className="gap-2 sm:gap-0 pt-6 border-t-2 border-slate-200">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-              className="border-2 h-11 px-6 text-base"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="h-11 px-8 text-base font-semibold bg-emerald-600 hover:bg-emerald-700"
-            >
-              {loading ? 'Guardando...' : (isEditing ? 'Actualizar Artículo' : 'Crear Artículo')}
-            </Button>
-          </DialogFooter>
         </form>
+
+        <DialogFooter className="gap-2 flex-shrink-0 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={loading}
+            className="h-11 px-6"
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            onClick={handleSubmit}
+            disabled={loading}
+            className="bg-green-600 hover:bg-green-700 gap-2 h-11 px-6"
+          >
+            <Check className="h-4 w-4" />
+            {loading ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
