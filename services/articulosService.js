@@ -104,26 +104,83 @@ export const articulosService = {
   },
 
   // Crear nuevo artículo
-  crearArticulo: async (articuloData) => {
+  crearArticulo: async (articuloData, imagenFile = null) => {
     try {
-      // Mapear campos del frontend al backend
-      const dataToSend = {
-        categoria_id: articuloData.categoria_id,
-        nombre: articuloData.nombre,
-        descripcion: articuloData.descripcion || null,
-        precio: parseFloat(articuloData.precio),
-        codigo_barra: articuloData.codigo || null,
-        stock_actual: articuloData.stock_actual ? parseInt(articuloData.stock_actual) : 0,
-        stock_minimo: articuloData.stock_minimo ? parseInt(articuloData.stock_minimo) : 0,
-        tipo: articuloData.tipo || 'OTRO',
-        imagen_url: null,
-        ingredientes: articuloData.tipo === 'ELABORADO' ? (articuloData.ingredientes || []) : []
-      };
+      // Si hay imagen, usar FormData
+      if (imagenFile) {
+        const formData = new FormData();
+        
+        // Agregar imagen con el nombre exacto que espera el backend
+        formData.append('imagen', imagenFile);
+        
+        // Agregar el resto de los campos
+        formData.append('categoria_id', articuloData.categoria_id);
+        formData.append('nombre', articuloData.nombre);
+        if (articuloData.descripcion) {
+          formData.append('descripcion', articuloData.descripcion);
+        }
+        formData.append('precio', parseFloat(articuloData.precio));
+        if (articuloData.codigo) {
+          formData.append('codigo_barra', articuloData.codigo);
+        }
+        formData.append('stock_actual', articuloData.stock_actual ? parseInt(articuloData.stock_actual) : 0);
+        formData.append('stock_minimo', articuloData.stock_minimo ? parseInt(articuloData.stock_minimo) : 0);
+        formData.append('tipo', articuloData.tipo || 'OTRO');
+        
+        // Agregar ingredientes si es ELABORADO
+        if (articuloData.tipo === 'ELABORADO' && articuloData.ingredientes && articuloData.ingredientes.length > 0) {
+          formData.append('ingredientes', JSON.stringify(articuloData.ingredientes));
+        }
 
-      const response = await apiRequest.post(
-        API_CONFIG.ENDPOINTS.ARTICULOS.CREATE,
-        dataToSend
-      );
+        // Enviar como multipart/form-data (axios detecta FormData automáticamente y establece el Content-Type correcto)
+        const response = await apiRequest.post(
+          API_CONFIG.ENDPOINTS.ARTICULOS.CREATE,
+          formData
+        );
+
+        // Verificar si la respuesta es un error transformado por el interceptor
+        if (response.data?.error === true) {
+          const status = response.data.status;
+          let errorMessage = 'Error al crear artículo';
+
+          if (status === 409) {
+            errorMessage = response.data.mensaje || 'Ya existe un artículo con ese nombre o código de barras';
+          } else if (status === 400) {
+            errorMessage = response.data.mensaje || 'Datos inválidos. Verifica la información ingresada';
+          } else {
+            errorMessage = response.data.mensaje || `Error ${status}: No se pudo crear el artículo`;
+          }
+
+          return {
+            success: false,
+            error: errorMessage
+          };
+        }
+
+        return {
+          success: true,
+          data: response.data.data || response.data,
+          mensaje: response.data.mensaje || 'Artículo creado correctamente'
+        };
+      } else {
+        // Si NO hay imagen, enviar como JSON normal
+        const dataToSend = {
+          categoria_id: articuloData.categoria_id,
+          nombre: articuloData.nombre,
+          descripcion: articuloData.descripcion || null,
+          precio: parseFloat(articuloData.precio),
+          codigo_barra: articuloData.codigo || null,
+          stock_actual: articuloData.stock_actual ? parseInt(articuloData.stock_actual) : 0,
+          stock_minimo: articuloData.stock_minimo ? parseInt(articuloData.stock_minimo) : 0,
+          tipo: articuloData.tipo || 'OTRO',
+          imagen_url: null,
+          ingredientes: articuloData.tipo === 'ELABORADO' ? (articuloData.ingredientes || []) : []
+        };
+
+        const response = await apiRequest.post(
+          API_CONFIG.ENDPOINTS.ARTICULOS.CREATE,
+          dataToSend
+        );
 
       // Verificar si la respuesta es un error transformado por el interceptor
       if (response.data?.error === true) {

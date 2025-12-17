@@ -110,6 +110,10 @@ export function ArticulosTab({
     ingredientes: []
   });
 
+  // Estados para imagen
+  const [imagenFile, setImagenFile] = useState(null);
+  const [imagenPreview, setImagenPreview] = useState(null);
+
   // Paginación para vista móvil
   const totalPagesMobile = useMemo(
     () => Math.ceil(articulosFiltrados.length / itemsPerPageMobile),
@@ -142,6 +146,12 @@ export function ArticulosTab({
       activo: true,
       ingredientes: []
     });
+    // Limpiar imagen
+    if (imagenPreview) {
+      URL.revokeObjectURL(imagenPreview);
+    }
+    setImagenFile(null);
+    setImagenPreview(null);
   };
 
   const validarCamposObligatorios = () => {
@@ -186,7 +196,8 @@ export function ArticulosTab({
       return;
     }
 
-    const resultado = await onCrearArticulo(construirPayloadArticulo(categoria_id));
+    // Pasar el archivo de imagen al servicio
+    const resultado = await onCrearArticulo(construirPayloadArticulo(categoria_id), imagenFile);
 
     if (resultado.success) {
       setModalAgregar(false);
@@ -433,6 +444,10 @@ export function ArticulosTab({
         onSubmit={modalAgregar ? handleCrearArticulo : handleActualizarArticulo}
         isEditing={modalEditar}
         loading={isMutatingArticulos}
+        imagenFile={imagenFile}
+        setImagenFile={setImagenFile}
+        imagenPreview={imagenPreview}
+        setImagenPreview={setImagenPreview}
       />
 
       {/* AlertDialog Eliminar */}

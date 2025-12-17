@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Utensils, Check, Plus, X } from 'lucide-react';
+import { Utensils, Check, Plus, X, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,10 @@ export const ArticulosForm = ({
   onSubmit,
   isEditing = false,
   loading = false,
+  imagenFile,
+  setImagenFile,
+  imagenPreview,
+  setImagenPreview,
 }) => {
   // Estado local para ingredientes seleccionados
   const [ingredienteTemp, setIngredienteTemp] = useState({
@@ -45,6 +49,9 @@ export const ArticulosForm = ({
 
   // Referencia para guardar los ingredientes originales del artículo
   const ingredientesOriginalesRef = useRef([]);
+  
+  // Referencia para el input de archivo
+  const fileInputRef = useRef(null);
 
   // Guardar ingredientes originales cuando se abre el modal para editar
   useEffect(() => {
@@ -54,6 +61,69 @@ export const ArticulosForm = ({
       ingredientesOriginalesRef.current = [];
     }
   }, [isOpen, isEditing]);
+
+  // Limpiar imagen cuando se cierra el modal
+  useEffect(() => {
+    if (!isOpen) {
+      // Limpiar imagen y preview al cerrar
+      if (imagenPreview) {
+        URL.revokeObjectURL(imagenPreview);
+      }
+      setImagenFile(null);
+      setImagenPreview(null);
+      // Resetear input de archivo
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [isOpen, imagenPreview, setImagenFile, setImagenPreview]);
+
+  // Manejar selección de imagen
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    
+    if (!file) {
+      return;
+    }
+
+    // Validar tipo de archivo
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Formato de imagen no válido. Solo se permiten JPEG, PNG o WebP');
+      e.target.value = '';
+      return;
+    }
+
+    // Validar tamaño (opcional: máximo 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error('La imagen es demasiado grande. Máximo 5MB');
+      e.target.value = '';
+      return;
+    }
+
+    // Limpiar preview anterior si existe
+    if (imagenPreview) {
+      URL.revokeObjectURL(imagenPreview);
+    }
+
+    // Crear nuevo preview
+    const preview = URL.createObjectURL(file);
+    setImagenFile(file);
+    setImagenPreview(preview);
+  };
+
+  // Limpiar imagen seleccionada
+  const handleClearImage = () => {
+    if (imagenPreview) {
+      URL.revokeObjectURL(imagenPreview);
+    }
+    setImagenFile(null);
+    setImagenPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleChange = (field, value) => {
     // Manejo especial para cambio de tipo
@@ -392,6 +462,59 @@ export const ArticulosForm = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Imagen del artículo */}
+          <div className="space-y-2">
+            <Label htmlFor="imagen" className="text-sm font-medium">
+              Imagen del artículo
+            </Label>
+            <div className="space-y-3">
+              {/* Input de archivo */}
+              <div className="flex items-center gap-2">
+                <Input
+                  id="imagen"
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleImageChange}
+                  className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  disabled={loading}
+                />
+              </div>
+
+              {/* Preview de imagen */}
+              {imagenPreview && (
+                <div className="relative inline-block">
+                  <div className="border-2 border-slate-300 rounded-lg p-2 bg-slate-50">
+                    <img
+                      src={imagenPreview}
+                      alt="Preview"
+                      className="max-w-full h-auto max-h-48 rounded-md object-contain"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleClearImage}
+                    disabled={loading}
+                    className="absolute top-4 right-4 h-8 w-8 p-0"
+                    title="Eliminar imagen"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
+              {/* Mensaje informativo */}
+              {!imagenPreview && (
+                <p className="text-xs text-slate-500 flex items-center gap-1">
+                  <ImageIcon className="h-3 w-3" />
+                  Formatos aceptados: JPEG, PNG, WebP (máx. 5MB)
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Checkbox Activo / Reactivar */}

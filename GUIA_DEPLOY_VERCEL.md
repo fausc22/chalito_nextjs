@@ -118,12 +118,15 @@ Aquí es **MUY IMPORTANTE** configurar las variables de entorno:
 
    | Name | Value |
    |------|-------|
-   | `NEXT_PUBLIC_API_URL` | `https://tu-backend-url.com` |
+   | `NEXT_PUBLIC_API_URL` | `https://chalito-backend.onrender.com` |
 
    > ⚠️ **IMPORTANTE**: 
-   > - Reemplaza `https://tu-backend-url.com` con la URL real de tu backend desplegado
+   > - Reemplaza `https://chalito-backend.onrender.com` con la URL real de tu backend desplegado
    > - Si tu backend está en otro servicio (Railway, Render, Heroku, etc.), usa esa URL
    > - Asegúrate de usar `https://` (no `http://`) para producción
+   > - **NO uses `http://localhost:3001`** - eso solo funciona en desarrollo local
+   > 
+   > 📖 **Para desplegar el backend en Render**: Sigue la guía `GUIA_DEPLOY_RENDER.md` en la carpeta del backend
 
 3. Selecciona los ambientes donde aplicará:
    - ✅ Production
@@ -313,4 +316,6 @@ Antes de considerar el deploy completo:
 **¡Listo!** Tu aplicación debería estar funcionando en Vercel. 🎉
 
 Si tienes problemas, revisa los logs en Vercel o la sección de Troubleshooting arriba.
+
+
 
