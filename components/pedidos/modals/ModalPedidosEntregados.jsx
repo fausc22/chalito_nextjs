@@ -103,7 +103,7 @@ export function ModalPedidosEntregados({ pedidos, isOpen, onClose }) {
           </DialogHeader>
 
           {pedidoSeleccionado && (
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 py-4 pr-2">
               {/* Información del cliente */}
               <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
                 <h3 className="text-base font-semibold text-slate-800 mb-3">👤 Cliente</h3>

@@ -183,11 +183,11 @@ export const useInventario = () => {
     }
   }, []);
 
-  const crearArticulo = async (articuloData, imagenFile = null) => {
+  const crearArticulo = async (articuloData) => {
     setIsMutatingArticulos(true);
 
     try {
-      const response = await articulosService.crearArticulo(articuloData, imagenFile);
+      const response = await articulosService.crearArticulo(articuloData);
 
       if (response.success) {
         return { success: true, data: response.data };

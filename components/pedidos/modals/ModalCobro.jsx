@@ -209,17 +209,25 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
           <DialogTitle className="text-xl font-bold">Cobrar Pedido #{pedidoParaMostrar.id}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 pr-2">
           {/* Items del Pedido */}
           {pedidoParaMostrar.items && pedidoParaMostrar.items.length > 0 && (
             <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
               <h3 className="text-base font-semibold text-slate-800 mb-3">📦 Items del Pedido</h3>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-3">
                 {pedidoParaMostrar.items.map((item, index) => {
                   const precioUnitario = parseFloat(item.precio) || 0;
                   const cantidad = item.cantidad || 1;
                   const subtotalItem = parseFloat(item.subtotal) || (precioUnitario * cantidad);
-                  const extras = item.extras || item.personalizaciones || [];
+                  
+                  // Manejar diferentes formatos de extras
+                  let extras = item.extras || item.personalizaciones || [];
+                  
+                  // Si extras es un objeto con una propiedad 'extras' que es un array, extraerlo
+                  if (extras && typeof extras === 'object' && !Array.isArray(extras) && extras.extras && Array.isArray(extras.extras)) {
+                    extras = extras.extras;
+                  }
+                  
                   const tieneExtras = extras && (Array.isArray(extras) ? extras.length > 0 : Object.keys(extras).length > 0);
                   
                   return (

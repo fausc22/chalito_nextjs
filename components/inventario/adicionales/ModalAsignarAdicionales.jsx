@@ -113,7 +113,7 @@ export function ModalAsignarAdicionales({
             </p>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto space-y-3 py-4">
+          <div className="flex-1 overflow-y-auto space-y-3 py-4 pr-2">
             {adicionalesDisponibles.map((adicional) => {
               const estaSeleccionado = adicionalesSeleccionados.includes(adicional.id);
               const estabaAsignado = adicionalesAsignados.includes(adicional.id);

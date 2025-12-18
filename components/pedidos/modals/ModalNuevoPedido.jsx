@@ -267,7 +267,7 @@ export function ModalNuevoPedido({
                       <div key={item.carritoId} className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm text-slate-900 truncate leading-tight">{item.nombre}</p>
+                            <p className="font-semibold text-sm text-slate-900 truncate leading-tight uppercase">{item.nombre}</p>
                             {item.extrasDisponibles && item.extrasDisponibles.length > 0 && (
                               <Badge variant="outline" className="text-xs mt-1 bg-yellow-50 text-yellow-700 border-yellow-300 px-1.5 py-0.5">
                                 {item.extrasSeleccionados.length} extras
@@ -275,18 +275,17 @@ export function ModalNuevoPedido({
                             )}
                           </div>
                           <div className="flex gap-1 ml-2 flex-shrink-0">
-                            {item.extrasDisponibles && item.extrasDisponibles.length > 0 && (
-                              <button
-                                onClick={() => editarExtrasItem(item)}
-                                className="text-blue-600 hover:text-blue-700"
-                                title="Editar extras"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </button>
-                            )}
+                            {/* ✅ Botón de editar SIEMPRE visible (para agregar observaciones) */}
+                            <button
+                              onClick={() => editarExtrasItem(item)}
+                              className="text-blue-600 hover:text-blue-700 transition-colors"
+                              title={item.extrasDisponibles && item.extrasDisponibles.length > 0 ? "Editar extras y observación" : "Editar observación"}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
                             <button
                               onClick={() => eliminarDelCarrito(item.carritoId)}
-                              className="text-red-600 hover:text-red-700"
+                              className="text-red-600 hover:text-red-700 transition-colors"
                               title="Eliminar"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -672,39 +671,70 @@ export function ModalNuevoPedido({
           </div>
         ) : (
           // PASO 3: Resumen
-          <div className="py-3 space-y-4 overflow-y-auto flex-1 min-h-0">
+          <div className="py-3 space-y-4 overflow-y-auto flex-1 min-h-0 pr-2">
             {/* Resumen del Pedido */}
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
               <h3 className="text-lg font-semibold text-slate-800 mb-4">📋 Resumen del Pedido</h3>
               
-              {/* Items del pedido */}
+              {/* Items del pedido - Con botones de editar/eliminar */}
               <div className="space-y-2 mb-4">
-                <h4 className="font-medium text-sm text-slate-700">Items:</h4>
-                {carrito.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-start bg-white p-2 rounded border border-slate-200">
-                    <div className="flex-1">
-                      <p className="font-medium text-sm text-slate-800">{item.nombre}</p>
-                      <p className="text-xs text-slate-600">Cantidad: {item.cantidad}</p>
-                      {item.extrasSeleccionados.length > 0 && (
-                        <div className="mt-1 text-[10px] text-slate-500">
-                          {item.extrasSeleccionados.map((extra, eIdx) => (
-                            <p key={eIdx}>+ {extra.nombre}</p>
-                          ))}
-                        </div>
-                      )}
-                      {item.observacion && (
-                        <p className="text-xs text-slate-600 italic mt-1">
+                <h4 className="font-medium text-sm text-slate-700 mb-2">Items:</h4>
+                {carrito.map((item) => (
+                  <div key={item.carritoId} className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-sm">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-slate-900 leading-tight uppercase">{item.nombre}</p>
+                        <p className="text-xs text-slate-600 mt-0.5">Cantidad: {item.cantidad}</p>
+                        {item.extrasDisponibles && item.extrasDisponibles.length > 0 && (
+                          <Badge variant="outline" className="text-xs mt-1 bg-yellow-50 text-yellow-700 border-yellow-300 px-1.5 py-0.5">
+                            {item.extrasSeleccionados.length} extras
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex gap-1 ml-2 flex-shrink-0">
+                        <button
+                          onClick={() => editarExtrasItem(item)}
+                          className="text-blue-600 hover:text-blue-700 transition-colors"
+                          title={item.extrasDisponibles && item.extrasDisponibles.length > 0 ? "Editar extras y observación" : "Editar observación"}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => eliminarDelCarrito(item.carritoId)}
+                          className="text-red-600 hover:text-red-700 transition-colors"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {item.extrasSeleccionados.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-slate-200 text-xs text-slate-700 space-y-0.5">
+                        {item.extrasSeleccionados.map((extra, eIdx) => (
+                          <p key={eIdx} className="font-medium">+ {extra.nombre} (+${(extra.precio * item.cantidad).toLocaleString('es-AR')})</p>
+                        ))}
+                      </div>
+                    )}
+
+                    {item.observacion && (
+                      <div className="mt-2 pt-2 border-t border-slate-200">
+                        <p className="text-xs text-slate-600 italic">
                           <span className="font-semibold">Obs:</span> {item.observacion}
                         </p>
-                      )}
+                      </div>
+                    )}
+
+                    <div className="mt-2 pt-2 border-t border-slate-200 flex justify-between items-center">
+                      <span className="text-xs text-slate-600 font-medium">Subtotal:</span>
+                      <p className="font-bold text-sm text-slate-900">
+                        ${(() => {
+                          const precioBase = item.precio * item.cantidad;
+                          const precioExtras = (item.extrasSeleccionados || []).reduce((sum, extra) => sum + (extra.precio * item.cantidad), 0);
+                          return (precioBase + precioExtras).toLocaleString('es-AR');
+                        })()}
+                      </p>
                     </div>
-                    <p className="font-semibold text-sm text-slate-800">
-                      ${(() => {
-                        const precioBase = item.precio * item.cantidad;
-                        const precioExtras = (item.extrasSeleccionados || []).reduce((sum, extra) => sum + (extra.precio * item.cantidad), 0);
-                        return (precioBase + precioExtras).toLocaleString('es-AR');
-                      })()}
-                    </p>
                   </div>
                 ))}
               </div>

@@ -84,6 +84,14 @@ export function CategoriasTab({
     };
   }, []);
 
+  // Ajustar página actual si queda fuera de rango después de operaciones
+  useEffect(() => {
+    const totalPages = Math.ceil(categorias.length / itemsPerPage);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [categorias.length, currentPage, itemsPerPage]);
+
   // Abrir modal para crear
   const abrirModalCrear = () => {
     setCategoriaEditando(null);

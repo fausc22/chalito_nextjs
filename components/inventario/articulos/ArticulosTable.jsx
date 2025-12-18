@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { Pencil, Trash2, Utensils } from 'lucide-react';
+import { Pencil, Trash2, Utensils, Package } from 'lucide-react';
+import { ArticuloImagenTable } from './ArticuloImagenTable';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,11 +31,25 @@ export const ArticulosTable = ({
   onEditar,
   onEliminar,
   scrollRef,
+  currentPage: currentPageProp,
+  setCurrentPage: setCurrentPageProp,
 }) => {
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
+  // Pagination state - usar props si están disponibles, sino usar estado local
+  const [currentPageLocal, setCurrentPageLocal] = useState(1);
+  const currentPage = currentPageProp !== undefined ? currentPageProp : currentPageLocal;
+  const setCurrentPage = setCurrentPageProp !== undefined ? setCurrentPageProp : setCurrentPageLocal;
+  
   const [itemsPerPage, setItemsPerPage] = useState(4); // Empezar con 4 (mobile-first)
   const tableRef = useRef(null);
+
+  // Ajustar página actual si queda fuera de rango después de operaciones
+  useEffect(() => {
+    const totalPages = Math.ceil(articulos.length / itemsPerPage);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [articulos.length, itemsPerPage, currentPage]);
 
   // Detectar tamaño de pantalla y actualizar items por página
   useEffect(() => {
@@ -52,7 +67,7 @@ export const ArticulosTable = ({
 
       setItemsPerPage(prev => {
         if (prev !== newItems) {
-          setCurrentPage(1); // Reset to first page when items per page changes
+          // NO resetear automáticamente - el useEffect de ajuste se encargará si es necesario
           return newItems;
         }
         return prev;
@@ -68,6 +83,7 @@ export const ArticulosTable = ({
     return () => {
       window.removeEventListener('resize', updateItemsPerPage);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemsPerPage]);
 
   // Calculate pagination
@@ -126,7 +142,7 @@ export const ArticulosTable = ({
         <Table className="w-full bg-white rounded-lg overflow-hidden shadow-sm">
           <TableHeader className="bg-slate-50">
             <TableRow>
-              <TableHead className="w-[70px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-l-2 border-r-2 border-b-2 border-gray-200 py-4">Imagen</TableHead>
+              <TableHead className="w-[100px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-l-2 border-r-2 border-b-2 border-gray-200 py-4">Imagen</TableHead>
               <TableHead className="text-center text-sm font-bold text-slate-800 uppercase tracking-wider max-w-[300px] min-w-[200px] border-r-2 border-b-2 border-gray-200 py-4">Nombre</TableHead>
               <TableHead className="text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Descripción</TableHead>
               <TableHead className="text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Categoría</TableHead>
@@ -146,41 +162,27 @@ export const ArticulosTable = ({
                 }`}
               >
                 {/* Imagen */}
-                <TableCell className="text-center py-3">
-                  <div className="relative w-12 h-12 rounded-md overflow-hidden bg-muted mx-auto">
-                    {articulo.imagen ? (
-                      <Image
-                        src={`${process.env.NEXT_PUBLIC_API_URL}${articulo.imagen}`}
-                        alt={articulo.nombre}
-                        fill
-                        className="object-cover"
-                        sizes="48px"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Utensils className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
+                <TableCell className="text-center py-1">
+                  <ArticuloImagenTable 
+                    imagen_url={articulo.imagen_url} 
+                    nombre={articulo.nombre} 
+                  />
                 </TableCell>
 
                 {/* Nombre */}
-                <TableCell className="font-medium max-w-[300px] text-center py-3">
-                  <div className="break-words">{articulo.nombre}</div>
+                <TableCell className="font-medium max-w-[300px] text-center py-1">
+                  <div className="break-words uppercase">{articulo.nombre}</div>
                 </TableCell>
 
                 {/* Descripción */}
-                <TableCell className="max-w-xs text-center py-3">
+                <TableCell className="max-w-xs text-center py-1">
                   <div className="break-words text-sm text-muted-foreground line-clamp-2">
                     {articulo.descripcion || 'Sin descripción'}
                   </div>
                 </TableCell>
 
                 {/* Categoría */}
-                <TableCell className="max-w-[150px] text-center py-3">
+                <TableCell className="max-w-[150px] text-center py-1">
                   <div className="flex justify-center">
                     <Badge variant="outline" className="max-w-full truncate" title={articulo.categoria}>
                       {articulo.categoria}
@@ -189,33 +191,33 @@ export const ArticulosTable = ({
                 </TableCell>
 
                 {/* Tipo */}
-                <TableCell className="text-center py-3">
+                <TableCell className="text-center py-1">
                   <Badge className={getTipoBadgeClass(articulo.tipo || 'OTRO')}>
                     {articulo.tipo || 'OTRO'}
                   </Badge>
                 </TableCell>
 
                 {/* Precio */}
-                <TableCell className="text-right py-3 px-4">
+                <TableCell className="text-right py-1 px-4">
                   <span className="font-semibold text-green-600">
                     ${articulo.precio}
                   </span>
                 </TableCell>
 
                 {/* Stock */}
-                <TableCell className="text-center py-3">
+                <TableCell className="text-center py-1">
                   <span className="font-medium">{articulo.stock_actual || 0}</span>
                 </TableCell>
 
                 {/* Estado */}
-                <TableCell className="text-center py-3">
+                <TableCell className="text-center py-1">
                   <Badge className={getEstadoBadgeClass(articulo.activo)}>
                     {articulo.activo ? 'Activo' : 'Inactivo'}
                   </Badge>
                 </TableCell>
 
                 {/* Acciones */}
-                <TableCell className="text-center py-3">
+                <TableCell className="text-center py-1">
                   <div className="flex gap-2 justify-center">
                     <Button
                       variant="outline"
@@ -246,90 +248,14 @@ export const ArticulosTable = ({
       {/* Vista Mobile/Tablet - Cards */}
       <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-4">
         {currentArticulos.map((articulo) => (
-          <Card key={articulo.id} className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-4">
-              {/* Imagen y Header */}
-              <div className="flex gap-3 mb-3">
-                <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                  {articulo.imagen ? (
-                    <Image
-                      src={`${process.env.NEXT_PUBLIC_API_URL}${articulo.imagen}`}
-                      alt={articulo.nombre}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 80px, 96px"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Utensils className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-sm md:text-base break-words mb-1.5 md:mb-2">{articulo.nombre}</h3>
-                  <div className="flex flex-wrap gap-1.5">
-                    <Badge variant="outline" className="text-xs">
-                      {articulo.categoria}
-                    </Badge>
-                    <Badge className={`text-xs ${getTipoBadgeClass(articulo.tipo || 'OTRO')}`}>
-                      {articulo.tipo || 'OTRO'}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              {/* Descripción */}
-              {articulo.descripcion && (
-                <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 break-words mb-3">
-                  {articulo.descripcion}
-                </p>
-              )}
-
-              {/* Info Grid */}
-              <div className="grid grid-cols-3 gap-2 md:gap-3 mb-3 md:mb-4 py-2.5 md:py-3 border-y">
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Precio</p>
-                  <p className="font-semibold text-green-600 text-sm md:text-base">${articulo.precio}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Stock</p>
-                  <p className="font-medium text-sm md:text-base">{articulo.stock_actual || 0}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Estado</p>
-                  <Badge className={`text-xs ${getEstadoBadgeClass(articulo.activo)}`}>
-                    {articulo.activo ? 'Activo' : 'Inactivo'}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Acciones */}
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onEditar(articulo)}
-                  className="flex-1 hover:scale-105 transition-transform text-xs md:text-sm"
-                >
-                  <Pencil className="h-3 w-3 mr-1" />
-                  Editar
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onEliminar(articulo)}
-                  className="flex-1 text-destructive hover:bg-destructive hover:text-destructive-foreground hover:scale-105 transition-transform text-xs md:text-sm"
-                >
-                  <Trash2 className="h-3 w-3 mr-1" />
-                  Eliminar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <ArticuloMobileCard
+            key={articulo.id}
+            articulo={articulo}
+            onEditar={onEditar}
+            onEliminar={onEliminar}
+            getTipoBadgeClass={getTipoBadgeClass}
+            getEstadoBadgeClass={getEstadoBadgeClass}
+          />
         ))}
       </div>
 
@@ -405,3 +331,116 @@ export const ArticulosTable = ({
     </div>
   );
 };
+
+/**
+ * 🎴 Componente individual de Card Mobile
+ * ✅ Hooks en nivel superior (no en loop)
+ */
+function ArticuloMobileCard({ 
+  articulo, 
+  onEditar, 
+  onEliminar, 
+  getTipoBadgeClass, 
+  getEstadoBadgeClass 
+}) {
+  // ✅ CORRECTO: Hook en nivel superior del componente
+  const [imageError, setImageError] = React.useState(false);
+
+  return (
+    <Card className="group hover:shadow-lg transition-all duration-300 flex flex-col h-full rounded-t-xl rounded-b-none overflow-hidden border border-slate-200 hover:border-slate-400">
+      {/* 🖼️ IMAGEN - Aspect Ratio 16:9, max 180px */}
+      <div className="relative w-full aspect-video max-h-[160px] md:max-h-[180px] bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 overflow-hidden">
+        {articulo.imagen_url && !imageError ? (
+          <Image
+            src={articulo.imagen_url}
+            alt={articulo.nombre}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            sizes="(max-width: 768px) 100vw, 50vw"
+            unoptimized
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Utensils className="h-10 w-10 md:h-12 md:w-12 text-slate-400" strokeWidth={1.5} />
+          </div>
+        )}
+      </div>
+
+      <CardContent className="p-3 md:p-4 flex-grow flex flex-col gap-2">
+        {/* 📝 NOMBRE */}
+        <h3 className="font-bold text-sm md:text-base line-clamp-2 leading-tight uppercase tracking-tight min-h-[2.5rem] md:min-h-[2.75rem]">
+          {articulo.nombre}
+        </h3>
+
+        {/* 💰 PRECIO */}
+        <p className="text-xl md:text-2xl font-bold text-green-600 leading-none">
+          ${articulo.precio}
+        </p>
+
+        {/* 🏷️ BADGES */}
+        <div className="flex flex-wrap gap-1.5 min-h-[1.5rem]">
+          <Badge
+            className={`text-[10px] md:text-xs font-medium ${
+              articulo.activo
+                ? 'bg-green-100 text-green-800 border-green-300'
+                : 'bg-red-100 text-red-800 border-red-300'
+            }`}
+          >
+            {articulo.activo ? 'Activo' : 'Inactivo'}
+          </Badge>
+
+          <Badge className={`text-[10px] md:text-xs ${getTipoBadgeClass(articulo.tipo || 'OTRO')}`}>
+            {articulo.tipo || 'OTRO'}
+          </Badge>
+
+          <Badge 
+            className={`text-[10px] md:text-xs ${
+              articulo.stock_actual <= articulo.stock_minimo
+                ? 'bg-red-50 text-red-700 border-red-300'
+                : 'bg-green-50 text-green-700 border-green-300 hidden md:inline-flex'
+            }`}
+          >
+            Stock: {articulo.stock_actual || 0}
+          </Badge>
+
+          <Badge variant="outline" className="hidden md:inline-flex text-xs text-purple-700 border-purple-300">
+            {articulo.categoria}
+          </Badge>
+        </div>
+
+        {/* 📄 DESCRIPCIÓN - Solo desktop */}
+        {articulo.descripcion && (
+          <p className="hidden md:block text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+            {articulo.descripcion}
+          </p>
+        )}
+
+        {/* SPACER */}
+        <div className="flex-grow min-h-[0.5rem]"></div>
+
+        {/* ⚙️ ACCIONES */}
+        <div className="flex gap-2 pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEditar(articulo)}
+            className="flex-1 h-10 md:h-11 text-xs md:text-sm font-medium rounded-lg border-2 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-98"
+          >
+            <Pencil className="h-4 w-4 mr-1.5" strokeWidth={2} />
+            Editar
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEliminar(articulo)}
+            className="flex-1 h-10 md:h-11 text-xs md:text-sm font-medium text-red-600 hover:bg-red-50 hover:border-red-400 hover:text-red-700 border-2 rounded-lg transition-all active:scale-98"
+          >
+            <Trash2 className="h-4 w-4 mr-1.5" strokeWidth={2} />
+            Eliminar
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

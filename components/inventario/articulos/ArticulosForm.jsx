@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Utensils, Check, Plus, X, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Utensils, Check, Plus, X, Image as ImageIcon, Upload } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -37,8 +37,6 @@ export const ArticulosForm = ({
   loading = false,
   imagenFile,
   setImagenFile,
-  imagenPreview,
-  setImagenPreview,
 }) => {
   // Estado local para ingredientes seleccionados
   const [ingredienteTemp, setIngredienteTemp] = useState({
@@ -49,8 +47,11 @@ export const ArticulosForm = ({
 
   // Referencia para guardar los ingredientes originales del artículo
   const ingredientesOriginalesRef = useRef([]);
-  
-  // Referencia para el input de archivo
+
+  // ==================== ESTADO PARA IMAGEN ====================
+  // El estado de imagenFile viene del padre (ArticulosTab)
+  // Preview local para mostrar la imagen seleccionada
+  const [imagenPreview, setImagenPreview] = useState(null);
   const fileInputRef = useRef(null);
 
   // Guardar ingredientes originales cuando se abre el modal para editar
@@ -65,65 +66,24 @@ export const ArticulosForm = ({
   // Limpiar imagen cuando se cierra el modal
   useEffect(() => {
     if (!isOpen) {
-      // Limpiar imagen y preview al cerrar
-      if (imagenPreview) {
-        URL.revokeObjectURL(imagenPreview);
-      }
       setImagenFile(null);
       setImagenPreview(null);
-      // Resetear input de archivo
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     }
-  }, [isOpen, imagenPreview, setImagenFile, setImagenPreview]);
+  }, [isOpen]);
 
-  // Manejar selección de imagen
-  const handleImageChange = (e) => {
-    const file = e.target.files?.[0];
-    
-    if (!file) {
-      return;
+  // Cargar imagen existente cuando se edita un artículo
+  useEffect(() => {
+    if (isOpen && isEditing && formulario.imagen_url && !imagenFile) {
+      // Si está editando y tiene imagen_url, mostrar preview de la imagen de Cloudinary
+      setImagenPreview(formulario.imagen_url);
+    } else if (isOpen && !isEditing) {
+      // Si es crear nuevo, limpiar preview
+      setImagenPreview(null);
     }
-
-    // Validar tipo de archivo
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      toast.error('Formato de imagen no válido. Solo se permiten JPEG, PNG o WebP');
-      e.target.value = '';
-      return;
-    }
-
-    // Validar tamaño (opcional: máximo 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
-      toast.error('La imagen es demasiado grande. Máximo 5MB');
-      e.target.value = '';
-      return;
-    }
-
-    // Limpiar preview anterior si existe
-    if (imagenPreview) {
-      URL.revokeObjectURL(imagenPreview);
-    }
-
-    // Crear nuevo preview
-    const preview = URL.createObjectURL(file);
-    setImagenFile(file);
-    setImagenPreview(preview);
-  };
-
-  // Limpiar imagen seleccionada
-  const handleClearImage = () => {
-    if (imagenPreview) {
-      URL.revokeObjectURL(imagenPreview);
-    }
-    setImagenFile(null);
-    setImagenPreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
+  }, [isOpen, isEditing, formulario.imagen_url, imagenFile]);
 
   const handleChange = (field, value) => {
     // Manejo especial para cambio de tipo
@@ -150,6 +110,61 @@ export const ArticulosForm = ({
     }
 
     setFormulario(prev => ({ ...prev, [field]: value }));
+  };
+
+  // ==================== HANDLERS PARA IMAGEN ====================
+  // Handler para seleccionar imagen
+  const handleImagenChange = (e) => {
+    const file = e.target.files?.[0];
+    
+    if (!file) return;
+
+    // Validar tipo de archivo
+    const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!tiposPermitidos.includes(file.type)) {
+      toast({
+        variant: 'destructive',
+        title: 'Formato no válido',
+        description: 'Solo se permiten imágenes JPG, PNG o WebP'
+      });
+      e.target.value = '';
+      return;
+    }
+
+    // Validar tamaño (máximo 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast({
+        variant: 'destructive',
+        title: 'Archivo muy grande',
+        description: 'La imagen no debe superar los 5MB'
+      });
+      e.target.value = '';
+      return;
+    }
+
+    // Guardar archivo en estado (NO se envía al backend)
+    setImagenFile(file);
+
+    // Crear preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagenPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    // FUTURO: Aquí se subirá la imagen a Cloudinary
+    // const uploadedUrl = await uploadToCloudinary(file);
+    // setFormulario(prev => ({ ...prev, imagen_url: uploadedUrl }));
+  };
+
+  // Handler para eliminar imagen seleccionada
+  const handleEliminarImagen = () => {
+    setImagenFile(null);
+    setImagenPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   // Agregar ingrediente a la lista
@@ -235,7 +250,7 @@ export const ArticulosForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 pt-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 pt-4 pr-2">
           {/* Código y Nombre */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -278,6 +293,83 @@ export const ArticulosForm = ({
               rows={3}
               className="border-2 focus:border-violet-600 focus:ring-2 focus:ring-violet-100 resize-none"
             />
+          </div>
+
+          {/* ==================== SECCIÓN DE IMAGEN (OPCIONAL) ==================== */}
+          <div className="border-2 border-dashed border-blue-200 rounded-lg p-4 bg-blue-50/30 space-y-3">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5 text-blue-600" />
+              <Label className="text-sm font-medium text-slate-700">
+                Imagen del artículo (Opcional)
+              </Label>
+            </div>
+
+            {/* Texto informativo */}
+            <p className="text-xs text-slate-500 leading-relaxed">
+              La imagen es opcional. Por ahora solo se puede seleccionar, pero no se subirá. 
+              Podrás agregarla más adelante cuando se implemente la subida a Cloudinary.
+            </p>
+
+            {/* Input de archivo */}
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <label 
+                  htmlFor="imagen-input" 
+                  className="flex-1 cursor-pointer"
+                >
+                  <div className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-blue-300 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-400 transition-colors">
+                    <Upload className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-slate-700">
+                      {imagenFile ? 'Cambiar imagen' : 'Seleccionar imagen'}
+                    </span>
+                  </div>
+                  <input
+                    id="imagen-input"
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleImagenChange}
+                    className="hidden"
+                  />
+                </label>
+
+                {imagenFile && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleEliminarImagen}
+                    className="sm:w-auto border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Quitar
+                  </Button>
+                )}
+              </div>
+
+              {/* Preview de la imagen */}
+              {imagenPreview && (
+                <div className="relative">
+                  <div className="relative w-full h-40 sm:h-48 bg-slate-100 rounded-lg overflow-hidden border-2 border-slate-200">
+                    <img
+                      src={imagenPreview}
+                      alt="Preview"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    <span className="font-medium">{imagenFile?.name}</span> 
+                    {' '}({(imagenFile?.size / 1024).toFixed(0)} KB)
+                  </p>
+                </div>
+              )}
+
+              {/* Indicación de formatos permitidos */}
+              {!imagenFile && (
+                <p className="text-xs text-slate-400">
+                  Formatos: JPG, PNG, WebP • Tamaño máximo: 5MB
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Precio y Tipo */}
@@ -462,59 +554,6 @@ export const ArticulosForm = ({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          {/* Imagen del artículo */}
-          <div className="space-y-2">
-            <Label htmlFor="imagen" className="text-sm font-medium">
-              Imagen del artículo
-            </Label>
-            <div className="space-y-3">
-              {/* Input de archivo */}
-              <div className="flex items-center gap-2">
-                <Input
-                  id="imagen"
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleImageChange}
-                  className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  disabled={loading}
-                />
-              </div>
-
-              {/* Preview de imagen */}
-              {imagenPreview && (
-                <div className="relative inline-block">
-                  <div className="border-2 border-slate-300 rounded-lg p-2 bg-slate-50">
-                    <img
-                      src={imagenPreview}
-                      alt="Preview"
-                      className="max-w-full h-auto max-h-48 rounded-md object-contain"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleClearImage}
-                    disabled={loading}
-                    className="absolute top-4 right-4 h-8 w-8 p-0"
-                    title="Eliminar imagen"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-
-              {/* Mensaje informativo */}
-              {!imagenPreview && (
-                <p className="text-xs text-slate-500 flex items-center gap-1">
-                  <ImageIcon className="h-3 w-3" />
-                  Formatos aceptados: JPEG, PNG, WebP (máx. 5MB)
-                </p>
-              )}
-            </div>
           </div>
 
           {/* Checkbox Activo / Reactivar */}

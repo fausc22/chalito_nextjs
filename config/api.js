@@ -32,6 +32,7 @@ export const API_CONFIG = {
       UPDATE: '/inventario/articulos',
       DELETE: '/inventario/articulos',
       BY_ID: (id) => `/inventario/articulos/${id}`,
+      UPLOAD_IMAGEN: '/articulos/upload-imagen',
     },
     CATEGORIAS: {
       LIST: '/inventario/categorias',

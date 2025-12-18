@@ -145,9 +145,9 @@ export function OrderCard({ pedido, onMarcharACocina, onListo, onEditar, onCance
     <Card
       ref={setNodeRef}
       style={style}
-      className="mb-2 shadow-sm hover:shadow-md transition-all border border-slate-300"
+      className="mb-2 shadow-sm hover:shadow-md transition-all border border-slate-300 flex flex-col"
     >
-      <CardHeader className="pb-2 pt-3 px-3 bg-slate-200">
+      <CardHeader className="pb-2 pt-3 px-3 bg-slate-200 flex-shrink-0">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
             <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none flex-shrink-0">
@@ -190,7 +190,7 @@ export function OrderCard({ pedido, onMarcharACocina, onListo, onEditar, onCance
         </div>
       </CardHeader>
 
-      <CardContent className="pt-2 px-3 pb-3">
+      <CardContent className="pt-2 px-3 pb-3 flex flex-col flex-grow">
         <div className="mb-2 bg-white rounded p-2 border border-slate-200">
           <ul className="space-y-1">
             {pedido.items.slice(0, 2).map((item, idx) => (
@@ -205,6 +205,9 @@ export function OrderCard({ pedido, onMarcharACocina, onListo, onEditar, onCance
             )}
           </ul>
         </div>
+
+        {/* Spacer para empujar el badge y botones al final */}
+        <div className="flex-grow"></div>
 
         <div className="mb-2">
           {pedido.paymentStatus === 'paid' ? (

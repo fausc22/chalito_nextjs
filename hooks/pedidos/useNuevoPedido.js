@@ -161,7 +161,7 @@ export const useNuevoPedido = () => {
                 nombre: p.nombre,
                 precio: parseFloat(p.precio) || 0,
                 categoria: p.categoria_id,
-                imagen: p.imagen_url || '📦',
+                imagen_url: p.imagen_url, // ✅ Usar imagen_url para Cloudinary
                 extrasDisponibles: extrasDisponibles
               };
             })
@@ -259,7 +259,10 @@ export const useNuevoPedido = () => {
 
   // Agregar producto al carrito
   const agregarProductoConExtras = useCallback((producto, cantidad) => {
-    if (producto.extrasDisponibles && producto.extrasDisponibles.length > 0) {
+    const tieneExtras = producto.extrasDisponibles && producto.extrasDisponibles.length > 0;
+
+    if (tieneExtras) {
+      // ✅ Si tiene extras, SIEMPRE abrir modal (sin importar la cantidad)
       setProductoParaExtras(producto);
       setCantidadProducto(cantidad);
       setTotalUnidades(cantidad);
@@ -270,16 +273,22 @@ export const useNuevoPedido = () => {
       setEditandoItemCarrito(null);
       setModalExtras(true);
     } else {
-      // Si no tiene extras, abrir modal para agregar observación
-      setProductoParaExtras(producto);
-      setCantidadProducto(cantidad);
-      setTotalUnidades(cantidad);
-      setUnidadActual(1);
-      setUnidadesConfiguradas([]);
-      setExtrasSeleccionados([]);
-      setObservacionItem('');
-      setEditandoItemCarrito(null);
-      setModalExtras(true);
+      // Si NO tiene extras, agregar directamente al carrito
+      const nuevoItem = {
+        ...producto,
+        cantidad: cantidad,
+        extrasSeleccionados: [],
+        observacion: undefined,
+        carritoId: Date.now() + Math.random()
+      };
+      setCarrito(prev => [...prev, nuevoItem]);
+      
+      // Mostrar toast de confirmación
+      toast({
+        title: "✅ Producto agregado",
+        description: `${cantidad} × ${producto.nombre}`,
+        duration: 2000,
+      });
     }
   }, []);
 

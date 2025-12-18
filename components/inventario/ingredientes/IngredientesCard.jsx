@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 
 export function IngredientesCard({ ingrediente, onEditar, onEliminar }) {
   return (
-    <Card className="hover:shadow-lg transition-all h-full flex flex-col">
+    <Card className="hover:shadow-lg transition-all h-full flex flex-col rounded-t-xl rounded-b-none overflow-hidden">
       <CardContent className="p-4 flex-grow">
         <div className="space-y-3">
           {/* Header con nombre y estado */}

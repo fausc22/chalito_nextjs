@@ -10,7 +10,7 @@ export const CategoriaCard = ({ categoria, onEditar, onEliminar }) => {
   const estaActiva = categoria.activo === 1 || categoria.activo === "1" || categoria.activo === true;
 
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col">
+    <Card className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col rounded-t-xl rounded-b-none overflow-hidden">
       <CardHeader className="pb-3 flex-grow">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
