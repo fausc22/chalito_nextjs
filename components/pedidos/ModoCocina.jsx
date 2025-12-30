@@ -526,9 +526,27 @@ export function ModoCocina({ isOpen, onClose, modoCocina = false, onPedidoActual
       if (/^\d{1,2}:\d{2}/.test(hora)) {
         const partes = hora.split(':');
         if (partes.length >= 2) {
-          const h = String(parseInt(partes[0])).padStart(2, '0');
-          const m = String(parseInt(partes[1])).padStart(2, '0');
+          const h = String(parseInt(partes[0], 10)).padStart(2, '0');
+          const m = String(parseInt(partes[1], 10)).padStart(2, '0');
           return `${h}:${m}`;
+        }
+      }
+      // Si tiene formato AM/PM, convertirlo a 24 horas
+      const tieneAMPM = hora.includes('a. m.') || hora.includes('p. m.') || 
+                        hora.includes('AM') || hora.includes('PM') ||
+                        hora.includes('am') || hora.includes('pm');
+      if (tieneAMPM) {
+        const partes = hora.replace(/[ap]\.?\s*m\.?/i, '').trim().split(':');
+        if (partes.length === 2) {
+          let hora24 = parseInt(partes[0].trim(), 10);
+          const minuto = parseInt(partes[1].trim(), 10);
+          const esPM = hora.toLowerCase().includes('p');
+          if (esPM && hora24 !== 12) {
+            hora24 += 12;
+          } else if (!esPM && hora24 === 12) {
+            hora24 = 0;
+          }
+          return `${String(hora24).padStart(2, '0')}:${String(minuto).padStart(2, '0')}`;
         }
       }
       return null;

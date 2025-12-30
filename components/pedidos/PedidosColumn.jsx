@@ -3,6 +3,7 @@ import { Package } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useDroppable } from '@dnd-kit/core';
 import { OrderCard } from './OrderCard';
+import { OrderRow } from './OrderRow';
 import {
   Pagination,
   PaginationContent,
@@ -21,10 +22,12 @@ export function PedidosColumn({
   onCobrar,
   onCancelar,
   estado,
-  compacto = false
+  compacto = false,
+  vistaTabla = false
 }) {
   const [paginaActual, setPaginaActual] = useState(1);
-  const itemsPorPagina = 6; // 3 filas x 2 columnas = 6 items por página
+  // Si es vista tabla: 8 filas por página. Si es vista cards: 6 items (3 filas x 2 columnas)
+  const itemsPorPagina = vistaTabla ? 8 : 6;
 
   const { setNodeRef, isOver } = useDroppable({
     id: estado,
@@ -70,7 +73,7 @@ export function PedidosColumn({
 
       <div
         ref={setNodeRef}
-        className={`flex-1 overflow-y-auto p-3 min-h-0 transition-colors ${
+        className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 transition-colors p-3 ${
           isOver ? 'bg-blue-100 border-2 border-blue-400' : ''
         }`}
       >
@@ -79,7 +82,23 @@ export function PedidosColumn({
             <Package className="h-10 w-10 mx-auto mb-2 opacity-50" />
             <p className="text-xs font-medium">No hay pedidos</p>
           </div>
+        ) : vistaTabla ? (
+          // Vista de tabla con filas - ocupa todo el ancho disponible
+          <div className="w-full">
+            {pedidosPaginados.map(pedido => (
+              <OrderRow
+                key={pedido.id}
+                pedido={pedido}
+                onMarcharACocina={onMarcharACocina}
+                onListo={onListo}
+                onEditar={onEditar}
+                onCancelar={onCancelar}
+                onCobrar={onCobrar}
+              />
+            ))}
+          </div>
         ) : (
+          // Vista de cards en grid
           <div className="grid grid-cols-2 gap-3">
             {pedidosPaginados.map(pedido => (
               <OrderCard

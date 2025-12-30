@@ -1,4 +1,4 @@
-import { ChefHat, Clock, Plus, Search, Package, Menu, X, ChevronLeft, ChevronRight, ClipboardCheck, Bell, Store } from 'lucide-react';
+import { ChefHat, Clock, Plus, Search, Package, Menu, X, ChevronLeft, ChevronRight, ClipboardCheck, Bell, Store, LayoutGrid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -17,7 +17,9 @@ export function PedidosSidebar({
   isOpen,
   setIsOpen,
   isMobile = false,
-  isOnline = true
+  isOnline = true,
+  vistaTabla = false,
+  onCambiarVista
 }) {
   return (
     <>
@@ -192,6 +194,25 @@ export function PedidosSidebar({
               <ClipboardCheck className="h-4 w-4 mr-1.5" />
               Pedidos Entregados
             </Button>
+
+            {/* Cambiar Vista */}
+            <Button
+              onClick={onCambiarVista}
+              className="w-full bg-slate-700 hover:bg-slate-600 text-white border border-slate-600 text-xs py-2 h-9 px-3"
+              size="sm"
+            >
+              {vistaTabla ? (
+                <>
+                  <LayoutGrid className="h-4 w-4 mr-1.5" />
+                  VISTA CARDS
+                </>
+              ) : (
+                <>
+                  <List className="h-4 w-4 mr-1.5" />
+                  VISTA TABLA
+                </>
+              )}
+            </Button>
           </div>
         )}
 
@@ -234,6 +255,14 @@ export function PedidosSidebar({
               title="Pedidos Entregados"
             >
               <ClipboardCheck className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={onCambiarVista}
+              className="w-full bg-slate-700 hover:bg-slate-600 text-white h-9"
+              size="sm"
+              title={vistaTabla ? "Vista Cards" : "Vista Tabla"}
+            >
+              {vistaTabla ? <LayoutGrid className="h-4 w-4" /> : <List className="h-4 w-4" />}
             </Button>
           </div>
         )}

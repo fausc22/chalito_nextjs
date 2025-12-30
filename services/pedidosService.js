@@ -94,7 +94,12 @@ const transformarPedidoBackendAFrontend = (pedidoBackend, articulos = []) => {
     origen: mapearOrigenBackendAFrontend(pedidoBackend.origen_pedido || 'mostrador'),
     tipo: pedidoBackend.horario_entrega ? 'programado' : 'ya',
     horaProgramada: pedidoBackend.horario_entrega 
-      ? new Date(pedidoBackend.horario_entrega).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+      ? (() => {
+          const fecha = new Date(pedidoBackend.horario_entrega);
+          const horas = String(fecha.getHours()).padStart(2, '0');
+          const minutos = String(fecha.getMinutes()).padStart(2, '0');
+          return `${horas}:${minutos}`;
+        })()
       : null,
     timestamp: new Date(pedidoBackend.fecha).getTime(),
     items: articulos.map(art => ({

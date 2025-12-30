@@ -60,7 +60,12 @@ const transformarComandaBackendAFrontend = (comandaBackend, articulos = []) => {
     clienteEmail: comandaBackend.cliente_email || '',
     modalidad: mapearModalidadBackendAFrontend(comandaBackend.modalidad),
     horarioEntrega: comandaBackend.horario_entrega 
-      ? new Date(comandaBackend.horario_entrega).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+      ? (() => {
+          const fecha = new Date(comandaBackend.horario_entrega);
+          const horas = String(fecha.getHours()).padStart(2, '0');
+          const minutos = String(fecha.getMinutes()).padStart(2, '0');
+          return `${horas}:${minutos}`;
+        })()
       : null,
     estado: mapearEstadoBackendAFrontend(comandaBackend.estado),
     observaciones: comandaBackend.observaciones || '',

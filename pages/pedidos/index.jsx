@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { DndContext, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import { ProtectedRoute } from '../../components/auth/ProtectedRoute';
 import { NavBar } from '../../components/layout/NavBar';
 import { Footer } from '../../components/layout/Footer';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
 import { PedidosSidebar } from '../../components/pedidos/PedidosSidebar';
 import { PedidosColumn } from '../../components/pedidos/PedidosColumn';
+import { OrderCardGhost } from '../../components/pedidos/OrderCard';
+import { OrderRowGhost } from '../../components/pedidos/OrderRow';
 import { ModalCancelarPedido } from '../../components/pedidos/modals/ModalCancelarPedido';
 import { ModalPedidosEntregados } from '../../components/pedidos/modals/ModalPedidosEntregados';
 import { ModalNuevoPedido } from '../../components/pedidos/modals/ModalNuevoPedido';
@@ -31,6 +33,9 @@ function VentasContent() {
   const [notificacionesCount, setNotificacionesCount] = useState(0);
   const [isOnline, setIsOnline] = useState(true); // Estado de conexión del sistema
   const [modoCocinaOpen, setModoCocinaOpen] = useState(false);
+  const [activeId, setActiveId] = useState(null);
+  const [activePedido, setActivePedido] = useState(null);
+  const [vistaTabla, setVistaTabla] = useState(false); // Estado para alternar entre vista de cards y tabla
 
   const {
     pedidosRecibidos,
@@ -49,11 +54,11 @@ function VentasContent() {
 
   const nuevoPedido = useNuevoPedido();
 
-  // Configuración de sensores para drag & drop
+  // Configuración de sensores para drag & drop optimizados
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5, // Reducido para respuesta más rápida
       },
     })
   );
@@ -204,6 +209,10 @@ function VentasContent() {
     setModalCobro(true);
   };
 
+  const handleCambiarVista = () => {
+    setVistaTabla(!vistaTabla);
+  };
+
   return (
     <>
       <Head>
@@ -230,6 +239,8 @@ function VentasContent() {
               setIsOpen={setSidebarOpen}
               isMobile={false}
               isOnline={isOnline}
+              vistaTabla={vistaTabla}
+              onCambiarVista={handleCambiarVista}
             />
           </div>
 
@@ -249,6 +260,8 @@ function VentasContent() {
               setIsOpen={setSidebarOpen}
               isMobile={true}
               isOnline={isOnline}
+              vistaTabla={vistaTabla}
+              onCambiarVista={handleCambiarVista}
             />
           </div>
 
@@ -259,7 +272,20 @@ function VentasContent() {
             <DndContext
               sensors={sensors}
               collisionDetection={closestCorners}
-              onDragEnd={handleDragEnd}
+              onDragStart={(event) => {
+                setActiveId(event.active.id);
+                // Buscar el pedido activo en todas las listas
+                const pedidoEncontrado = 
+                  pedidosRecibidos.find(p => `pedido-${p.id}` === event.active.id) ||
+                  pedidosEnCocina.find(p => `pedido-${p.id}` === event.active.id) ||
+                  pedidosEntregados.find(p => `pedido-${p.id}` === event.active.id);
+                setActivePedido(pedidoEncontrado || null);
+              }}
+              onDragEnd={(event) => {
+                setActiveId(null);
+                setActivePedido(null);
+                handleDragEnd(event);
+              }}
             >
               <div className="flex-1 w-full px-3 sm:px-4 lg:px-6 py-3 min-h-0 flex flex-col">
                 <div className="flex gap-3 h-[calc(100vh-140px)] w-full transition-all duration-300">
@@ -274,6 +300,7 @@ function VentasContent() {
                       onCobrar={abrirModalCobro}
                       estado="recibido"
                       compacto={true}
+                      vistaTabla={vistaTabla}
                     />
                   </div>
 
@@ -288,10 +315,25 @@ function VentasContent() {
                       onCobrar={abrirModalCobro}
                       estado="en_cocina"
                       compacto={true}
+                      vistaTabla={vistaTabla}
                     />
                   </div>
                 </div>
               </div>
+              <DragOverlay 
+                dropAnimation={null}
+                style={{ cursor: 'grabbing' }}
+              >
+                {activePedido ? (
+                  <div className="pointer-events-none">
+                    {vistaTabla ? (
+                      <OrderRowGhost pedido={activePedido} />
+                    ) : (
+                      <OrderCardGhost pedido={activePedido} />
+                    )}
+                  </div>
+                ) : null}
+              </DragOverlay>
             </DndContext>
           </div>
         </main>
