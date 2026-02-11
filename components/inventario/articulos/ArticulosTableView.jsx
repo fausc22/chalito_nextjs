@@ -171,3 +171,10 @@ export function ArticulosTableView({
 
 
 
+
+
+
+
+
+
+

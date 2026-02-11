@@ -16,25 +16,38 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `articulo_contenido`
+-- Table structure for table `adicionales`
 --
 
-DROP TABLE IF EXISTS `articulo_contenido`;
+DROP TABLE IF EXISTS `adicionales`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `articulo_contenido` (
+CREATE TABLE `adicionales` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `articulo_id` int NOT NULL,
-  `ingrediente_id` int NOT NULL,
-  `unidad_medida` enum('UNIDADES','LITROS','GRAMOS','KILOS') NOT NULL DEFAULT 'UNIDADES',
-  `cantidad` decimal(8,2) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `descripcion` varchar(255) DEFAULT NULL,
+  `precio_extra` decimal(8,2) NOT NULL DEFAULT '0.00',
+  `disponible` tinyint(1) NOT NULL DEFAULT '1',
+  `fecha_creacion` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `articulo_ingrediente_unique` (`articulo_id`,`ingrediente_id`),
-  KEY `idx_ingrediente_id` (`ingrediente_id`),
-  CONSTRAINT `articulo_contenido_articulo_fk` FOREIGN KEY (`articulo_id`) REFERENCES `articulos` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `articulo_contenido_ingrediente_fk` FOREIGN KEY (`ingrediente_id`) REFERENCES `ingredientes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `articulo_contenido_chk_cantidad` CHECK ((`cantidad` > 0))
-) ENGINE=InnoDB AUTO_INCREMENT=199 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  UNIQUE KEY `nombre_UNIQUE` (`nombre`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `adicionales_contenido`
+--
+
+DROP TABLE IF EXISTS `adicionales_contenido`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `adicionales_contenido` (
+  `id` int NOT NULL,
+  `adicional_id` int NOT NULL,
+  `articulo_id` int NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -66,9 +79,30 @@ CREATE TABLE `articulos` (
   KEY `idx_tipo` (`tipo`),
   KEY `idx_stock_minimo` (`stock_actual`,`stock_minimo`),
   CONSTRAINT `articulos_categoria_fk` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `articulos_chk_precio` CHECK ((`precio` >= 0)),
-  CONSTRAINT `articulos_chk_stock` CHECK (((`stock_actual` >= 0) and (`stock_minimo` >= 0)))
-) ENGINE=InnoDB AUTO_INCREMENT=67 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  CONSTRAINT `articulos_chk_precio` CHECK ((`precio` >= 0))
+) ENGINE=InnoDB AUTO_INCREMENT=72 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `articulos_contenido`
+--
+
+DROP TABLE IF EXISTS `articulos_contenido`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `articulos_contenido` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `articulo_id` int NOT NULL,
+  `ingrediente_id` int NOT NULL,
+  `unidad_medida` enum('UNIDADES','LITROS','GRAMOS','KILOS') NOT NULL DEFAULT 'UNIDADES',
+  `cantidad` decimal(8,2) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `articulo_ingrediente_unique` (`articulo_id`,`ingrediente_id`),
+  KEY `idx_ingrediente_id` (`ingrediente_id`),
+  CONSTRAINT `articulo_contenido_articulo_fk` FOREIGN KEY (`articulo_id`) REFERENCES `articulos` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `articulo_contenido_ingrediente_fk` FOREIGN KEY (`ingrediente_id`) REFERENCES `ingredientes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `articulos_contenido_chk_cantidad` CHECK ((`cantidad` > 0))
+) ENGINE=InnoDB AUTO_INCREMENT=255 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -103,7 +137,7 @@ CREATE TABLE `auditorias` (
   KEY `idx_estado` (`estado`),
   KEY `idx_registro_tabla` (`tabla_afectada`,`registro_id`),
   CONSTRAINT `auditorias_usuario_fk` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=3349 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=27792 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -160,7 +194,7 @@ CREATE TABLE `comandas` (
   `cliente_email` varchar(100) DEFAULT NULL,
   `modalidad` enum('DELIVERY','RETIRO') NOT NULL,
   `horario_entrega` timestamp NULL DEFAULT NULL,
-  `estado` enum('RECIBIDO','EN_PREPARACION','ENTREGADO','CANCELADO') NOT NULL DEFAULT 'RECIBIDO',
+  `estado` enum('EN_PREPARACION','LISTA','CANCELADA') NOT NULL DEFAULT 'EN_PREPARACION',
   `observaciones` text,
   `usuario_id` int DEFAULT NULL,
   `usuario_nombre` varchar(100) DEFAULT NULL,
@@ -174,7 +208,7 @@ CREATE TABLE `comandas` (
   KEY `idx_horario_entrega` (`horario_entrega`),
   CONSTRAINT `comandas_pedido_fk` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`) ON DELETE CASCADE,
   CONSTRAINT `comandas_usuario_fk` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -198,7 +232,27 @@ CREATE TABLE `comandas_contenido` (
   CONSTRAINT `comandas_contenido_articulo_fk` FOREIGN KEY (`articulo_id`) REFERENCES `articulos` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `comandas_contenido_comanda_fk` FOREIGN KEY (`comanda_id`) REFERENCES `comandas` (`id`) ON DELETE CASCADE,
   CONSTRAINT `comandas_contenido_chk_cantidad` CHECK ((`cantidad` > 0))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `configuracion_sistema`
+--
+
+DROP TABLE IF EXISTS `configuracion_sistema`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `configuracion_sistema` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `clave` varchar(100) NOT NULL,
+  `valor` varchar(255) NOT NULL,
+  `tipo` enum('INT','STRING','BOOLEAN','JSON') NOT NULL DEFAULT 'STRING',
+  `descripcion` text,
+  `fecha_modificacion` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `clave` (`clave`),
+  KEY `idx_clave` (`clave`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -319,22 +373,34 @@ CREATE TABLE `pedidos` (
   `iva_total` decimal(10,2) NOT NULL DEFAULT '0.00',
   `total` decimal(10,2) NOT NULL,
   `medio_pago` varchar(50) DEFAULT NULL,
+  `estado_pago` enum('DEBE','PAGADO') NOT NULL DEFAULT 'DEBE',
   `modalidad` enum('DELIVERY','RETIRO') NOT NULL,
+  `origen_pedido` enum('MOSTRADOR','TELEFONO','WHATSAPP','WEB') NOT NULL DEFAULT 'MOSTRADOR',
   `horario_entrega` timestamp NULL DEFAULT NULL,
-  `estado` enum('PENDIENTE','CONFIRMADO','LISTO','ENTREGADO','CANCELADO') NOT NULL DEFAULT 'PENDIENTE',
+  `estado` enum('RECIBIDO','EN_PREPARACION','LISTO','ENTREGADO','CANCELADO') NOT NULL DEFAULT 'RECIBIDO',
   `observaciones` varchar(255) DEFAULT NULL,
   `usuario_id` int DEFAULT NULL,
   `usuario_nombre` varchar(100) DEFAULT NULL,
   `fecha_modificacion` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `hora_inicio_preparacion` timestamp NULL DEFAULT NULL COMMENT 'Timestamp cuando el pedido entra a EN_PREPARACION',
+  `tiempo_estimado_preparacion` int NOT NULL DEFAULT '15' COMMENT 'Minutos estimados de preparación (default 15)',
+  `hora_esperada_finalizacion` timestamp NULL DEFAULT NULL COMMENT 'Calculado: hora_inicio_preparacion + tiempo_estimado_preparacion',
+  `prioridad` enum('NORMAL','ALTA') NOT NULL DEFAULT 'NORMAL' COMMENT 'ALTA para pedidos "cuanto antes", NORMAL para programados',
+  `transicion_automatica` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'Si FALSE, requiere intervención manual',
   PRIMARY KEY (`id`),
   KEY `idx_fecha` (`fecha`),
   KEY `idx_estado` (`estado`),
   KEY `idx_modalidad` (`modalidad`),
   KEY `idx_usuario_id` (`usuario_id`),
   KEY `idx_horario_entrega` (`horario_entrega`),
+  KEY `idx_estado_pago` (`estado_pago`),
+  KEY `idx_hora_inicio_preparacion` (`hora_inicio_preparacion`),
+  KEY `idx_prioridad` (`prioridad`),
+  KEY `idx_estado_hora_inicio` (`estado`,`hora_inicio_preparacion`),
+  KEY `idx_estado_prioridad` (`estado`,`prioridad`,`fecha`),
   CONSTRAINT `pedidos_usuario_fk` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL,
   CONSTRAINT `pedidos_chk_totales` CHECK (((`subtotal` >= 0) and (`iva_total` >= 0) and (`total` >= 0)))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -361,7 +427,7 @@ CREATE TABLE `pedidos_contenido` (
   CONSTRAINT `pedidos_contenido_pedido_fk` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`) ON DELETE CASCADE,
   CONSTRAINT `pedidos_contenido_chk_cantidad` CHECK ((`cantidad` > 0)),
   CONSTRAINT `pedidos_contenido_chk_precio` CHECK (((`precio` >= 0) and (`subtotal` >= 0)))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -413,7 +479,7 @@ CREATE TABLE `ventas` (
   `observaciones` varchar(255) DEFAULT NULL,
   `usuario_id` int DEFAULT NULL,
   `usuario_nombre` varchar(100) DEFAULT NULL,
-  `tipo_factura` varchar(1) DEFAULT NULL,
+  `tipo_factura` varchar(100) DEFAULT NULL,
   `cae_id` varchar(100) DEFAULT NULL,
   `cae_fecha` timestamp NULL DEFAULT NULL,
   `fecha_modificacion` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -426,7 +492,7 @@ CREATE TABLE `ventas` (
   CONSTRAINT `ventas_cuenta_fk` FOREIGN KEY (`cuenta_id`) REFERENCES `cuentas_fondos` (`id`) ON DELETE SET NULL,
   CONSTRAINT `ventas_usuario_fk` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL,
   CONSTRAINT `ventas_chk_totales` CHECK (((`subtotal` >= 0) and (`iva_total` >= 0) and (`descuento` >= 0) and (`total` >= 0)))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=78 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -451,7 +517,7 @@ CREATE TABLE `ventas_contenido` (
   CONSTRAINT `ventas_contenido_venta_fk` FOREIGN KEY (`venta_id`) REFERENCES `ventas` (`id`) ON DELETE CASCADE,
   CONSTRAINT `ventas_contenido_chk_cantidad` CHECK ((`cantidad` > 0)),
   CONSTRAINT `ventas_contenido_chk_precio` CHECK (((`precio` >= 0) and (`subtotal` >= 0)))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=132 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -463,4 +529,4 @@ CREATE TABLE `ventas_contenido` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-12-09 14:18:55
+-- Dump completed on 2026-01-06 14:10:16

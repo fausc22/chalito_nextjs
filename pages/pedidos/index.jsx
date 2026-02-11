@@ -11,11 +11,14 @@ import { OrderRowGhost } from '../../components/pedidos/OrderRow';
 import { ModalCancelarPedido } from '../../components/pedidos/modals/ModalCancelarPedido';
 import { ModalPedidosEntregados } from '../../components/pedidos/modals/ModalPedidosEntregados';
 import { ModalNuevoPedido } from '../../components/pedidos/modals/ModalNuevoPedido';
+import { ModalEditarPedido } from '../../components/pedidos/modals/ModalEditarPedido';
 import { ModalExtras } from '../../components/pedidos/modals/ModalExtras';
 import { ModoCocina } from '../../components/pedidos/ModoCocina';
 import { ModalCobro } from '../../components/pedidos/modals/ModalCobro';
+import { ModalImprimir } from '../../components/pedidos/modals/ModalImprimir';
 import { usePedidos } from '../../hooks/pedidos/usePedidos';
 import { useNuevoPedido } from '../../hooks/pedidos/useNuevoPedido';
+import { useEditarPedido } from '../../hooks/pedidos/useEditarPedido';
 import { toast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import Head from 'next/head';
@@ -27,11 +30,12 @@ function VentasContent() {
   const [modalPedidosEntregados, setModalPedidosEntregados] = useState(false);
   const [modalCobro, setModalCobro] = useState(false);
   const [pedidoACobrar, setPedidoACobrar] = useState(null);
+  const [modalImprimir, setModalImprimir] = useState(false);
+  const [pedidoAImprimir, setPedidoAImprimir] = useState(null);
   const [pedidoPendienteCrear, setPedidoPendienteCrear] = useState(null);
   const [mostrarConfirmacionFacturacion, setMostrarConfirmacionFacturacion] = useState(false);
   const [medioPagoParaCrear, setMedioPagoParaCrear] = useState(null);
   const [notificacionesCount, setNotificacionesCount] = useState(0);
-  const [isOnline, setIsOnline] = useState(true); // Estado de conexión del sistema
   const [modoCocinaOpen, setModoCocinaOpen] = useState(false);
   const [activeId, setActiveId] = useState(null);
   const [activePedido, setActivePedido] = useState(null);
@@ -46,6 +50,7 @@ function VentasContent() {
     handleDragEnd,
     handleMarcharACocina,
     handleListo,
+    handleEntregar,
     handleCancelar: cancelarPedido,
     agregarPedido,
     actualizarPedido,
@@ -53,6 +58,7 @@ function VentasContent() {
   } = usePedidos();
 
   const nuevoPedido = useNuevoPedido();
+  const editarPedido = useEditarPedido();
 
   // Configuración de sensores para drag & drop optimizados
   const sensors = useSensors(
@@ -75,9 +81,19 @@ function VentasContent() {
   }, [nuevoPedido]);
 
   const handleEditar = (pedido) => {
-    toast.info(`Editar pedido ${pedido.id}`, {
-      description: 'Modal por implementar',
-    });
+    // Verificar que no esté ENTREGADO o CANCELADO
+    if (pedido.estado === 'entregado' || pedido.estado === 'cancelado') {
+      toast.error('No se puede editar un pedido entregado o cancelado');
+      return;
+    }
+    
+    // Abrir modal de edición
+    editarPedido.abrirModal(pedido);
+  };
+
+  const handleImprimir = (pedido) => {
+    setPedidoAImprimir(pedido);
+    setModalImprimir(true);
   };
 
   const handleCancelar = (pedido) => {
@@ -183,12 +199,16 @@ function VentasContent() {
     }
   };
 
-  const handleCobroExitoso = async (pedidoId) => {
-    // Actualizar el estado del pedido a pagado
-    if (recargarPedidos) {
+  const handleCobroExitoso = async (pedidoIdOrMedioPago, pedidoActualizadoDesdeBackend) => {
+    if (pedidoActualizadoDesdeBackend && pedidoIdOrMedioPago && pedidoIdOrMedioPago !== 'nuevo') {
+      actualizarPedido(String(pedidoIdOrMedioPago), {
+        ...pedidoActualizadoDesdeBackend,
+        id: String(pedidoIdOrMedioPago),
+        paymentStatus: 'paid'
+      });
+    } else if (recargarPedidos) {
       await recargarPedidos();
     }
-    // El pedido ya debería estar actualizado en el backend
   };
 
   const handleModoCocina = () => {
@@ -238,7 +258,6 @@ function VentasContent() {
               isOpen={sidebarOpen}
               setIsOpen={setSidebarOpen}
               isMobile={false}
-              isOnline={isOnline}
               vistaTabla={vistaTabla}
               onCambiarVista={handleCambiarVista}
             />
@@ -259,7 +278,6 @@ function VentasContent() {
               isOpen={sidebarOpen}
               setIsOpen={setSidebarOpen}
               isMobile={true}
-              isOnline={isOnline}
               vistaTabla={vistaTabla}
               onCambiarVista={handleCambiarVista}
             />
@@ -295,12 +313,15 @@ function VentasContent() {
                       pedidos={pedidosRecibidos}
                       onMarcharACocina={handleMarcharACocina}
                       onListo={handleListo}
+                      onEntregar={handleEntregar}
                       onEditar={handleEditar}
                       onCancelar={handleCancelar}
                       onCobrar={abrirModalCobro}
+                      onImprimir={handleImprimir}
                       estado="recibido"
                       compacto={true}
                       vistaTabla={vistaTabla}
+                      cobrandoPedidoId={pedidoACobrar && pedidoACobrar.id !== 'nuevo' ? pedidoACobrar.id : null}
                     />
                   </div>
 
@@ -310,12 +331,15 @@ function VentasContent() {
                       pedidos={pedidosEnCocina}
                       onMarcharACocina={handleMarcharACocina}
                       onListo={handleListo}
+                      onEntregar={handleEntregar}
                       onEditar={handleEditar}
                       onCancelar={handleCancelar}
                       onCobrar={abrirModalCobro}
+                      onImprimir={handleImprimir}
                       estado="en_cocina"
                       compacto={true}
                       vistaTabla={vistaTabla}
+                      cobrandoPedidoId={pedidoACobrar && pedidoACobrar.id !== 'nuevo' ? pedidoACobrar.id : null}
                     />
                   </div>
                 </div>
@@ -369,6 +393,7 @@ function VentasContent() {
         categorias={nuevoPedido.categorias}
         loadingCategorias={nuevoPedido.loadingCategorias}
         loadingProductos={nuevoPedido.loadingProductos}
+        loadingProductosMasSolicitados={nuevoPedido.loadingProductosMasSolicitados}
         tipoEntrega={nuevoPedido.tipoEntrega}
         setTipoEntrega={nuevoPedido.setTipoEntrega}
         cliente={nuevoPedido.cliente}
@@ -396,7 +421,59 @@ function VentasContent() {
         editarExtrasItem={nuevoPedido.editarExtrasItem}
         resetearModal={nuevoPedido.resetearModal}
         crearPedido={nuevoPedido.crearPedido}
+        validarPasoCliente={nuevoPedido.validarPasoCliente}
         onSuccess={handlePedidoCreado}
+      />
+
+      <ModalEditarPedido
+        isOpen={editarPedido.isOpen}
+        onClose={() => editarPedido.setIsOpen(false)}
+        pasoModal={editarPedido.pasoModal}
+        setPasoModal={editarPedido.setPasoModal}
+        categoriaSeleccionada={editarPedido.categoriaSeleccionada}
+        setCategoriaSeleccionada={editarPedido.setCategoriaSeleccionada}
+        busquedaProducto={editarPedido.busquedaProducto}
+        setBusquedaProducto={editarPedido.setBusquedaProducto}
+        carrito={editarPedido.carrito}
+        productosFiltrados={editarPedido.productosFiltrados}
+        categorias={editarPedido.categorias}
+        loadingCategorias={editarPedido.loadingCategorias}
+        loadingProductos={editarPedido.loadingProductos}
+        loadingPedido={editarPedido.loadingPedido}
+        pedidoOriginal={editarPedido.pedidoOriginal}
+        tipoEntrega={editarPedido.tipoEntrega}
+        setTipoEntrega={editarPedido.setTipoEntrega}
+        cliente={editarPedido.cliente}
+        setCliente={editarPedido.setCliente}
+        origen={editarPedido.origen}
+        setOrigen={editarPedido.setOrigen}
+        tipoPedido={editarPedido.tipoPedido}
+        setTipoPedido={editarPedido.setTipoPedido}
+        horaProgramada={editarPedido.horaProgramada}
+        setHoraProgramada={editarPedido.setHoraProgramada}
+        medioPago={editarPedido.medioPago}
+        setMedioPago={editarPedido.setMedioPago}
+        estadoPago={editarPedido.estadoPago}
+        setEstadoPago={editarPedido.setEstadoPago}
+        descuento={editarPedido.descuento}
+        setDescuento={editarPedido.setDescuento}
+        calcularSubtotal={editarPedido.calcularSubtotal}
+        calcularEnvio={editarPedido.calcularEnvio}
+        calcularDescuento={editarPedido.calcularDescuento}
+        calcularIVA={editarPedido.calcularIVA}
+        calcularTotal={editarPedido.calcularTotal}
+        agregarProductoConExtras={editarPedido.agregarProductoConExtras}
+        modificarCantidad={editarPedido.modificarCantidad}
+        eliminarDelCarrito={editarPedido.eliminarDelCarrito}
+        editarExtrasItem={editarPedido.editarExtrasItem}
+        resetearModal={editarPedido.resetearModal}
+        actualizarPedido={editarPedido.actualizarPedido}
+        onSuccess={(pedidoActualizado) => {
+          if (pedidoActualizado?.id) {
+            actualizarPedido(pedidoActualizado.id, pedidoActualizado);
+          }
+          recargarPedidos?.();
+        }}
       />
 
       <ModoCocina
@@ -410,19 +487,51 @@ function VentasContent() {
       />
 
       <ModalExtras
-        isOpen={nuevoPedido.modalExtras}
-        onClose={(open) => !open && nuevoPedido.cerrarModalExtras()}
-        producto={nuevoPedido.productoParaExtras}
-        cantidadProducto={nuevoPedido.cantidadProducto}
-        extrasSeleccionados={nuevoPedido.extrasSeleccionados}
-        setExtrasSeleccionados={nuevoPedido.setExtrasSeleccionados}
-        observacionItem={nuevoPedido.observacionItem}
-        setObservacionItem={nuevoPedido.setObservacionItem}
-        editandoItemCarrito={nuevoPedido.editandoItemCarrito}
-        unidadActual={nuevoPedido.unidadActual}
-        totalUnidades={nuevoPedido.totalUnidades}
-        unidadesConfiguradas={nuevoPedido.unidadesConfiguradas}
-        onConfirmar={nuevoPedido.confirmarExtras}
+        isOpen={nuevoPedido.modalExtras || editarPedido.modalExtras}
+        onClose={(open) => {
+          if (!open) {
+            nuevoPedido.cerrarModalExtras();
+            editarPedido.cerrarModalExtras();
+          }
+        }}
+        producto={nuevoPedido.modalExtras ? nuevoPedido.productoParaExtras : editarPedido.productoParaExtras}
+        cantidadProducto={nuevoPedido.modalExtras ? nuevoPedido.cantidadProducto : editarPedido.cantidadProducto}
+        extrasSeleccionados={nuevoPedido.modalExtras ? nuevoPedido.extrasSeleccionados : editarPedido.extrasSeleccionados}
+        setExtrasSeleccionados={(extras) => {
+          if (nuevoPedido.modalExtras) {
+            nuevoPedido.setExtrasSeleccionados(extras);
+          } else if (editarPedido.modalExtras) {
+            editarPedido.setExtrasSeleccionados(extras);
+          }
+        }}
+        observacionItem={nuevoPedido.modalExtras ? nuevoPedido.observacionItem : editarPedido.observacionItem}
+        setObservacionItem={(obs) => {
+          if (nuevoPedido.modalExtras) {
+            nuevoPedido.setObservacionItem(obs);
+          } else if (editarPedido.modalExtras) {
+            editarPedido.setObservacionItem(obs);
+          }
+        }}
+        editandoItemCarrito={nuevoPedido.modalExtras ? nuevoPedido.editandoItemCarrito : editarPedido.editandoItemCarrito}
+        unidadActual={nuevoPedido.modalExtras ? nuevoPedido.unidadActual : editarPedido.unidadActual}
+        totalUnidades={nuevoPedido.modalExtras ? nuevoPedido.totalUnidades : editarPedido.totalUnidades}
+        unidadesConfiguradas={nuevoPedido.modalExtras ? nuevoPedido.unidadesConfiguradas : editarPedido.unidadesConfiguradas}
+        onConfirmar={() => {
+          if (nuevoPedido.modalExtras) {
+            nuevoPedido.confirmarExtras();
+          } else if (editarPedido.modalExtras) {
+            editarPedido.confirmarExtras();
+          }
+        }}
+      />
+
+      <ModalImprimir
+        pedido={pedidoAImprimir}
+        isOpen={modalImprimir}
+        onClose={() => {
+          setModalImprimir(false);
+          setPedidoAImprimir(null);
+        }}
       />
 
       <ModalCobro
@@ -433,13 +542,11 @@ function VentasContent() {
           setPedidoACobrar(null);
           setPedidoPendienteCrear(null);
         }}
-        onCobroExitoso={(pedidoIdOrMedioPago) => {
-          // Si es un pedido nuevo (medioPago es string), usar handleCobroExitosoYCrearPedido
-          // Si es un pedido existente (pedidoId es número), usar handleCobroExitoso
+        onCobroExitoso={(pedidoIdOrMedioPago, pedidoActualizado) => {
           if (pedidoACobrar && pedidoACobrar.id === 'nuevo') {
             handleCobroExitosoYCrearPedido(pedidoIdOrMedioPago);
           } else {
-            handleCobroExitoso(pedidoIdOrMedioPago);
+            handleCobroExitoso(pedidoIdOrMedioPago, pedidoActualizado);
           }
         }}
       />

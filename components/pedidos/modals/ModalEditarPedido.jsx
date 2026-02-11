@@ -1,4 +1,4 @@
-import { ShoppingCart, ChevronRight, ChevronLeft, Check, Search, Package, Edit, Trash2, Store, Truck, Phone, MessageSquare, Globe, Clock, Banknote, CreditCard, Building2, Smartphone, XCircle, CheckCircle, Settings } from 'lucide-react';
+import { ShoppingCart, ChevronRight, ChevronLeft, Check, Search, Package, Edit, Trash2, Store, Truck, Phone, MessageSquare, Globe, Clock, Banknote, CreditCard, Building2, Smartphone, XCircle, CheckCircle, Settings, AlertCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,8 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ProductCard } from '../ProductCard';
-import { toast } from '@/hooks/use-toast';
 
 // Helper para obtener icono según el valor
 const getOrigenIcon = (valor) => {
@@ -36,18 +36,19 @@ const getEstadoPagoIcon = (valor) => {
   return valor === 'paid' ? CheckCircle : XCircle;
 };
 
-// Sanitización de inputs: evitan guardar caracteres no permitidos
-const sanitizeNombre = (v) => (v || '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, '');
-const sanitizeTelefono = (v) => {
-  const s = (v || '').trim();
-  const hasPlus = s.startsWith('+');
-  const rest = (hasPlus ? s.slice(1) : s).replace(/[^\d\s\-()]/g, '');
-  return (hasPlus ? '+' : '') + rest;
+// Mapear estado del pedido a texto legible
+const getEstadoTexto = (estado) => {
+  const estados = {
+    'recibido': 'RECIBIDO',
+    'en_cocina': 'EN PREPARACIÓN',
+    'listo': 'LISTO',
+    'entregado': 'ENTREGADO',
+    'cancelado': 'CANCELADO'
+  };
+  return estados[estado] || estado.toUpperCase();
 };
-const sanitizeDireccion = (v) => (v || '').replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.,'\-/°]/g, '');
-const sanitizeNumeroAltura = (v) => (v || '').replace(/[^a-zA-Z0-9\s\-°]/g, '');
 
-export function ModalNuevoPedido({
+export function ModalEditarPedido({
   isOpen,
   onClose,
   pasoModal,
@@ -61,7 +62,8 @@ export function ModalNuevoPedido({
   categorias = [],
   loadingCategorias = false,
   loadingProductos = false,
-  loadingProductosMasSolicitados = false,
+  loadingPedido = false,
+  pedidoOriginal,
   tipoEntrega,
   setTipoEntrega,
   cliente,
@@ -88,8 +90,7 @@ export function ModalNuevoPedido({
   eliminarDelCarrito,
   editarExtrasItem,
   resetearModal,
-  crearPedido,
-  validarPasoCliente,
+  actualizarPedido,
   onSuccess
 }) {
   const handleClose = (open) => {
@@ -99,156 +100,102 @@ export function ModalNuevoPedido({
     }
   };
 
-  const handleCrearPedido = async () => {
-    // Si el estado de pago es "paid", primero mostrar modal de cobro
-    if (estadoPago === 'paid') {
-      // Preparar datos del pedido para el modal de cobro
-      const pedidoParaCobro = {
-        id: 'nuevo', // Temporal hasta que se cree
-        clienteNombre: cliente.nombre,
-        telefono: cliente.telefono,
-        email: cliente.email,
-        direccion: tipoEntrega === 'delivery' 
-          ? `${cliente.direccion.calle} ${cliente.direccion.numero}`.trim()
-          : '',
-        subtotal: calcularSubtotal() - calcularDescuento(),
-        ivaTotal: calcularIVA(),
-        descuento: calcularDescuento(),
-        total: calcularTotal(),
-        items: carrito.map(item => {
-          const precioBase = parseFloat(item.precio) || 0;
-          const cantidad = parseInt(item.cantidad) || 1;
-          const precioExtras = (item.extrasSeleccionados || []).reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
-          const subtotalItem = (precioBase + precioExtras) * cantidad;
-          
-          return {
-            id: item.id,
-            articulo_id: item.id,
-            nombre: item.nombre,
-            cantidad: cantidad,
-            precio: precioBase + precioExtras,
-            subtotal: subtotalItem
-          };
-        }),
-        medioPago: medioPago,
-        // Guardar todos los datos del formulario para crear el pedido después
-        datosFormulario: {
-          cliente,
-          carrito,
-          tipoEntrega,
-          origen,
-          tipoPedido,
-          horaProgramada,
-          descuento,
-          estadoPago: 'paid' // Ya está pagado
-        }
-      };
-      
-      // Llamar callback para mostrar modal de cobro
-      if (onSuccess) {
-        onSuccess({ mostrarCobro: true, pedidoParaCobro });
-      }
-      return;
-    }
-    
-    // Si no es "paid", crear el pedido directamente
+  const handleActualizarPedido = async () => {
     try {
-      const pedido = await crearPedido(onSuccess);
+      const pedido = await actualizarPedido(onSuccess);
       if (pedido) {
         handleClose(false);
       }
     } catch (error) {
-      console.error('Error al crear pedido:', error);
-      // El error ya se maneja en crearPedido con alert
+      console.error('Error al actualizar pedido:', error);
+      // El error ya se maneja en actualizarPedido con toast
     }
   };
 
   const getTitulo = () => {
     switch (pasoModal) {
       case 1:
-        return 'Nuevo Pedido - Armar Pedido';
+        return 'Editar Pedido - Armar Pedido';
       case 2:
-        return 'Nuevo Pedido - Datos del Cliente';
+        return 'Editar Pedido - Datos del Cliente';
       case 3:
-        return 'Nuevo Pedido - Resumen';
+        return 'Editar Pedido - Resumen';
       default:
-        return 'Nuevo Pedido';
+        return 'Editar Pedido';
     }
   };
+
+  // Determinar si el pedido está en cocina o listo
+  const estaEnCocina = pedidoOriginal?.estado === 'en_cocina' || pedidoOriginal?.estado === 'listo';
+  const estadoActual = pedidoOriginal?.estado ? getEstadoTexto(pedidoOriginal.estado) : '';
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-6xl h-[90vh] flex flex-col bg-slate-100">
         <DialogHeader className="flex-shrink-0 pb-3">
           <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5" />
+            <Edit className="h-5 w-5" />
             {getTitulo()}
+            {pedidoOriginal && (
+              <Badge variant="outline" className="ml-2 bg-blue-100 text-blue-800 border-blue-400">
+                #{pedidoOriginal.id} - {estadoActual}
+              </Badge>
+            )}
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Modal para crear un nuevo pedido con productos, datos del cliente y resumen
+            Modal para editar un pedido existente
           </DialogDescription>
+          
+          {/* Aviso si el pedido está en cocina o listo */}
+          {estaEnCocina && (
+            <Alert className="mt-3 bg-yellow-50 border-yellow-400">
+              <AlertCircle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-sm text-yellow-800">
+                Este pedido ya está en cocina. Los cambios se reflejarán en tiempo real.
+              </AlertDescription>
+            </Alert>
+          )}
         </DialogHeader>
 
-        {pasoModal === 1 ? (
-          // PASO 1: Armar Pedido - Diseño minimalista
+        {loadingPedido ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <Package className="h-12 w-12 mx-auto mb-3 opacity-50 text-slate-400 animate-pulse" />
+              <p className="text-sm text-slate-500">Cargando pedido...</p>
+            </div>
+          </div>
+        ) : pasoModal === 1 ? (
+          // PASO 1: Armar Pedido - Mismo diseño que ModalNuevoPedido
           <div className="flex-1 flex gap-4 min-h-0 bg-slate-100">
             {/* Columna principal: Categorías y Productos - 60% */}
             <div className="w-[60%] flex flex-col min-h-0">
-              {/* Categorías como tabs: HAMBURGUESAS, SÁNDWICHES, EMPANADAS, PAPAS, BEBIDAS | ÚLTIMOS */}
-              <div className="flex items-center gap-1.5 mb-3 border-b-2 border-slate-400 pb-1.5 flex-shrink-0 overflow-x-auto">
+              {/* Categorías como tabs */}
+              <div className="flex gap-1.5 mb-3 border-b-2 border-slate-400 pb-1.5 flex-shrink-0 overflow-x-auto">
                 {loadingCategorias ? (
                   <div className="text-xs text-slate-500">Cargando categorías...</div>
                 ) : !Array.isArray(categorias) || categorias.length === 0 ? (
                   <div className="text-xs text-slate-500">No hay categorías disponibles</div>
                 ) : (
-                  <>
-                    {(() => {
-                      const ORDER = ['HAMBURGUESAS', 'SÁNDWICHES', 'SANDWICHES', 'EMPANADAS', 'PAPAS', 'BEBIDAS'];
-                      const norm = (s) => (s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                      const sorted = [...categorias].sort((a, b) => {
-                        const nameA = norm(a.nombre || a.nombre_categoria || String(a));
-                        const nameB = norm(b.nombre || b.nombre_categoria || String(b));
-                        const iA = ORDER.findIndex(o => nameA.includes(norm(o)) || norm(o).includes(nameA));
-                        const iB = ORDER.findIndex(o => nameB.includes(norm(o)) || norm(o).includes(nameB));
-                        if (iA === -1 && iB === -1) return 0;
-                        if (iA === -1) return 1;
-                        if (iB === -1) return -1;
-                        return iA - iB;
-                      });
-                      return sorted.map(cat => {
-                        const categoriaId = cat.id || cat.categoria_id || cat;
-                        const categoriaNombre = cat.nombre || cat.nombre_categoria || String(cat);
-                        return (
-                          <button
-                            key={categoriaId}
-                            onClick={() => setCategoriaSeleccionada(categoriaId)}
-                            className={`
-                              px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all whitespace-nowrap flex-shrink-0
-                              ${categoriaSeleccionada === categoriaId
-                                ? 'bg-blue-600 text-white border-b-2 border-blue-600'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                              }
-                            `}
-                          >
-                            {categoriaNombre}
-                          </button>
-                        );
-                      });
-                    })()}
-                    <Separator orientation="vertical" className="h-6 bg-slate-400 flex-shrink-0" />
-                    <button
-                      onClick={() => setCategoriaSeleccionada('ultimos')}
-                      className={`
-                        px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all whitespace-nowrap flex-shrink-0
-                        ${categoriaSeleccionada === 'ultimos'
-                          ? 'bg-blue-600 text-white border-b-2 border-blue-600'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }
-                      `}
-                    >
-                      ÚLTIMOS
-                    </button>
-                  </>
+                  categorias.map(cat => {
+                    const categoriaId = cat.id || cat.categoria_id || cat;
+                    const categoriaNombre = cat.nombre || cat.nombre_categoria || String(cat);
+                    
+                    return (
+                      <button
+                        key={categoriaId}
+                        onClick={() => setCategoriaSeleccionada(categoriaId)}
+                        className={`
+                          px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all whitespace-nowrap flex-shrink-0
+                          ${categoriaSeleccionada === categoriaId
+                            ? 'bg-blue-600 text-white border-b-2 border-blue-600'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }
+                        `}
+                      >
+                        {categoriaNombre}
+                      </button>
+                    );
+                  })
                 )}
               </div>
 
@@ -265,12 +212,7 @@ export function ModalNuevoPedido({
 
               {/* Grid de productos con scroll */}
               <div className="flex-1 overflow-y-auto min-h-0 pr-3">
-                {categoriaSeleccionada === 'ultimos' && loadingProductosMasSolicitados ? (
-                  <div className="text-center py-8 text-slate-400">
-                    <Package className="h-12 w-12 mx-auto mb-3 opacity-50 animate-pulse" />
-                    <p className="text-sm">Cargando productos más pedidos...</p>
-                  </div>
-                ) : productosFiltrados.length === 0 ? (
+                {productosFiltrados.length === 0 ? (
                   <div className="text-center py-8 text-slate-400">
                     <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     <p className="text-sm">No se encontraron productos</p>
@@ -289,7 +231,7 @@ export function ModalNuevoPedido({
               </div>
             </div>
 
-            {/* Sidebar derecha: Carrito - 40% - Empieza desde arriba, ocupa toda la altura */}
+            {/* Sidebar derecha: Carrito - 40% */}
             <div className="w-[40%] flex flex-col border-l-2 border-slate-400 pl-4 h-full">
               <div className="flex items-center justify-between mb-2 flex-shrink-0">
                 <h3 className="text-lg font-bold text-slate-900">Carrito</h3>
@@ -307,7 +249,7 @@ export function ModalNuevoPedido({
                 </div>
               ) : (
                 <div className="flex flex-col flex-1 min-h-0 h-full">
-                  {/* Lista del carrito con scroll - ocupa todo el alto disponible */}
+                  {/* Lista del carrito con scroll */}
                   <div className="flex-1 overflow-y-auto space-y-3 mb-3 min-h-0 pr-2">
                     {carrito.map(item => (
                       <div key={item.carritoId} className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
@@ -321,7 +263,6 @@ export function ModalNuevoPedido({
                             )}
                           </div>
                           <div className="flex gap-1 ml-2 flex-shrink-0">
-                            {/* ✅ Botón de editar SIEMPRE visible (para agregar observaciones) */}
                             <button
                               onClick={() => editarExtrasItem(item)}
                               className="text-blue-600 hover:text-blue-700 transition-colors"
@@ -387,7 +328,7 @@ export function ModalNuevoPedido({
                     ))}
                   </div>
 
-                  {/* Resumen del carrito - siempre visible */}
+                  {/* Resumen del carrito */}
                   <div className="border-t-2 border-slate-400 pt-2 flex-shrink-0">
                     <div className="bg-white border border-slate-300 rounded-md p-2 space-y-1.5">
                       <div className="flex justify-between text-sm">
@@ -397,7 +338,6 @@ export function ModalNuevoPedido({
                         </span>
                       </div>
                       
-                      {/* Descuento */}
                       <div className="flex items-center gap-2">
                         <Input
                           type="number"
@@ -430,7 +370,7 @@ export function ModalNuevoPedido({
             </div>
           </div>
         ) : pasoModal === 2 ? (
-          // PASO 2: Datos del Cliente
+          // PASO 2: Datos del Cliente - Mismo diseño que ModalNuevoPedido
           <div className="py-3 pr-3 space-y-4 overflow-y-auto flex-1 min-h-0">
             {/* Datos Básicos del Cliente */}
             <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
@@ -440,22 +380,19 @@ export function ModalNuevoPedido({
                   <Label className="text-xs font-medium">Nombre del Cliente *</Label>
                   <Input
                     value={cliente.nombre}
-                    onChange={(e) => setCliente({ ...cliente, nombre: sanitizeNombre(e.target.value) })}
+                    onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })}
                     placeholder="Ej: Juan Pérez"
                     className="mt-1 h-8 text-sm"
-                    maxLength={100}
                   />
                 </div>
 
                 <div>
                   <Label className="text-xs font-medium">Teléfono *</Label>
                   <Input
-                    type="tel"
                     value={cliente.telefono}
-                    onChange={(e) => setCliente({ ...cliente, telefono: sanitizeTelefono(e.target.value) })}
+                    onChange={(e) => setCliente({ ...cliente, telefono: e.target.value })}
                     placeholder="Ej: 3815-123456"
                     className="mt-1 h-8 text-sm"
-                    maxLength={20}
                   />
                 </div>
 
@@ -464,7 +401,7 @@ export function ModalNuevoPedido({
                   <Input
                     type="email"
                     value={cliente.email}
-                    onChange={(e) => setCliente({ ...cliente, email: e.target.value.trim() })}
+                    onChange={(e) => setCliente({ ...cliente, email: e.target.value })}
                     placeholder="Ej: cliente@email.com"
                     className="mt-1 h-8 text-sm"
                   />
@@ -512,11 +449,10 @@ export function ModalNuevoPedido({
                       value={cliente.direccion.calle}
                       onChange={(e) => setCliente({
                         ...cliente,
-                        direccion: { ...cliente.direccion, calle: sanitizeDireccion(e.target.value).slice(0, 200) }
+                        direccion: { ...cliente.direccion, calle: e.target.value }
                       })}
                       placeholder="Ej: Av. Belgrano"
                       className="mt-1 h-8 text-sm"
-                      maxLength={200}
                     />
                   </div>
 
@@ -526,11 +462,10 @@ export function ModalNuevoPedido({
                       value={cliente.direccion.numero}
                       onChange={(e) => setCliente({
                         ...cliente,
-                        direccion: { ...cliente.direccion, numero: sanitizeNumeroAltura(e.target.value).slice(0, 30) }
+                        direccion: { ...cliente.direccion, numero: e.target.value }
                       })}
                       placeholder="Ej: 1234"
                       className="mt-1 h-8 text-sm"
-                      maxLength={30}
                     />
                   </div>
 
@@ -540,11 +475,10 @@ export function ModalNuevoPedido({
                       value={cliente.direccion.edificio}
                       onChange={(e) => setCliente({
                         ...cliente,
-                        direccion: { ...cliente.direccion, edificio: sanitizeDireccion(e.target.value).slice(0, 100) }
+                        direccion: { ...cliente.direccion, edificio: e.target.value }
                       })}
                       placeholder="Ej: Torre A"
                       className="mt-1 h-8 text-sm"
-                      maxLength={100}
                     />
                   </div>
 
@@ -554,11 +488,10 @@ export function ModalNuevoPedido({
                       value={cliente.direccion.piso}
                       onChange={(e) => setCliente({
                         ...cliente,
-                        direccion: { ...cliente.direccion, piso: sanitizeDireccion(e.target.value).slice(0, 50) }
+                        direccion: { ...cliente.direccion, piso: e.target.value }
                       })}
                       placeholder="Ej: 3° A"
                       className="mt-1 h-8 text-sm"
-                      maxLength={50}
                     />
                   </div>
 
@@ -568,12 +501,11 @@ export function ModalNuevoPedido({
                       value={cliente.direccion.observaciones}
                       onChange={(e) => setCliente({
                         ...cliente,
-                        direccion: { ...cliente.direccion, observaciones: sanitizeDireccion(e.target.value).slice(0, 300) }
+                        direccion: { ...cliente.direccion, observaciones: e.target.value }
                       })}
                       placeholder="Ej: Timbre B, portón verde"
                       rows={2}
                       className="mt-1 text-sm"
-                      maxLength={300}
                     />
                   </div>
                 </div>
@@ -724,13 +656,12 @@ export function ModalNuevoPedido({
             </div>
           </div>
         ) : (
-          // PASO 3: Resumen
+          // PASO 3: Resumen - Mismo diseño que ModalNuevoPedido
           <div className="py-3 space-y-4 overflow-y-auto flex-1 min-h-0 pr-2">
-            {/* Resumen del Pedido */}
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
               <h3 className="text-lg font-semibold text-slate-800 mb-4">📋 Resumen del Pedido</h3>
               
-              {/* Items del pedido - Con botones de editar/eliminar */}
+              {/* Items del pedido */}
               <div className="space-y-2 mb-4">
                 <h4 className="font-medium text-sm text-slate-700 mb-2">Items:</h4>
                 {carrito.map((item) => (
@@ -880,14 +811,8 @@ export function ModalNuevoPedido({
                 Volver
               </Button>
               <Button
-                onClick={() => {
-                  const { valid, mensaje } = validarPasoCliente(cliente, tipoEntrega);
-                  if (!valid) {
-                    toast.error(mensaje);
-                    return;
-                  }
-                  setPasoModal(3);
-                }}
+                onClick={() => setPasoModal(3)}
+                disabled={!cliente.nombre || !cliente.telefono || (tipoEntrega === 'delivery' && !cliente.direccion.calle)}
                 className="gap-2 bg-green-600 hover:bg-green-700"
               >
                 Siguiente: Resumen
@@ -905,11 +830,11 @@ export function ModalNuevoPedido({
                 Volver
               </Button>
               <Button
-                onClick={handleCrearPedido}
+                onClick={handleActualizarPedido}
                 className="bg-green-600 hover:bg-green-700 gap-2"
               >
                 <Check className="h-5 w-5" />
-                Crear Pedido
+                Guardar Cambios
               </Button>
             </>
           )}
@@ -918,3 +843,5 @@ export function ModalNuevoPedido({
     </Dialog>
   );
 }
+
+

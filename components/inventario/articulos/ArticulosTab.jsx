@@ -387,7 +387,7 @@ export function ArticulosTab({
           </p>
         </div>
 
-        <Button onClick={() => setModalAgregar(true)} className="gap-2 w-[200px] sm:w-auto">
+        <Button onClick={() => setModalAgregar(true)} className="gap-2 w-[200px] sm:w-auto bg-green-500 hover:bg-green-600">
           <Plus className="h-4 w-4" />
           Nuevo Artículo
         </Button>

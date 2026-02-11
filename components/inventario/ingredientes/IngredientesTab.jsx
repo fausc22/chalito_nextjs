@@ -311,7 +311,7 @@ export function IngredientesTab({
             Total: {ingredientes.length} ingredientes
           </p>
         </div>
-        <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto">
+        <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto bg-green-500 hover:bg-green-600">
           <Plus className="h-4 w-4" />
           Nuevo Ingrediente
         </Button>

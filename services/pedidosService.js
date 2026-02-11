@@ -11,7 +11,7 @@ const mapearEstadoFrontendABackend = (estadoFrontend) => {
   const mapeo = {
     'recibido': 'RECIBIDO',
     'en_cocina': 'EN_PREPARACION',
-    'listo': 'EN_PREPARACION', // No existe LISTO en BD, se mapea a EN_PREPARACION
+    'listo': 'LISTO', // Estado LISTO ahora es real
     'entregado': 'ENTREGADO',
     'cancelado': 'CANCELADO'
   };
@@ -23,6 +23,7 @@ const mapearEstadoBackendAFrontend = (estadoBackend) => {
   const mapeo = {
     'RECIBIDO': 'recibido',
     'EN_PREPARACION': 'en_cocina',
+    'LISTO': 'listo', // Estado LISTO ahora es real
     'ENTREGADO': 'entregado',
     'CANCELADO': 'cancelado'
   };
@@ -88,9 +89,20 @@ const transformarPedidoBackendAFrontend = (pedidoBackend, articulos = []) => {
     return mapeo[origenNormalizado] || 'mostrador';
   };
 
+  // Mapear medio_pago del backend al frontend (EFECTIVO -> efectivo)
+  const mapearMedioPagoBackendAFrontend = (medio) => {
+    if (!medio || typeof medio !== 'string') return null;
+    const m = medio.toUpperCase();
+    const map = { 'EFECTIVO': 'efectivo', 'DEBITO': 'debito', 'CREDITO': 'credito', 'TRANSFERENCIA': 'transferencia', 'MERCADOPAGO': 'mercadopago' };
+    return map[m] || medio.toLowerCase();
+  };
+
   return {
     id: String(pedidoBackend.id),
     clienteNombre: pedidoBackend.cliente_nombre || 'Cliente sin nombre',
+    telefono: pedidoBackend.cliente_telefono || '',
+    email: pedidoBackend.cliente_email || null,
+    direccion: pedidoBackend.cliente_direccion || '',
     origen: mapearOrigenBackendAFrontend(pedidoBackend.origen_pedido || 'mostrador'),
     tipo: pedidoBackend.horario_entrega ? 'programado' : 'ya',
     horaProgramada: pedidoBackend.horario_entrega 
@@ -122,9 +134,17 @@ const transformarPedidoBackendAFrontend = (pedidoBackend, articulos = []) => {
       : (pedidoBackend.medio_pago && pedidoBackend.medio_pago !== null && pedidoBackend.medio_pago !== '' ? 'paid' : 'pending'),
     estado: mapearEstadoBackendAFrontend(pedidoBackend.estado),
     tipoEntrega: mapearModalidadBackendAFrontend(pedidoBackend.modalidad),
+    medioPago: mapearMedioPagoBackendAFrontend(pedidoBackend.medio_pago),
     observaciones: pedidoBackend.observaciones || '',
     subtotal: parseFloat(pedidoBackend.subtotal) || 0,
-    ivaTotal: parseFloat(pedidoBackend.iva_total) || 0
+    ivaTotal: parseFloat(pedidoBackend.iva_total) || 0,
+    // Campos nuevos para automatización
+    horaInicioPreparacion: pedidoBackend.hora_inicio_preparacion ? new Date(pedidoBackend.hora_inicio_preparacion).getTime() : null,
+    tiempoEstimadoPreparacion: pedidoBackend.tiempo_estimado_preparacion || 15,
+    horaEsperadaFinalizacion: pedidoBackend.hora_esperada_finalizacion ? new Date(pedidoBackend.hora_esperada_finalizacion).getTime() : null,
+    horaListo: pedidoBackend.hora_listo ? new Date(pedidoBackend.hora_listo).getTime() : null,
+    prioridad: pedidoBackend.prioridad ? pedidoBackend.prioridad.toLowerCase() : 'normal',
+    transicionAutomatica: pedidoBackend.transicion_automatica !== undefined ? pedidoBackend.transicion_automatica : true
   };
 };
 
@@ -220,6 +240,18 @@ const transformarPedidoFrontendABackend = (pedidoFrontend) => {
         observaciones: item.observaciones || null
       };
     }) || []
+  };
+};
+
+/**
+ * Arma el payload de actualización: formato plano que espera el backend.
+ * El backend requiere: articulos (obligatorio) + campos pedido (cliente_nombre, modalidad, etc.)
+ */
+const buildActualizarPedidoPayload = (pedidoFrontend) => {
+  const full = transformarPedidoFrontendABackend(pedidoFrontend);
+  return {
+    ...full,
+    articulos: full.articulos || []
   };
 };
 
@@ -328,6 +360,72 @@ export const pedidosService = {
       return {
         success: false,
         error: error.response?.data?.mensaje || 'Error al obtener pedido'
+      };
+    }
+  },
+
+  /**
+   * Obtener los IDs de los productos más solicitados en pedidos recientes
+   * (para la pestaña "ÚLTIMOS" en nuevo pedido)
+   * @param {number} limiteProductos - Cantidad de productos a devolver (default 9)
+   * @param {number} dias - Últimos N días de pedidos (default 7)
+   * @param {number} maxPedidos - Máximo de pedidos a consultar para no saturar (default 25)
+   */
+  obtenerProductosMasSolicitados: async (limiteProductos = 9, dias = 7, maxPedidos = 25) => {
+    try {
+      const hasta = new Date();
+      const desde = new Date();
+      desde.setDate(desde.getDate() - dias);
+      const fecha_desde = desde.getFullYear() + '-' + String(desde.getMonth() + 1).padStart(2, '0') + '-' + String(desde.getDate()).padStart(2, '0');
+      const fecha_hasta = hasta.getFullYear() + '-' + String(hasta.getMonth() + 1).padStart(2, '0') + '-' + String(hasta.getDate()).padStart(2, '0');
+
+      const params = new URLSearchParams();
+      params.append('fecha_desde', fecha_desde);
+      params.append('fecha_hasta', fecha_hasta);
+
+      const url = API_CONFIG.ENDPOINTS.PEDIDOS.LIST + '?' + params.toString();
+      const response = await apiRequest.get(url);
+
+      if (response.data?.error === true) {
+        return { success: false, error: response.data.mensaje, data: [] };
+      }
+
+      const pedidosBackend = response.data.data || response.data || [];
+      const pedidosLimitados = Array.isArray(pedidosBackend) ? pedidosBackend.slice(0, maxPedidos) : [];
+
+      const conteoPorArticulo = {};
+
+      await Promise.all(
+        pedidosLimitados.map(async (pedido) => {
+          try {
+            const detalle = await apiRequest.get(API_CONFIG.ENDPOINTS.PEDIDOS.BY_ID(pedido.id));
+            const data = detalle.data?.data || detalle.data || {};
+            const articulos = data.articulos || [];
+            articulos.forEach((item) => {
+              const id = item.articulo_id ?? item.articuloId;
+              const cantidad = parseInt(item.cantidad, 10) || 1;
+              if (id != null) {
+                conteoPorArticulo[id] = (conteoPorArticulo[id] || 0) + cantidad;
+              }
+            });
+          } catch (err) {
+            console.warn('Error al obtener ítems del pedido', pedido.id, err);
+          }
+        })
+      );
+
+      const ordenados = Object.entries(conteoPorArticulo)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limiteProductos)
+        .map(([id]) => parseInt(id, 10));
+
+      return { success: true, data: ordenados };
+    } catch (error) {
+      console.error('Error al obtener productos más solicitados:', error);
+      return {
+        success: false,
+        error: error.response?.data?.mensaje || error.message,
+        data: []
       };
     }
   },
@@ -596,7 +694,54 @@ export const pedidosService = {
   },
 
   /**
-   * Actualizar estado de pago de un pedido
+   * Cobrar pedido existente (usa endpoint POST /pedidos/:id/cobrar).
+   * Crea UNA venta, marca pedido como PAGADO, idempotente (no duplica si ya cobrado).
+   */
+  cobrarPedido: async (pedidoId, { medioPago = 'efectivo', tipoFactura = null, cuentaId = null } = {}) => {
+    try {
+      const medioPagoBackend = mapearMedioPagoFrontendABackend(medioPago) || 'EFECTIVO';
+      const response = await apiRequest.post(
+        API_CONFIG.ENDPOINTS.PEDIDOS.COBRAR(pedidoId),
+        {
+          medio_pago: medioPagoBackend,
+          tipo_factura: tipoFactura || null,
+          cuenta_id: cuentaId || null
+        }
+      );
+
+      if (response.data?.error === true || response.data?.success === false) {
+        return {
+          success: false,
+          error: response.data.mensaje || response.data.message || 'Error al cobrar pedido',
+          code: response.data.code
+        };
+      }
+
+      const data = response.data.data || response.data;
+      const pedidoBackend = data.pedido || data;
+      const articulos = pedidoBackend.articulos || [];
+      const pedidoFrontend = transformarPedidoBackendAFrontend(pedidoBackend, articulos);
+
+      return {
+        success: true,
+        data: {
+          pedido: pedidoFrontend,
+          venta_id: data.venta_id,
+          pagado: true
+        }
+      };
+    } catch (error) {
+      const errData = error.response?.data;
+      return {
+        success: false,
+        error: errData?.mensaje || errData?.message || error.message || 'Error al cobrar pedido',
+        code: errData?.code
+      };
+    }
+  },
+
+  /**
+   * Actualizar estado de pago de un pedido (legacy - preferir cobrarPedido para cobrar)
    */
   actualizarEstadoPagoPedido: async (id, estadoPago, medioPago = null) => {
     try {
@@ -632,6 +777,166 @@ export const pedidosService = {
       return {
         success: false,
         error: error.response?.data?.mensaje || error.message || 'Error al actualizar estado de pago'
+      };
+    }
+  },
+
+  /**
+   * Obtener información de capacidad de cocina
+   */
+  obtenerCapacidadCocina: async () => {
+    try {
+      const response = await apiRequest.get(API_CONFIG.ENDPOINTS.PEDIDOS.CAPACIDAD);
+
+      if (response.data?.error === true) {
+        return {
+          success: false,
+          error: response.data.mensaje || 'Error al obtener capacidad'
+        };
+      }
+
+      return {
+        success: true,
+        data: response.data.data || response.data
+      };
+    } catch (error) {
+      console.error('Error al obtener capacidad:', error);
+      return {
+        success: false,
+        error: error.response?.data?.mensaje || error.message || 'Error al obtener capacidad'
+      };
+    }
+  },
+
+  /**
+   * Obtener datos de comanda para imprimir
+   */
+  obtenerComandaParaImprimir: async (id) => {
+    try {
+      const response = await apiRequest.get(API_CONFIG.ENDPOINTS.PEDIDOS.COMANDA_PRINT(id));
+
+      if (response.data?.error === true) {
+        return {
+          success: false,
+          error: response.data.mensaje || 'Error al obtener comanda'
+        };
+      }
+
+      return {
+        success: true,
+        data: response.data.data || response.data
+      };
+    } catch (error) {
+      console.error('Error al obtener comanda para imprimir:', error);
+      return {
+        success: false,
+        error: error.response?.data?.mensaje || error.message || 'Error al obtener comanda'
+      };
+    }
+  },
+
+  /**
+   * Obtener datos de ticket/factura para imprimir
+   */
+  obtenerTicketParaImprimir: async (id) => {
+    try {
+      const response = await apiRequest.get(API_CONFIG.ENDPOINTS.PEDIDOS.TICKET_PRINT(id));
+
+      if (response.data?.error === true) {
+        return {
+          success: false,
+          error: response.data.mensaje || 'Error al obtener ticket'
+        };
+      }
+
+      return {
+        success: true,
+        data: response.data.data || response.data
+      };
+    } catch (error) {
+      console.error('Error al obtener ticket para imprimir:', error);
+      return {
+        success: false,
+        error: error.response?.data?.mensaje || error.message || 'Error al obtener ticket'
+      };
+    }
+  },
+
+  /**
+   * Actualizar un pedido existente.
+   * Siempre envía payload completo: { pedido: {...}, items: [...] }
+   */
+  actualizarPedido: async (id, pedidoData) => {
+    try {
+      const payload = buildActualizarPedidoPayload(pedidoData);
+      console.log('📝 Actualizando pedido:', id, payload);
+
+      const response = await apiRequest.put(
+        API_CONFIG.ENDPOINTS.PEDIDOS.BY_ID(id),
+        payload
+      );
+
+      console.log('📝 Respuesta del backend:', response.data);
+
+      if (response.data?.error === true || response.data?.success === false) {
+        console.error('❌ Error del backend completo:', JSON.stringify(response.data, null, 2));
+        
+        const errorData = response.data.data || response.data;
+        
+        if (errorData?.errors && Array.isArray(errorData.errors)) {
+          console.error('❌ Errores de validación detallados:', errorData.errors);
+          const erroresDetalle = errorData.errors.map(e => `${e.path || 'campo'}: ${e.message}`).join(', ');
+          return {
+            success: false,
+            error: `Error de validación: ${erroresDetalle}`,
+            errores: errorData.errors
+          };
+        }
+        
+        return {
+          success: false,
+          error: response.data.mensaje || errorData?.mensaje || errorData?.message || 'Error al actualizar pedido',
+          errores: errorData?.errors
+        };
+      }
+
+      const raw = response.data.data || response.data;
+      const pedidoBackend = raw.pedido ?? raw;
+      const articulos = Array.isArray(raw.articulos)
+        ? raw.articulos
+        : (Array.isArray(pedidoBackend.articulos) ? pedidoBackend.articulos : []);
+      const pedidoFrontend = transformarPedidoBackendAFrontend(pedidoBackend, articulos);
+      
+      console.log('✅ Pedido actualizado exitosamente:', pedidoFrontend);
+      
+      return {
+        success: true,
+        data: pedidoFrontend,
+        mensaje: response.data.message || 'Pedido actualizado exitosamente'
+      };
+    } catch (error) {
+      console.error('❌ Error al actualizar pedido:', error);
+      
+      if (error.response?.data?.errors) {
+        console.error('❌ Errores de validación:', error.response.data.errors);
+        const erroresDetalle = error.response.data.errors.map(e => `${e.path || 'campo'}: ${e.message}`).join(', ');
+        return {
+          success: false,
+          error: `Error de validación: ${erroresDetalle}`,
+          errores: error.response.data.errors
+        };
+      }
+      
+      let errorMessage = 'Error al actualizar pedido';
+      if (error.response?.data?.mensaje) {
+        errorMessage = error.response.data.mensaje;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
+      return {
+        success: false,
+        error: errorMessage
       };
     }
   }

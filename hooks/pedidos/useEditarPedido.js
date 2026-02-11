@@ -5,25 +5,10 @@ import { pedidosService } from '../../services/pedidosService';
 import { adicionalesService } from '../../services/adicionalesService';
 import { toast } from '@/hooks/use-toast';
 
-// Patrones para validación: sin símbolos raros (email se valida aparte)
-const SOLO_LETRAS_ESPACIOS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-']*$/; // nombre: letras, espacios, guión, apóstrofe
-const SOLO_NUMEROS_TELEFONO = /^\+?[\d\s\-()]*$/; // teléfono: + opcional, luego solo dígitos, espacios, guiones, paréntesis
-const DIRECCION_SEGURA = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.,\-'/°]*$/; // calle, edificio, piso, observaciones (guión al final = literal)
-const NUMERO_ALTURA = /^[a-zA-Z0-9\s\-°]*$/; // número/altura (ej. "1234" o "1234 B")
-
-// Esquema de validación para el cliente
+// Esquema de validación para el cliente (mismo que useNuevoPedido)
 const clienteSchema = z.object({
-  nombre: z
-    .string()
-    .min(2, 'El nombre debe tener al menos 2 caracteres')
-    .max(100, 'El nombre es demasiado largo')
-    .regex(SOLO_LETRAS_ESPACIOS, 'El nombre solo puede contener letras, espacios, guiones o apóstrofes'),
-  telefono: z
-    .string()
-    .min(1, 'El teléfono es requerido')
-    .max(20, 'El teléfono es demasiado largo')
-    .regex(SOLO_NUMEROS_TELEFONO, 'El teléfono solo puede contener números, espacios, guiones o paréntesis')
-    .refine((v) => (v.replace(/\D/g, '').length >= 6), 'El teléfono debe tener al menos 6 dígitos'),
+  nombre: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(100, 'El nombre es demasiado largo'),
+  telefono: z.string().min(1, 'El teléfono es requerido').max(20, 'El teléfono es demasiado largo'),
   email: z.preprocess(
     (val) => {
       if (!val || (typeof val === 'string' && val.trim() === '')) {
@@ -33,15 +18,13 @@ const clienteSchema = z.object({
     },
     z.string().email('Email inválido').optional()
   ),
-  direccion: z
-    .object({
-      calle: z.string().max(200).regex(DIRECCION_SEGURA, 'Caracteres no permitidos en calle').optional().or(z.literal('')),
-      numero: z.string().max(30).regex(NUMERO_ALTURA, 'Caracteres no permitidos en número').optional().or(z.literal('')),
-      edificio: z.string().max(100).regex(DIRECCION_SEGURA, 'Caracteres no permitidos').optional().or(z.literal('')),
-      piso: z.string().max(50).regex(DIRECCION_SEGURA, 'Caracteres no permitidos').optional().or(z.literal('')),
-      observaciones: z.string().max(300).regex(DIRECCION_SEGURA, 'Caracteres no permitidos').optional().or(z.literal('')),
-    })
-    .optional(),
+  direccion: z.object({
+    calle: z.string().optional(),
+    numero: z.string().optional(),
+    edificio: z.string().optional(),
+    piso: z.string().optional(),
+    observaciones: z.string().optional(),
+  }).optional(),
 });
 
 // Esquema de validación para el carrito
@@ -69,26 +52,23 @@ const pedidoSchema = z.object({
   descuento: z.number().min(0).max(100).optional(),
 });
 
-export const useNuevoPedido = () => {
+export const useEditarPedido = () => {
   // Estados del modal
   const [isOpen, setIsOpen] = useState(false);
+  const [pedidoOriginal, setPedidoOriginal] = useState(null);
   const [pasoModal, setPasoModal] = useState(1);
 
   // Paso 1: Armar Pedido
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [carrito, setCarrito] = useState([]);
-  const CATEGORIA_ULTIMOS = 'ultimos';
-
-  // Productos más solicitados en últimos pedidos (pestaña ÚLTIMOS)
-  const [productosMasSolicitadosIds, setProductosMasSolicitadosIds] = useState([]);
-  const [loadingProductosMasSolicitados, setLoadingProductosMasSolicitados] = useState(false);
   
   // Datos desde el backend
   const [categorias, setCategorias] = useState([]);
   const [productos, setProductos] = useState([]);
   const [loadingCategorias, setLoadingCategorias] = useState(true);
   const [loadingProductos, setLoadingProductos] = useState(true);
+  const [loadingPedido, setLoadingPedido] = useState(false);
 
   // Modal de extras
   const [modalExtras, setModalExtras] = useState(false);
@@ -122,7 +102,7 @@ export const useNuevoPedido = () => {
   const [horaProgramada, setHoraProgramada] = useState('');
   const [medioPago, setMedioPago] = useState('efectivo');
   const [estadoPago, setEstadoPago] = useState('pending');
-  const [descuento, setDescuento] = useState(0); // Porcentaje de descuento
+  const [descuento, setDescuento] = useState(0);
 
   // Cargar categorías y productos desde el backend
   useEffect(() => {
@@ -133,8 +113,6 @@ export const useNuevoPedido = () => {
         const categoriasResponse = await articulosService.obtenerCategorias();
         if (categoriasResponse.success && Array.isArray(categoriasResponse.data)) {
           setCategorias(categoriasResponse.data);
-          // Seleccionar la primera categoría por defecto
-          // eslint-disable-next-line react-hooks/exhaustive-deps
           if (categoriasResponse.data.length > 0 && !categoriaSeleccionada) {
             const primeraCategoria = categoriasResponse.data[0];
             const categoriaId = primeraCategoria.id || primeraCategoria.categoria_id;
@@ -158,11 +136,8 @@ export const useNuevoPedido = () => {
       try {
         const productosResponse = await articulosService.obtenerArticulos({ disponible: true });
         if (productosResponse.success && Array.isArray(productosResponse.data)) {
-          // Transformar productos del backend al formato del frontend
-          // Y cargar adicionales asignados a cada artículo
           const productosTransformados = await Promise.all(
             productosResponse.data.map(async (p) => {
-              // Cargar adicionales asignados a este artículo
               let extrasDisponibles = [];
               try {
                 const adicionalesResponse = await adicionalesService.obtenerAdicionalesPorArticulo(p.id);
@@ -182,7 +157,7 @@ export const useNuevoPedido = () => {
                 nombre: p.nombre,
                 precio: parseFloat(p.precio) || 0,
                 categoria: p.categoria_id,
-                imagen_url: p.imagen_url, // ✅ Usar imagen_url para Cloudinary
+                imagen_url: p.imagen_url,
                 extrasDisponibles: extrasDisponibles
               };
             })
@@ -204,47 +179,91 @@ export const useNuevoPedido = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Cargar productos más solicitados cuando se abre el modal (para pestaña ÚLTIMOS)
-  useEffect(() => {
-    if (!isOpen) return;
-    let cancelled = false;
-    setLoadingProductosMasSolicitados(true);
-    pedidosService
-      .obtenerProductosMasSolicitados(9, 7, 25)
-      .then((res) => {
-        if (!cancelled && res.success && Array.isArray(res.data)) {
-          setProductosMasSolicitadosIds(res.data);
+  // Cargar datos del pedido cuando se abre el modal
+  const cargarPedido = useCallback(async (pedidoId) => {
+    setLoadingPedido(true);
+    try {
+      const response = await pedidosService.obtenerPedidoPorId(pedidoId);
+      if (response.success && response.data) {
+        const pedido = response.data;
+        setPedidoOriginal(pedido);
+
+        // Verificar que no esté ENTREGADO o CANCELADO
+        if (pedido.estado === 'entregado' || pedido.estado === 'cancelado') {
+          toast.error('No se puede editar un pedido entregado o cancelado');
+          setIsOpen(false);
+          return;
         }
-      })
-      .catch(() => {
-        if (!cancelled) setProductosMasSolicitadosIds([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingProductosMasSolicitados(false);
-      });
-    return () => { cancelled = true; };
-  }, [isOpen]);
+
+        // Cargar datos del pedido en el formulario
+        setCliente({
+          nombre: pedido.clienteNombre || '',
+          telefono: pedido.telefono || '',
+          email: pedido.email || '',
+          direccion: {
+            calle: pedido.direccion?.split(',')[0]?.trim() || '',
+            numero: pedido.direccion?.split(',')[1]?.trim() || '',
+            edificio: '',
+            piso: '',
+            observaciones: ''
+          }
+        });
+        
+        setTipoEntrega(pedido.tipoEntrega || 'retiro');
+        setOrigen(pedido.origen || 'mostrador');
+        setTipoPedido(pedido.tipo || 'ya');
+        setHoraProgramada(pedido.horaProgramada || '');
+        setMedioPago(pedido.medioPago ?? 'efectivo');
+        setEstadoPago(pedido.paymentStatus || 'pending');
+        setDescuento(0); // Descuento no se almacena en el pedido
+
+        // Transformar items del pedido al formato del carrito
+        const itemsCarrito = (pedido.items || []).map((item, index) => {
+          // Extraer extras/personalizaciones (asegurar que sea array)
+          const rawExtras = item.extras ?? item.personalizaciones?.extras;
+          const extras = Array.isArray(rawExtras) ? rawExtras : [];
+          const extrasSeleccionados = extras.map(extra => ({
+            id: extra.id || extra.adicional_id,
+            nombre: extra.nombre || extra.adicional_nombre || extra.nombre,
+            precio: parseFloat(extra.precio || extra.precio_extra || 0)
+          }));
+
+          return {
+            id: item.id || item.articulo_id,
+            nombre: item.nombre || item.articulo_nombre,
+            precio: parseFloat(item.precio) || 0,
+            cantidad: parseInt(item.cantidad) || 1,
+            extrasSeleccionados: extrasSeleccionados,
+            observacion: item.observaciones || null,
+            carritoId: `edit-${pedido.id}-${index}-${Date.now()}`
+          };
+        });
+
+        setCarrito(itemsCarrito);
+        setPasoModal(1);
+      } else {
+        toast.error(response.error || 'Error al cargar el pedido');
+        setIsOpen(false);
+      }
+    } catch (error) {
+      console.error('Error al cargar pedido:', error);
+      toast.error('Error al cargar el pedido');
+      setIsOpen(false);
+    } finally {
+      setLoadingPedido(false);
+    }
+  }, []);
 
   // Filtrar productos
   const productosFiltrados = useMemo(() => {
     if (!categoriaSeleccionada) return [];
-    
-    if (categoriaSeleccionada === CATEGORIA_ULTIMOS) {
-      const lista = productosMasSolicitadosIds
-        .map(id => productos.find(p => p.id === id))
-        .filter(Boolean);
-      if (busquedaProducto.trim() === '') return lista;
-      return lista.filter(p =>
-        p.nombre.toLowerCase().includes(busquedaProducto.toLowerCase())
-      );
-    }
     
     return productos.filter(p => {
       const matchCategoria = p.categoria === categoriaSeleccionada;
       const matchBusqueda = p.nombre.toLowerCase().includes(busquedaProducto.toLowerCase());
       return matchCategoria && matchBusqueda;
     });
-  }, [productos, categoriaSeleccionada, busquedaProducto, productosMasSolicitadosIds]);
+  }, [productos, categoriaSeleccionada, busquedaProducto]);
 
   // Calcular subtotal
   const calcularSubtotal = useCallback(() => {
@@ -283,6 +302,7 @@ export const useNuevoPedido = () => {
   // Resetear modal
   const resetearModal = useCallback(() => {
     setPasoModal(1);
+    setPedidoOriginal(null);
     if (categorias.length > 0) {
       setCategoriaSeleccionada(categorias[0].id);
     }
@@ -309,12 +329,28 @@ export const useNuevoPedido = () => {
     setDescuento(0);
   }, [categorias]);
 
-  // Agregar producto al carrito
+  // Abrir modal con pedido
+  const abrirModal = useCallback((pedido) => {
+    if (!pedido || !pedido.id) {
+      toast.error('Pedido inválido');
+      return;
+    }
+
+    // Verificar que no esté ENTREGADO o CANCELADO
+    if (pedido.estado === 'entregado' || pedido.estado === 'cancelado') {
+      toast.error('No se puede editar un pedido entregado o cancelado');
+      return;
+    }
+
+    setIsOpen(true);
+    cargarPedido(pedido.id);
+  }, [cargarPedido]);
+
+  // Agregar producto al carrito (misma lógica que useNuevoPedido)
   const agregarProductoConExtras = useCallback((producto, cantidad) => {
     const tieneExtras = producto.extrasDisponibles && producto.extrasDisponibles.length > 0;
 
     if (tieneExtras) {
-      // ✅ Si tiene extras, SIEMPRE abrir modal (sin importar la cantidad)
       setProductoParaExtras(producto);
       setCantidadProducto(cantidad);
       setTotalUnidades(cantidad);
@@ -325,7 +361,6 @@ export const useNuevoPedido = () => {
       setEditandoItemCarrito(null);
       setModalExtras(true);
     } else {
-      // Si NO tiene extras, agregar directamente al carrito
       const nuevoItem = {
         ...producto,
         cantidad: cantidad,
@@ -334,6 +369,12 @@ export const useNuevoPedido = () => {
         carritoId: Date.now() + Math.random()
       };
       setCarrito(prev => [...prev, nuevoItem]);
+      
+      toast({
+        title: "✅ Producto agregado",
+        description: `${cantidad} × ${producto.nombre}`,
+        duration: 2000,
+      });
     }
   }, []);
 
@@ -381,7 +422,7 @@ export const useNuevoPedido = () => {
     setUnidadesConfiguradas([]);
   }, []);
 
-  // Toggle extra (agregar o quitar de la lista)
+  // Toggle extra
   const toggleExtra = useCallback((extra) => {
     setExtrasSeleccionados(prev => {
       const existe = prev.find(e => e.id === extra.id);
@@ -396,7 +437,6 @@ export const useNuevoPedido = () => {
   // Confirmar extras y agregar/actualizar en carrito
   const confirmarExtras = useCallback(() => {
     if (editandoItemCarrito) {
-      // Estamos editando un item existente
       setCarrito(prev => prev.map(item =>
         item.carritoId === editandoItemCarrito
           ? { 
@@ -408,8 +448,6 @@ export const useNuevoPedido = () => {
       ));
       cerrarModalExtras();
     } else {
-      // Agregando nuevos productos
-      // Guardar la configuración de esta unidad
       const nuevaUnidad = {
         producto: productoParaExtras,
         extras: [...extrasSeleccionados],
@@ -417,19 +455,15 @@ export const useNuevoPedido = () => {
       };
       const unidadesActualizadas = [...unidadesConfiguradas, nuevaUnidad];
 
-      // Verificar si hay más unidades por configurar
       if (unidadActual < totalUnidades) {
-        // Hay más unidades, preparar para la siguiente
         setUnidadesConfiguradas(unidadesActualizadas);
         setUnidadActual(unidadActual + 1);
-        setExtrasSeleccionados([]); // Limpiar selección para la siguiente unidad
-        setObservacionItem(''); // Limpiar observación para la siguiente unidad
-        // El modal sigue abierto para la siguiente unidad
+        setExtrasSeleccionados([]);
+        setObservacionItem('');
       } else {
-        // Esta era la última unidad, agregar todas al carrito
         const nuevosItems = unidadesActualizadas.map(unidad => ({
           ...unidad.producto,
-          cantidad: 1, // Cada unidad es un item separado
+          cantidad: 1,
           extrasSeleccionados: unidad.extras,
           observacion: unidad.observacion,
           carritoId: Date.now() + Math.random()
@@ -440,41 +474,13 @@ export const useNuevoPedido = () => {
     }
   }, [editandoItemCarrito, extrasSeleccionados, observacionItem, productoParaExtras, unidadesConfiguradas, unidadActual, totalUnidades, cerrarModalExtras]);
 
-  // Validar datos del paso 2 (cliente) para poder avanzar al resumen. Devuelve { valid, mensaje }.
-  const validarPasoCliente = useCallback((clienteActual, tipoEntregaActual) => {
-    const datosCliente = {
-      nombre: clienteActual.nombre,
-      telefono: clienteActual.telefono,
-      email: clienteActual.email && clienteActual.email.trim() !== '' ? clienteActual.email : undefined,
-      direccion: clienteActual.direccion,
-    };
-    const result = clienteSchema.safeParse(datosCliente);
-    if (!result.success) {
-      const issues = result.error.issues ?? result.error.errors ?? [];
-      const primerError = issues[0];
-      const camposTraducidos = {
-        nombre: 'Nombre',
-        telefono: 'Teléfono',
-        email: 'Email',
-        calle: 'Calle',
-        numero: 'Número',
-      };
-      let mensaje = primerError?.message || 'Revisá los datos del formulario.';
-      if (primerError?.path?.length) {
-        const campo = primerError.path[primerError.path.length - 1];
-        const campoTraducido = camposTraducidos[campo] ?? campo;
-        mensaje = `${campoTraducido}: ${primerError.message}`;
-      }
-      return { valid: false, mensaje };
+  // Actualizar pedido
+  const actualizarPedido = useCallback(async (onSuccess) => {
+    if (!pedidoOriginal || !pedidoOriginal.id) {
+      toast.error('No hay pedido seleccionado');
+      return null;
     }
-    if (tipoEntregaActual === 'delivery' && !(clienteActual.direccion?.calle?.trim())) {
-      return { valid: false, mensaje: 'Calle: La calle es requerida para delivery.' };
-    }
-    return { valid: true };
-  }, []);
 
-  // Crear pedido
-  const crearPedido = useCallback(async (onSuccess) => {
     // Validar con Zod
     try {
       const datosValidar = {
@@ -497,39 +503,40 @@ export const useNuevoPedido = () => {
       pedidoSchema.parse(datosValidar);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        // Zod 3/4 usa .issues (no .errors)
-        const issues = error.issues ?? error.errors ?? [];
-        const primerError = issues.length > 0 ? issues[0] : null;
-        const camposTraducidos = {
-          nombre: 'Nombre',
-          telefono: 'Teléfono',
-          email: 'Email',
-          calle: 'Calle',
-          numero: 'Número',
-          cliente: 'Cliente',
-          carrito: 'Carrito',
-          tipoEntrega: 'Tipo de entrega',
-          origen: 'Origen',
-          tipoPedido: 'Tipo de pedido',
-          medioPago: 'Medio de pago',
-          estadoPago: 'Estado de pago',
-          descuento: 'Descuento',
-        };
-        let mensaje = primerError?.message || 'Revisá los datos del formulario.';
-        if (primerError?.path?.length) {
-          const campo = primerError.path[primerError.path.length - 1];
-          const campoTraducido = camposTraducidos[campo] ?? campo;
-          mensaje = `${campoTraducido}: ${primerError.message}`;
+        const primerError = error.errors && error.errors.length > 0 ? error.errors[0] : null;
+        if (primerError) {
+          let mensaje = primerError.message;
+          if (primerError.path && primerError.path.length > 0) {
+            const campo = primerError.path[primerError.path.length - 1];
+            const camposTraducidos = {
+              'nombre': 'Nombre',
+              'telefono': 'Teléfono',
+              'email': 'Email',
+              'calle': 'Calle',
+              'numero': 'Número',
+              'cliente': 'Cliente',
+              'carrito': 'Carrito',
+              'tipoEntrega': 'Tipo de entrega',
+              'origen': 'Origen',
+              'tipoPedido': 'Tipo de pedido',
+              'medioPago': 'Medio de pago',
+              'estadoPago': 'Estado de pago',
+              'descuento': 'Descuento'
+            };
+            const campoTraducido = camposTraducidos[campo] || campo;
+            mensaje = `${campoTraducido}: ${primerError.message}`;
+          }
+          toast.error(mensaje || 'Error de validación');
+        } else {
+          toast.error('Error de validación');
         }
-        toast.error(mensaje);
         return null;
       }
-      console.error('Error al validar pedido:', error);
       toast.error('Error de validación');
       return null;
     }
 
-    // Preparar datos del pedido para el backend
+    // Preparar datos del pedido para el backend (mantener estado original)
     const direccionCompleta = [
       cliente.direccion.calle,
       cliente.direccion.numero,
@@ -552,7 +559,6 @@ export const useNuevoPedido = () => {
       origen: origen,
       tipo: tipoPedido,
       horaProgramada: tipoPedido === 'programado' ? horaProgramada : null,
-      timestamp: Date.now(),
       items: carrito.map(item => {
         const precioBase = parseFloat(item.precio) || 0;
         const cantidad = parseInt(item.cantidad) || 1;
@@ -561,107 +567,56 @@ export const useNuevoPedido = () => {
 
         return {
           id: item.id,
-          articulo_id: item.id, // También incluir articulo_id para compatibilidad
+          articulo_id: item.id,
           nombre: item.nombre,
-          articulo_nombre: item.nombre, // También incluir articulo_nombre para compatibilidad
+          articulo_nombre: item.nombre,
           cantidad: cantidad,
-          precio: precioBase, // Precio base del producto
+          precio: precioBase,
           subtotal: subtotalItem,
           extras: item.extrasSeleccionados || [],
-          observaciones: item.observacion || null // Corregido: usar observacion (sin 's')
+          observaciones: item.observacion || null
         };
       }),
       subtotal: calcularSubtotal() - calcularDescuento(),
       ivaTotal: calcularIVA(),
       total: calcularTotal(),
       paymentStatus: estadoPago,
-      estado: 'recibido',
+      // NO cambiar el estado - mantener el estado original
+      estado: pedidoOriginal.estado,
       tipoEntrega: tipoEntrega,
-      // Enviar el medio de pago seleccionado siempre que esté disponible
-      // Si no hay medio de pago seleccionado y el estado es "paid", usar 'efectivo' por defecto
-      // IMPORTANTE: El medio de pago se guarda siempre que esté seleccionado, independientemente del estado de pago
       medioPago: medioPago ? medioPago : (estadoPago === 'paid' ? 'efectivo' : null),
-      observaciones: ''
+      observaciones: pedidoOriginal.observaciones || ''
     };
 
-    // Log para depuración
-    console.log('📦 Creando pedido con datos:', {
-      medioPago: pedidoData.medioPago,
-      estadoPago: pedidoData.paymentStatus,
-      medioPagoOriginal: medioPago
-    });
-
     try {
-      // Crear pedido en el backend
-      const response = await pedidosService.crearPedido(pedidoData);
+      const response = await pedidosService.actualizarPedido(pedidoOriginal.id, pedidoData);
       
       if (response.success) {
-        const nuevoPedido = {
-          id: response.data.id,
-          clienteNombre: cliente.nombre,
-          origen: origen,
-          tipo: tipoPedido,
-          horaProgramada: tipoPedido === 'programado' ? horaProgramada : null,
-          timestamp: Date.now(),
-          items: carrito.map(item => {
-            const precioBase = parseFloat(item.precio) || 0;
-            const cantidad = parseInt(item.cantidad) || 1;
-            const precioExtras = (item.extrasSeleccionados || []).reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
-            const subtotalItem = (precioBase + precioExtras) * cantidad;
-            
-            return {
-              id: item.id,
-              articulo_id: item.id,
-              nombre: item.nombre,
-              cantidad: cantidad,
-              precio: precioBase + precioExtras,
-              subtotal: subtotalItem
-            };
-          }),
-          subtotal: calcularSubtotal() - calcularDescuento(),
-          ivaTotal: calcularIVA(),
-          descuento: calcularDescuento(),
-          total: calcularTotal(),
-          paymentStatus: estadoPago,
-          estado: 'recibido',
-          tipoEntrega: tipoEntrega,
-          medioPago: medioPago,
-          telefono: cliente.telefono,
-          email: cliente.email,
-          direccion: tipoEntrega === 'delivery' 
-            ? `${cliente.direccion.calle} ${cliente.direccion.numero}`.trim()
-            : ''
-        };
-
-        // Llamar callback antes de resetear
-        if (onSuccess) {
-          onSuccess(nuevoPedido);
+        toast.success('Pedido actualizado correctamente');
+        const pedidoDesdeBackend = response.data;
+        if (pedidoDesdeBackend && onSuccess) {
+          onSuccess({ ...pedidoDesdeBackend, id: String(pedidoDesdeBackend.id || pedidoOriginal.id) });
         }
-
-        // Resetear después de crear
         resetearModal();
         setIsOpen(false);
-        
-        // El toast se mostrará en el callback onSuccess si es necesario
-        // No mostrar aquí para evitar duplicados cuando viene del flujo de cobro
-        return nuevoPedido;
+        return pedidoDesdeBackend;
       } else {
-        toast.error(`Error al crear pedido: ${response.error || 'Error desconocido'}`);
+        toast.error(response.error || 'Error al actualizar el pedido');
         return null;
       }
     } catch (error) {
-      console.error('Error al crear pedido:', error);
-      const mensajeBackend = error.response?.data?.mensaje || error.response?.data?.message;
-      const mensaje = mensajeBackend || error.message || 'No se pudo crear el pedido. Intentá de nuevo.';
-      toast.error(`Error al crear pedido: ${mensaje}`);
+      console.error('Error al actualizar pedido:', error);
+      const msg = error.response?.data?.mensaje || error.response?.data?.message || error.message;
+      toast.error(msg || 'Error al actualizar el pedido');
       return null;
     }
-  }, [cliente, carrito, origen, tipoPedido, horaProgramada, estadoPago, tipoEntrega, medioPago, descuento, calcularSubtotal, calcularDescuento, calcularIVA, calcularTotal, resetearModal]);
+  }, [pedidoOriginal, cliente, carrito, origen, tipoPedido, horaProgramada, estadoPago, tipoEntrega, medioPago, descuento, calcularSubtotal, calcularDescuento, calcularIVA, calcularTotal, resetearModal]);
 
   return {
     // Estados
     isOpen,
     setIsOpen,
+    pedidoOriginal,
     pasoModal,
     setPasoModal,
     categoriaSeleccionada,
@@ -674,7 +629,7 @@ export const useNuevoPedido = () => {
     productos,
     loadingCategorias,
     loadingProductos,
-    loadingProductosMasSolicitados,
+    loadingPedido,
     modalExtras,
     setModalExtras,
     productoParaExtras,
@@ -716,6 +671,8 @@ export const useNuevoPedido = () => {
     calcularIVA,
     calcularTotal,
     resetearModal,
+    abrirModal,
+    cargarPedido,
     agregarProductoConExtras,
     modificarCantidad,
     eliminarDelCarrito,
@@ -723,8 +680,8 @@ export const useNuevoPedido = () => {
     cerrarModalExtras,
     toggleExtra,
     confirmarExtras,
-    crearPedido,
-    validarPasoCliente,
+    actualizarPedido,
   };
 };
+
 

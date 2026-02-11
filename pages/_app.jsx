@@ -1,6 +1,7 @@
 import '../styles/globals.css';
 import { AuthProvider } from '../contexts/AuthContext';
 import { NotificationProvider } from '../contexts/NotificationContext';
+import { ConnectionStatusProvider } from '../contexts/ConnectionStatusContext';
 import { Toaster } from '@/components/ui/toaster';
 import Head from 'next/head';
 
@@ -16,8 +17,10 @@ function MyApp({ Component, pageProps }) {
 
       <NotificationProvider>
         <AuthProvider>
-          <Component {...pageProps} />
-          <Toaster />
+          <ConnectionStatusProvider>
+            <Component {...pageProps} />
+            <Toaster />
+          </ConnectionStatusProvider>
         </AuthProvider>
       </NotificationProvider>
     </>
