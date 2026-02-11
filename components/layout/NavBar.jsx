@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
 import { ROUTES } from '../../config/routes';
 import { ROLE_NAMES, ROLE_ICONS } from '../../config/api';
-import { Menu, LogOut, Home, Package, User, Settings, ChevronDown, Plus, ChevronRight, CreditCard } from 'lucide-react';
+import { Menu, LogOut, Home, Package, User, Settings, ChevronDown, Plus, ChevronRight, CreditCard, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 import Image from 'next/image';
 import {
   DropdownMenu,
@@ -106,6 +106,20 @@ export function NavBar() {
                 <span className="flex items-center gap-2">
                   <Package className="h-4 w-4" />
                   Inventario
+                </span>
+              </Link>
+
+              <Link href={ROUTES.VENTAS} className={navLinkClasses(ROUTES.VENTAS)}>
+                <span className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Ventas
+                </span>
+              </Link>
+
+              <Link href={ROUTES.GASTOS} className={navLinkClasses(ROUTES.GASTOS)}>
+                <span className="flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4" />
+                  Gastos
                 </span>
               </Link>
             </nav>
@@ -249,6 +263,45 @@ export function NavBar() {
                   >
                     <Package className="h-5 w-5" />
                     Inventario
+                  </Link>
+
+                  <Link
+                    href={ROUTES.VENTAS}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${
+                      router.pathname === ROUTES.VENTAS
+                        ? 'bg-blue-700 text-white'
+                        : 'text-blue-200 hover:text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    <TrendingUp className="h-5 w-5" />
+                    Ventas
+                  </Link>
+
+                  <Link
+                    href={ROUTES.GASTOS}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${
+                      router.pathname === ROUTES.GASTOS
+                        ? 'bg-blue-700 text-white'
+                        : 'text-blue-200 hover:text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    <TrendingDown className="h-5 w-5" />
+                    Gastos
+                  </Link>
+
+                  <Link
+                    href={ROUTES.FONDOS}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${
+                      router.pathname === ROUTES.FONDOS
+                        ? 'bg-blue-700 text-white'
+                        : 'text-blue-200 hover:text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    <Wallet className="h-5 w-5" />
+                    Fondos
                   </Link>
 
                   {/* Separador */}

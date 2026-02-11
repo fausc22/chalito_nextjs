@@ -29,11 +29,11 @@ function DashboardContent() {
   const modules = [
     {
       title: 'Ventas',
-      description: 'Punto de venta, facturación y comandas',
+      description: 'Historial de ventas e ingresos del negocio',
       icon: '💳',
-      href: null,
+      href: '/ventas',
       color: 'green',
-      disabled: true,
+      disabled: false,
     },
     {
       title: 'Pedidos',
@@ -54,18 +54,18 @@ function DashboardContent() {
     {
       title: 'Gastos',
       description: 'Registro y control de gastos operativos',
-      icon: '💰',
-      href: null,
+      icon: '💸',
+      href: '/gastos',
       color: 'red',
-      disabled: true,
+      disabled: false,
     },
     {
-      title: 'Finanzas',
-      description: 'Análisis financiero y reportes contables',
-      icon: '📊',
-      href: null,
+      title: 'Fondos',
+      description: 'Gestión de cuentas, movimientos y balances',
+      icon: '💰',
+      href: '/fondos',
       color: 'teal',
-      disabled: true,
+      disabled: false,
     },
     {
       title: 'Estadísticas',
@@ -166,7 +166,7 @@ function DashboardContent() {
                 </h3>
                 <p className="text-blue-700">
                   Los módulos marcados como &quot;Próximamente&quot; estarán disponibles en futuras actualizaciones.
-                  Actualmente puedes acceder a los módulos de <strong>Ventas</strong> e <strong>Inventario</strong>.
+                  Actualmente puedes acceder a <strong>Pedidos</strong>, <strong>Ventas</strong>, <strong>Inventario</strong> y <strong>Gastos</strong>.
                 </p>
               </div>
             </div>
