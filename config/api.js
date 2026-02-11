@@ -22,9 +22,10 @@ export const API_CONFIG = {
     VENTAS: {
       LIST: '/ventas',
       CREATE: '/ventas',
-      UPDATE: '/ventas',
-      DELETE: '/ventas',
       BY_ID: (id) => `/ventas/${id}`,
+      ANULAR: (id) => `/ventas/${id}/anular`,
+      RESUMEN: '/ventas/resumen',
+      MEDIOS_PAGO: '/ventas/medios-pago',
     },
     ARTICULOS: {
       LIST: '/inventario/articulos',
@@ -65,6 +66,31 @@ export const API_CONFIG = {
       BY_ID: (id) => `/comandas/${id}`,
       ESTADO: (id) => `/comandas/${id}/estado`,
       OBSERVACIONES: (id) => `/comandas/${id}/observaciones`,
+    },
+    GASTOS: {
+      LIST: '/gastos',
+      CREATE: '/gastos',
+      BY_ID: (id) => `/gastos/${id}`,
+      UPDATE: (id) => `/gastos/${id}`,
+      DELETE: (id) => `/gastos/${id}`,
+      CATEGORIAS: '/gastos/categorias',
+      CATEGORIA_BY_ID: (id) => `/gastos/categorias/${id}`,
+      CUENTAS: '/gastos/cuentas',
+      RESUMEN: '/gastos/resumen',
+    },
+    FONDOS: {
+      CUENTAS: {
+        LIST: '/fondos/cuentas',
+        CREATE: '/fondos/cuentas',
+        BY_ID: (id) => `/fondos/cuentas/${id}`,
+        UPDATE: (id) => `/fondos/cuentas/${id}`,
+        DELETE: (id) => `/fondos/cuentas/${id}`,
+        MOVIMIENTOS: (id) => `/fondos/cuentas/${id}/movimientos`,
+        HISTORIAL: (id) => `/fondos/cuentas/${id}/historial`,
+      },
+      MOVIMIENTOS: {
+        CREATE: '/fondos/movimientos',
+      },
     },
   },
 
