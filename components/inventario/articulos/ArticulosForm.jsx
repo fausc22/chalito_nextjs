@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Utensils, Check, Plus, X } from 'lucide-react';
+import { Utensils, Check, Plus, X, Image as ImageIcon, Upload } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,8 @@ export const ArticulosForm = ({
   onSubmit,
   isEditing = false,
   loading = false,
+  imagenFile,
+  setImagenFile,
 }) => {
   // Estado local para ingredientes seleccionados
   const [ingredienteTemp, setIngredienteTemp] = useState({
@@ -46,6 +48,12 @@ export const ArticulosForm = ({
   // Referencia para guardar los ingredientes originales del artículo
   const ingredientesOriginalesRef = useRef([]);
 
+  // ==================== ESTADO PARA IMAGEN ====================
+  // El estado de imagenFile viene del padre (ArticulosTab)
+  // Preview local para mostrar la imagen seleccionada
+  const [imagenPreview, setImagenPreview] = useState(null);
+  const fileInputRef = useRef(null);
+
   // Guardar ingredientes originales cuando se abre el modal para editar
   useEffect(() => {
     if (isOpen && isEditing && formulario.ingredientes?.length > 0) {
@@ -54,6 +62,28 @@ export const ArticulosForm = ({
       ingredientesOriginalesRef.current = [];
     }
   }, [isOpen, isEditing]);
+
+  // Limpiar imagen cuando se cierra el modal
+  useEffect(() => {
+    if (!isOpen) {
+      setImagenFile(null);
+      setImagenPreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [isOpen]);
+
+  // Cargar imagen existente cuando se edita un artículo
+  useEffect(() => {
+    if (isOpen && isEditing && formulario.imagen_url && !imagenFile) {
+      // Si está editando y tiene imagen_url, mostrar preview de la imagen de Cloudinary
+      setImagenPreview(formulario.imagen_url);
+    } else if (isOpen && !isEditing) {
+      // Si es crear nuevo, limpiar preview
+      setImagenPreview(null);
+    }
+  }, [isOpen, isEditing, formulario.imagen_url, imagenFile]);
 
   const handleChange = (field, value) => {
     // Manejo especial para cambio de tipo
@@ -80,6 +110,61 @@ export const ArticulosForm = ({
     }
 
     setFormulario(prev => ({ ...prev, [field]: value }));
+  };
+
+  // ==================== HANDLERS PARA IMAGEN ====================
+  // Handler para seleccionar imagen
+  const handleImagenChange = (e) => {
+    const file = e.target.files?.[0];
+    
+    if (!file) return;
+
+    // Validar tipo de archivo
+    const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!tiposPermitidos.includes(file.type)) {
+      toast({
+        variant: 'destructive',
+        title: 'Formato no válido',
+        description: 'Solo se permiten imágenes JPG, PNG o WebP'
+      });
+      e.target.value = '';
+      return;
+    }
+
+    // Validar tamaño (máximo 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast({
+        variant: 'destructive',
+        title: 'Archivo muy grande',
+        description: 'La imagen no debe superar los 5MB'
+      });
+      e.target.value = '';
+      return;
+    }
+
+    // Guardar archivo en estado (NO se envía al backend)
+    setImagenFile(file);
+
+    // Crear preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagenPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    // FUTURO: Aquí se subirá la imagen a Cloudinary
+    // const uploadedUrl = await uploadToCloudinary(file);
+    // setFormulario(prev => ({ ...prev, imagen_url: uploadedUrl }));
+  };
+
+  // Handler para eliminar imagen seleccionada
+  const handleEliminarImagen = () => {
+    setImagenFile(null);
+    setImagenPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   // Agregar ingrediente a la lista
@@ -165,7 +250,7 @@ export const ArticulosForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 pt-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 pt-4 pr-2">
           {/* Código y Nombre */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -208,6 +293,83 @@ export const ArticulosForm = ({
               rows={3}
               className="border-2 focus:border-violet-600 focus:ring-2 focus:ring-violet-100 resize-none"
             />
+          </div>
+
+          {/* ==================== SECCIÓN DE IMAGEN (OPCIONAL) ==================== */}
+          <div className="border-2 border-dashed border-blue-200 rounded-lg p-4 bg-blue-50/30 space-y-3">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5 text-blue-600" />
+              <Label className="text-sm font-medium text-slate-700">
+                Imagen del artículo (Opcional)
+              </Label>
+            </div>
+
+            {/* Texto informativo */}
+            <p className="text-xs text-slate-500 leading-relaxed">
+              La imagen es opcional. Por ahora solo se puede seleccionar, pero no se subirá. 
+              Podrás agregarla más adelante cuando se implemente la subida a Cloudinary.
+            </p>
+
+            {/* Input de archivo */}
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <label 
+                  htmlFor="imagen-input" 
+                  className="flex-1 cursor-pointer"
+                >
+                  <div className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-blue-300 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-400 transition-colors">
+                    <Upload className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-slate-700">
+                      {imagenFile ? 'Cambiar imagen' : 'Seleccionar imagen'}
+                    </span>
+                  </div>
+                  <input
+                    id="imagen-input"
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleImagenChange}
+                    className="hidden"
+                  />
+                </label>
+
+                {imagenFile && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleEliminarImagen}
+                    className="sm:w-auto border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Quitar
+                  </Button>
+                )}
+              </div>
+
+              {/* Preview de la imagen */}
+              {imagenPreview && (
+                <div className="relative">
+                  <div className="relative w-full h-40 sm:h-48 bg-slate-100 rounded-lg overflow-hidden border-2 border-slate-200">
+                    <img
+                      src={imagenPreview}
+                      alt="Preview"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    <span className="font-medium">{imagenFile?.name}</span> 
+                    {' '}({(imagenFile?.size / 1024).toFixed(0)} KB)
+                  </p>
+                </div>
+              )}
+
+              {/* Indicación de formatos permitidos */}
+              {!imagenFile && (
+                <p className="text-xs text-slate-400">
+                  Formatos: JPG, PNG, WebP • Tamaño máximo: 5MB
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Precio y Tipo */}

@@ -191,7 +191,6 @@ export function IngredientesTab({
           : 'Ingrediente creado correctamente'
         );
         cerrarModal();
-        setCurrentPage(1);
         onCargarIngredientes();
       } else {
         toast.error(resultado.error || 'Ha ocurrido un error');
@@ -215,7 +214,6 @@ export function IngredientesTab({
       if (resultado.success) {
         toast.success('Ingrediente eliminado correctamente');
         setIngredienteEliminar(null);
-        setCurrentPage(1);
         onCargarIngredientes();
       } else {
         toast.error(resultado.error || 'No se pudo eliminar el ingrediente');
@@ -257,6 +255,14 @@ export function IngredientesTab({
 
     return true;
   });
+
+  // Ajustar página actual si queda fuera de rango después de operaciones
+  useEffect(() => {
+    const totalPages = Math.ceil(ingredientesFiltrados.length / itemsPerPage);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [ingredientesFiltrados.length, currentPage, itemsPerPage]);
 
   // Calcular paginación local
   const totalPages = Math.ceil(ingredientesFiltrados.length / itemsPerPage);
@@ -305,7 +311,7 @@ export function IngredientesTab({
             Total: {ingredientes.length} ingredientes
           </p>
         </div>
-        <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto">
+        <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto bg-green-500 hover:bg-green-600">
           <Plus className="h-4 w-4" />
           Nuevo Ingrediente
         </Button>

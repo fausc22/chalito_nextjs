@@ -1,8 +1,9 @@
-import { ChefHat, Clock, Plus, Search, Package, Menu, X, ChevronLeft, ChevronRight, ClipboardCheck, Bell, Store } from 'lucide-react';
+import { ChefHat, Clock, Plus, Search, Package, Menu, X, ChevronLeft, ChevronRight, ClipboardCheck, Bell, Store, LayoutGrid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { useConnectionStatus, CONNECTION_STATUS } from '../../contexts/ConnectionStatusContext';
 
 export function PedidosSidebar({
   demoraCocina,
@@ -17,8 +18,42 @@ export function PedidosSidebar({
   isOpen,
   setIsOpen,
   isMobile = false,
-  isOnline = true
+  vistaTabla = false,
+  onCambiarVista
 }) {
+  const { status, getStatusTooltip, getStatusText } = useConnectionStatus();
+
+  // Determinar el color y animación del indicador según el estado
+  const getIndicatorStyles = () => {
+    switch (status) {
+      case CONNECTION_STATUS.ACTIVE:
+        return {
+          color: 'bg-green-500',
+          textColor: 'text-green-500',
+          pulse: false,
+        };
+      case CONNECTION_STATUS.WITH_DELAYS:
+        return {
+          color: 'bg-yellow-500',
+          textColor: 'text-yellow-500',
+          pulse: false,
+        };
+      case CONNECTION_STATUS.INACTIVE:
+        return {
+          color: 'bg-red-500',
+          textColor: 'text-red-500',
+          pulse: false,
+        };
+      default:
+        return {
+          color: 'bg-gray-500',
+          textColor: 'text-gray-500',
+          pulse: false,
+        };
+    }
+  };
+
+  const indicatorStyles = getIndicatorStyles();
   return (
     <>
       {/* Botón toggle para móvil */}
@@ -64,9 +99,12 @@ export function PedidosSidebar({
                 <div>
                   <h2 className="text-sm font-bold text-white">El Chalito</h2>
                   <div className="flex items-center gap-1">
-                    <div className={`h-1.5 w-1.5 ${isOnline ? 'bg-green-500' : 'bg-red-500'} rounded-full ${isOnline ? 'animate-pulse' : ''}`}></div>
-                    <span className={`text-[10px] ${isOnline ? 'text-green-500' : 'text-red-500'} font-medium`}>
-                      {isOnline ? 'Abierto' : 'Offline'}
+                    <div
+                      className={`h-1.5 w-1.5 ${indicatorStyles.color} rounded-full ${indicatorStyles.pulse ? 'animate-pulse' : ''}`}
+                      title={getStatusTooltip()}
+                    ></div>
+                    <span className={`text-[10px] ${indicatorStyles.textColor} font-medium`}>
+                      {getStatusText()}
                     </span>
                   </div>
                 </div>
@@ -84,7 +122,10 @@ export function PedidosSidebar({
             </div>
           ) : (
             <div className="flex items-center justify-center h-full">
-              <div className={`h-3 w-3 ${isOnline ? 'bg-green-500' : 'bg-red-500'} rounded-full ${isOnline ? 'animate-pulse' : ''} flex-shrink-0`} title={isOnline ? 'Sistema Online' : 'Sistema Offline'}></div>
+              <div
+                className={`h-3 w-3 ${indicatorStyles.color} rounded-full ${indicatorStyles.pulse ? 'animate-pulse' : ''} flex-shrink-0`}
+                title={getStatusTooltip()}
+              ></div>
             </div>
           )}
           {/* Botón toggle cuando está cerrado - posicionado fuera del sidebar */}
@@ -106,136 +147,206 @@ export function PedidosSidebar({
 
         {/* Contenido del sidebar */}
         {isOpen && (
-          <div className="flex-1 overflow-y-auto p-2 space-y-2">
-            {/* Botones de acción */}
-            <div className="space-y-2.5">
-              <Button
-                onClick={onNuevoPedido}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm text-xs py-2 h-9 px-3"
-                size="sm"
-              >
-                <Plus className="h-4 w-4 mr-1.5" />
-                NUEVO PEDIDO
-                <span className="ml-1.5 text-[10px] opacity-80">(F1)</span>
-              </Button>
+          <>
+            <div className="flex-1 overflow-y-auto p-2 space-y-2">
+              {/* Botones de acción */}
+              <div className="space-y-2.5">
+                <Button
+                  onClick={onNuevoPedido}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold shadow-sm text-xs py-2 h-9 px-3"
+                  size="sm"
+                >
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  NUEVO PEDIDO
+                  <span className="ml-1.5 text-[10px] opacity-80">(F1)</span>
+                </Button>
 
+                <Button
+                  onClick={onNotificaciones}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm text-xs py-2 h-9 px-3 relative"
+                  size="sm"
+                >
+                  <Bell className="h-4 w-4 mr-1.5" />
+                  NOTIFICACIONES
+                  {notificacionesCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      {notificacionesCount > 9 ? '9+' : notificacionesCount}
+                    </span>
+                  )}
+                </Button>
+
+                <Button
+                  onClick={onModoCocina}
+                  className="w-full bg-slate-700 hover:bg-slate-600 text-white border border-slate-600 text-xs py-2 h-9 px-3"
+                  size="sm"
+                >
+                  <ChefHat className="h-4 w-4 mr-1.5" />
+                  MODO COCINA
+                </Button>
+
+              </div>
+
+              {/* Búsqueda de pedidos */}
+              <Card className="bg-slate-700 border-slate-600 p-2">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold text-slate-300 block">
+                    BUSCAR PEDIDOS
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-slate-400" />
+                    <Input
+                      type="text"
+                      placeholder="ID o nombre..."
+                      value={busquedaPedidos}
+                      onChange={(e) => setBusquedaPedidos(e.target.value)}
+                      className="pl-7 h-7 text-xs bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
+                    />
+                  </div>
+                </div>
+              </Card>
+
+              {/* Pedidos Entregados */}
               <Button
-                onClick={onModoCocina}
+                onClick={onVerPedidosEntregados}
                 className="w-full bg-slate-700 hover:bg-slate-600 text-white border border-slate-600 text-xs py-2 h-9 px-3"
                 size="sm"
               >
-                <ChefHat className="h-4 w-4 mr-1.5" />
-                MODO COCINA
+                <ClipboardCheck className="h-4 w-4 mr-1.5" />
+                PEDIDOS ENTREGADOS
               </Button>
 
+              {/* Cambiar Vista */}
               <Button
-                onClick={onNotificaciones}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-sm text-xs py-2 h-9 px-3 relative"
+                onClick={onCambiarVista}
+                className="w-full bg-slate-700 hover:bg-slate-600 text-white border border-slate-600 text-xs py-2 h-9 px-3"
                 size="sm"
               >
-                <Bell className="h-4 w-4 mr-1.5" />
-                NOTIFICACIONES
+                {vistaTabla ? (
+                  <>
+                    <LayoutGrid className="h-4 w-4 mr-1.5" />
+                    VISTA CARDS
+                  </>
+                ) : (
+                  <>
+                    <List className="h-4 w-4 mr-1.5" />
+                    VISTA TABLA
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Footer con Demora Cocina - separado y centrado */}
+            <div className="flex-shrink-0 p-2 border-t border-slate-700">
+              <div className="flex justify-center">
+                <Card className="bg-slate-700 border-slate-600 p-2 w-fit">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-semibold text-slate-300 block text-center">
+                      DEMORA COCINA
+                    </label>
+                    <div className="flex items-center gap-1.5 justify-center">
+                      <Clock className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          value={demoraCocina}
+                          onChange={(e) => setDemoraCocina(parseInt(e.target.value) || 0)}
+                          className="w-12 h-7 bg-slate-800 text-white px-1.5 py-0.5 rounded text-xs font-bold border border-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500 text-center"
+                        />
+                        <span className="text-xs font-bold text-slate-300">MIN</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Iconos cuando está colapsado */}
+        {!isOpen && !isMobile && (
+          <>
+            <div className="flex-1 flex flex-col items-center justify-start pt-2 space-y-2.5 px-2 overflow-y-auto">
+              <Button
+                onClick={onNuevoPedido}
+                className="w-full bg-green-600 hover:bg-green-700 text-white h-9"
+                size="sm"
+                title="Nuevo Pedido (F1)"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={onNotificaciones}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white h-9 relative"
+                size="sm"
+                title="Notificaciones"
+              >
+                <Bell className="h-4 w-4" />
                 {notificacionesCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
                     {notificacionesCount > 9 ? '9+' : notificacionesCount}
                   </span>
                 )}
               </Button>
+              <Button
+                onClick={onModoCocina}
+                className="w-full bg-slate-700 hover:bg-slate-600 text-white h-9"
+                size="sm"
+                title="Modo Cocina"
+              >
+                <ChefHat className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => {
+                  // Abrir sidebar para mostrar búsqueda
+                  setIsOpen(true);
+                  // Focus en el input de búsqueda después de un pequeño delay
+                  setTimeout(() => {
+                    const searchInput = document.querySelector('input[placeholder="ID o nombre..."]');
+                    if (searchInput) {
+                      searchInput.focus();
+                    }
+                  }, 100);
+                }}
+                className="w-full bg-slate-700 hover:bg-slate-600 text-white h-9"
+                size="sm"
+                title="Buscar Pedidos"
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={onVerPedidosEntregados}
+                className="w-full bg-slate-700 hover:bg-slate-600 text-white h-9"
+                size="sm"
+                title="Pedidos Entregados"
+              >
+                <ClipboardCheck className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={onCambiarVista}
+                className="w-full bg-slate-700 hover:bg-slate-600 text-white h-9"
+                size="sm"
+                title={vistaTabla ? "Vista Cards" : "Vista Tabla"}
+              >
+                {vistaTabla ? <LayoutGrid className="h-4 w-4" /> : <List className="h-4 w-4" />}
+              </Button>
             </div>
-
-            {/* Búsqueda de pedidos */}
-            <Card className="bg-slate-700 border-slate-600 p-2">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold text-slate-300 block">
-                  Buscar Pedidos
-                </label>
-                <div className="relative">
-                  <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-slate-400" />
-                  <Input
-                    type="text"
-                    placeholder="ID o nombre..."
-                    value={busquedaPedidos}
-                    onChange={(e) => setBusquedaPedidos(e.target.value)}
-                    className="pl-7 h-7 text-xs bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
-                  />
-                </div>
-              </div>
-            </Card>
-
-            {/* Demora cocina */}
-            <Card className="bg-slate-700 border-slate-600 p-2 w-fit">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold text-slate-300 block">
-                  Demora Cocina
-                </label>
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="number"
-                      value={demoraCocina}
-                      onChange={(e) => setDemoraCocina(parseInt(e.target.value) || 0)}
-                      className="w-12 h-7 bg-slate-800 text-white px-1.5 py-0.5 rounded text-xs font-bold border border-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500 text-center"
-                    />
-                    <span className="text-xs font-bold text-slate-300">min</span>
+            
+            {/* Mini recuadro de demora cocina cuando está cerrado */}
+            <div className="flex-shrink-0 p-2 border-t border-slate-700">
+              <div className="flex justify-center">
+                <div className="bg-slate-700 border border-slate-600 rounded px-2 py-1.5 min-w-[32px]">
+                  <div className="text-center">
+                    <div className="text-xs font-bold text-white">
+                      {demoraCocina}
+                    </div>
+                    <div className="text-[8px] text-slate-400 mt-0.5">
+                      MIN
+                    </div>
                   </div>
                 </div>
               </div>
-            </Card>
-
-            {/* Pedidos Entregados */}
-            <Button
-              onClick={onVerPedidosEntregados}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold text-xs py-2 h-9 px-3"
-              size="sm"
-            >
-              <ClipboardCheck className="h-4 w-4 mr-1.5" />
-              Pedidos Entregados
-            </Button>
-          </div>
-        )}
-
-        {/* Iconos cuando está colapsado */}
-        {!isOpen && !isMobile && (
-          <div className="flex-1 flex flex-col items-center justify-start pt-2 space-y-2.5 px-2">
-            <Button
-              onClick={onNuevoPedido}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white h-9"
-              size="sm"
-              title="Nuevo Pedido"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-            <Button
-              onClick={onModoCocina}
-              className="w-full bg-slate-700 hover:bg-slate-600 text-white h-9"
-              size="sm"
-              title="Modo Cocina"
-            >
-              <ChefHat className="h-4 w-4" />
-            </Button>
-            <Button
-              onClick={onNotificaciones}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white h-9 relative"
-              size="sm"
-              title="Notificaciones"
-            >
-              <Bell className="h-4 w-4" />
-              {notificacionesCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {notificacionesCount > 9 ? '9+' : notificacionesCount}
-                </span>
-              )}
-            </Button>
-            <Button
-              onClick={onVerPedidosEntregados}
-              className="w-full bg-green-600 hover:bg-green-700 text-white h-9"
-              size="sm"
-              title="Pedidos Entregados"
-            >
-              <ClipboardCheck className="h-4 w-4" />
-            </Button>
-          </div>
+            </div>
+          </>
         )}
       </aside>
     </>

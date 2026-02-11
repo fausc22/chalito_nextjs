@@ -49,7 +49,7 @@ export const CategoriasForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 pt-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 pt-4 pr-2">
           {/* Nombre */}
           <div className="space-y-2">
             <Label htmlFor="nombre" className="text-sm font-medium">

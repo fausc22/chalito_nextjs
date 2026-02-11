@@ -1,5 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { pedidosService } from '../../services/pedidosService';
+import { useSocket } from '../useSocket';
+import { useConnectionStatus } from '../../contexts/ConnectionStatusContext';
 
 // Función para normalizar texto eliminando tildes y convirtiendo a minúsculas
 const normalizarTexto = (texto) => {
@@ -16,37 +18,143 @@ export const usePedidos = () => {
   const [busquedaPedidos, setBusquedaPedidos] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { updatePollingStatus, updateWebsocketStatus } = useConnectionStatus();
+
+  // Función para cargar pedidos
+  const cargarPedidos = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await pedidosService.obtenerPedidos();
+      if (response.success) {
+        setPedidos(response.data || []);
+        // Separar pedidos entregados
+        const entregados = (response.data || []).filter(p => p.estado === 'entregado');
+        setPedidosEntregados(entregados);
+        // Actualizar estado de conexión: polling exitoso
+        updatePollingStatus(true, null);
+      } else {
+        const errorMsg = response.error || 'Error al cargar pedidos';
+        setError(errorMsg);
+        console.error('Error al cargar pedidos:', errorMsg);
+        // Actualizar estado de conexión: error en polling
+        updatePollingStatus(true, errorMsg);
+      }
+    } catch (err) {
+      const errorMsg = err.message || 'Error al cargar pedidos';
+      setError(errorMsg);
+      console.error('Error al cargar pedidos:', err);
+      // Actualizar estado de conexión: error en polling
+      updatePollingStatus(true, errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  }, [updatePollingStatus]);
 
   // Cargar pedidos desde el backend al montar el componente
   useEffect(() => {
-    const cargarPedidos = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await pedidosService.obtenerPedidos();
-        if (response.success) {
-          setPedidos(response.data || []);
-          // Separar pedidos entregados
-          const entregados = (response.data || []).filter(p => p.estado === 'entregado');
-          setPedidosEntregados(entregados);
-        } else {
-          setError(response.error || 'Error al cargar pedidos');
-          console.error('Error al cargar pedidos:', response.error);
-        }
-      } catch (err) {
-        setError(err.message || 'Error al cargar pedidos');
-        console.error('Error al cargar pedidos:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     cargarPedidos();
     
-    // Recargar pedidos cada 120 segundos (2 minutos) para mantenerlos actualizados y evitar rate limiting
-    const interval = setInterval(cargarPedidos, 120000);
+    // Polling optimizado: cada 45 segundos (balance entre latencia y carga)
+    // Se puede optimizar más con If-Modified-Since en el backend
+    const interval = setInterval(cargarPedidos, 45000);
     return () => clearInterval(interval);
+  }, [cargarPedidos]);
+
+  // Integrar WebSockets (Fase 3)
+  const handlePedidoCreado = useCallback((data) => {
+    console.log('📦 [usePedidos] Pedido creado recibido via WebSocket:', data);
+    // Recargar pedidos para obtener el nuevo pedido con todos sus datos
+    cargarPedidos();
+  }, [cargarPedidos]);
+
+  const handlePedidoEstadoCambiado = useCallback((data) => {
+    console.log('🔄 [usePedidos] Estado cambiado recibido via WebSocket:', data);
+    
+    // Mapear estado del backend al frontend
+    const mapearEstado = (estadoBackend) => {
+      const estado = estadoBackend.toLowerCase();
+      if (estado === 'en_preparacion') return 'en_cocina';
+      if (estado === 'listo') return 'listo';
+      if (estado === 'recibido') return 'recibido';
+      if (estado === 'entregado') return 'entregado';
+      if (estado === 'cancelado') return 'cancelado';
+      return estado;
+    };
+    
+    const nuevoEstado = mapearEstado(data.estadoNuevo);
+    
+    // Actualizar pedido localmente
+    setPedidos(prev => prev.map(p => 
+      p.id === String(data.pedidoId) 
+        ? { ...p, estado: nuevoEstado }
+        : p
+    ));
+    
+    // Si cambió a entregado, actualizar lista de entregados
+    if (nuevoEstado === 'entregado') {
+      setPedidosEntregados(prev => {
+        const pedido = pedidos.find(p => p.id === String(data.pedidoId));
+        if (pedido && !prev.find(p => p.id === String(data.pedidoId))) {
+          return [...prev, { ...pedido, estado: 'entregado' }];
+        }
+        return prev;
+      });
+    }
+    
+    // Recargar para obtener datos completos del pedido actualizado
+    // Usar timeout para evitar múltiples recargas si hay varios eventos
+    setTimeout(() => {
+      cargarPedidos();
+    }, 500);
+  }, [cargarPedidos, pedidos]);
+
+  const handleCapacidadActualizada = useCallback((data) => {
+    console.log('📊 [usePedidos] Capacidad actualizada via WebSocket:', data);
+    // La capacidad se maneja en PedidosColumn, que recarga automáticamente
+    // Los eventos WebSocket ayudan a actualizar en tiempo real
   }, []);
+
+  const handlePedidosAtrasados = useCallback((data) => {
+    console.log('⚠️ [usePedidos] Pedidos atrasados via WebSocket:', data);
+    // Se pueden mostrar notificaciones o actualizar visualmente
+    // Por ahora solo logueamos
+  }, []);
+
+  const handlePedidoActualizado = useCallback((data) => {
+    console.log('🔄 [usePedidos] Pedido actualizado recibido via WebSocket:', data);
+    if (data.pedidoId == null) return;
+    setPedidos(prev => prev.map(p => {
+      if (p.id === String(data.pedidoId) && data.pedido) {
+        return {
+          ...p,
+          ...data.pedido,
+          actualizadoRecientemente: true
+        };
+      }
+      return p;
+    }));
+    setTimeout(() => {
+      setPedidos(prev => prev.map(ped =>
+        ped.id === String(data.pedidoId) ? { ...ped, actualizadoRecientemente: false } : ped
+      ));
+    }, 2000);
+    cargarPedidos();
+  }, [cargarPedidos]);
+
+  // Conectar WebSocket
+  const { isConnected: socketConnected } = useSocket(
+    handlePedidoCreado,
+    handlePedidoEstadoCambiado,
+    handleCapacidadActualizada,
+    handlePedidosAtrasados,
+    handlePedidoActualizado
+  );
+
+  // Actualizar estado de conexión cuando cambia el WebSocket
+  useEffect(() => {
+    updateWebsocketStatus(socketConnected);
+  }, [socketConnected, updateWebsocketStatus]);
 
   // Filtrar pedidos por búsqueda (sin necesidad de tildes)
   const pedidosFiltrados = useMemo(() => {
@@ -67,14 +175,12 @@ export const usePedidos = () => {
     [pedidosFiltrados]
   );
 
-  const pedidosEnCocina = useMemo(() => 
-    pedidosFiltrados.filter(p => 
-      // Incluir pedidos en cocina O pedidos entregados que aún no han sido pagados
-      p.estado === 'en_cocina' || 
-      (p.estado === 'entregado' && p.paymentStatus === 'pending')
-    ),
+  // EN PREPARACIÓN: en_cocina y listo (listo no oculta; solo salen al entregar; cobrar no los saca de la columna)
+  const pedidosEnCocina = useMemo(() =>
+    pedidosFiltrados.filter(p => p.estado === 'en_cocina' || p.estado === 'listo'),
     [pedidosFiltrados]
   );
+
 
   const handleDragEnd = useCallback(async (event) => {
     const { active, over } = event;
@@ -84,6 +190,14 @@ export const usePedidos = () => {
     const estadoActual = active.data.current.estado;
     const estadoDestino = over.id;
 
+    // ⚠️ DESHABILITAR: No permitir drag & drop desde RECIBIDOS a EN_PREPARACION
+    // El sistema ahora lo hace automáticamente
+    if (estadoActual === 'recibido' && estadoDestino === 'en_cocina') {
+      console.warn('⚠️ Drag & Drop desde RECIBIDOS a EN_PREPARACION deshabilitado. El sistema lo hace automáticamente.');
+      return; // No hacer nada, el sistema maneja esta transición
+    }
+
+    // Permitir otros drag & drop (dentro de EN_PREPARACION para reordenar visual, etc.)
     if (estadoActual !== estadoDestino) {
       // Actualizar estado en el backend
       const response = await pedidosService.actualizarEstadoPedido(pedidoId, estadoDestino);
@@ -125,7 +239,77 @@ export const usePedidos = () => {
       return;
     }
 
-    // Actualización optimista: actualizar la UI inmediatamente
+    // Actualización optimista: actualizar la UI inmediatamente a LISTO (no ENTREGADO)
+    setPedidos(prev =>
+      prev.map(p =>
+        p.id === pedidoId
+          ? { ...p, estado: 'listo', horaListo: new Date() }
+          : p
+      )
+    );
+
+    // Intentar actualizar en el backend (en segundo plano)
+    try {
+      const response = await pedidosService.actualizarEstadoPedido(pedidoId, 'listo');
+      
+      if (!response.success) {
+        // Si falla, verificar si es rate limit
+        const isRateLimit = response.error?.includes('Rate limit') || 
+                           response.error?.includes('rate limit') ||
+                           response.error?.toLowerCase().includes('rate limit') ||
+                           response.rateLimit === true ||
+                           response.status === 429;
+        
+        if (isRateLimit) {
+          // Si es rate limit, mantener la actualización optimista
+          // El pedido se sincronizará cuando se pueda
+          console.warn('⚠️ Rate limit al actualizar estado. Manteniendo actualización optimista.');
+          return;
+        }
+        
+        // Si no es rate limit, revertir la actualización optimista
+        console.error('Error al marcar pedido como listo:', response.error);
+        setPedidos(prev =>
+          prev.map(p =>
+            p.id === pedidoId
+              ? { ...p, estado: pedido.estado, horaListo: pedido.horaListo }
+              : p
+          )
+        );
+      }
+    } catch (error) {
+      // Si hay un error de red u otro error, verificar si es rate limit
+      const isRateLimit = error.message?.includes('Rate limit') || 
+                         error.message?.includes('rate limit') ||
+                         error.response?.status === 429;
+      
+      if (isRateLimit) {
+        // Si es rate limit, mantener la actualización optimista
+        console.warn('⚠️ Rate limit al actualizar estado. Manteniendo actualización optimista.');
+        return;
+      }
+      
+      // Si no es rate limit, revertir la actualización optimista
+      console.error('Error al marcar pedido como listo:', error);
+      setPedidos(prev =>
+        prev.map(p =>
+          p.id === pedidoId
+            ? { ...p, estado: pedido.estado, horaListo: pedido.horaListo }
+            : p
+        )
+      );
+    }
+  }, [pedidos]);
+
+  const handleEntregar = useCallback(async (pedidoId) => {
+    // Encontrar el pedido antes de actualizar
+    const pedido = pedidos.find(p => p.id === pedidoId);
+    if (!pedido) {
+      console.error('Pedido no encontrado:', pedidoId);
+      return;
+    }
+
+    // Actualización optimista: actualizar la UI inmediatamente a ENTREGADO
     setPedidos(prev =>
       prev.map(p =>
         p.id === pedidoId
@@ -135,7 +319,7 @@ export const usePedidos = () => {
     );
     
     // Solo agregar a pedidosEntregados si está pagado (para el modal de entregados)
-    // Los pedidos entregados pero no pagados permanecen en pedidos para mostrarse en "En preparación"
+    // Los pedidos entregados pero no pagados permanecen en pedidos para mostrarse
     if (pedido.paymentStatus === 'paid') {
       const pedidoEntregado = { ...pedido, estado: 'entregado', horaEntrega: new Date() };
       setPedidosEntregados(prev => {
@@ -161,13 +345,12 @@ export const usePedidos = () => {
         
         if (isRateLimit) {
           // Si es rate limit, mantener la actualización optimista
-          // El pedido se sincronizará cuando se pueda
           console.warn('⚠️ Rate limit al actualizar estado. Manteniendo actualización optimista.');
           return;
         }
         
         // Si no es rate limit, revertir la actualización optimista
-        console.error('Error al marcar pedido como listo:', response.error);
+        console.error('Error al marcar pedido como entregado:', response.error);
         setPedidos(prev =>
           prev.map(p =>
             p.id === pedidoId
@@ -193,7 +376,7 @@ export const usePedidos = () => {
       }
       
       // Si no es rate limit, revertir la actualización optimista
-      console.error('Error al marcar pedido como listo:', error);
+      console.error('Error al marcar pedido como entregado:', error);
       setPedidos(prev =>
         prev.map(p =>
           p.id === pedidoId
@@ -241,21 +424,14 @@ export const usePedidos = () => {
     handleDragEnd,
     handleMarcharACocina,
     handleListo,
+    handleEntregar,
     handleCancelar,
     agregarPedido,
     actualizarPedido,
     loading,
     error,
-    recargarPedidos: async () => {
-      setLoading(true);
-      const response = await pedidosService.obtenerPedidos();
-      if (response.success) {
-        setPedidos(response.data || []);
-        const entregados = (response.data || []).filter(p => p.estado === 'entregado');
-        setPedidosEntregados(entregados);
-      }
-      setLoading(false);
-    }
+    recargarPedidos: cargarPedidos,
+    socketConnected // Exponer estado de conexión WebSocket
   };
 };
 

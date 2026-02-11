@@ -51,7 +51,12 @@ export function ModalPedidosEntregados({ pedidos, isOpen, onClose }) {
                     <div className="mb-2">
                       <p className="text-sm font-semibold text-slate-800 truncate">{pedido.clienteNombre}</p>
                       <p className="text-xs text-slate-500">
-                        {pedido.horaEntrega && new Date(pedido.horaEntrega).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                        {pedido.horaEntrega && (() => {
+                          const fecha = new Date(pedido.horaEntrega);
+                          const horas = String(fecha.getHours()).padStart(2, '0');
+                          const minutos = String(fecha.getMinutes()).padStart(2, '0');
+                          return `${horas}:${minutos}`;
+                        })()}
                       </p>
                     </div>
 
@@ -103,7 +108,7 @@ export function ModalPedidosEntregados({ pedidos, isOpen, onClose }) {
           </DialogHeader>
 
           {pedidoSeleccionado && (
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 py-4 pr-2">
               {/* Información del cliente */}
               <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
                 <h3 className="text-base font-semibold text-slate-800 mb-3">👤 Cliente</h3>
@@ -233,7 +238,15 @@ export function ModalPedidosEntregados({ pedidos, isOpen, onClose }) {
                     <div>
                       <span className="font-medium text-slate-700">Hora de entrega: </span>
                       <span className="text-slate-900">
-                        {new Date(pedidoSeleccionado.horaEntrega).toLocaleString('es-AR')}
+                        {(() => {
+                          const fecha = new Date(pedidoSeleccionado.horaEntrega);
+                          const horas = String(fecha.getHours()).padStart(2, '0');
+                          const minutos = String(fecha.getMinutes()).padStart(2, '0');
+                          const dia = String(fecha.getDate()).padStart(2, '0');
+                          const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+                          const año = fecha.getFullYear();
+                          return `${dia}/${mes}/${año} ${horas}:${minutos}`;
+                        })()}
                       </span>
                     </div>
                   )}

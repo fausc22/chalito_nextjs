@@ -46,10 +46,10 @@ export function ModalExtras({
           <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
             <Package className="h-5 w-5" />
             {editandoItemCarrito
-              ? 'Editar Extras'
+              ? producto.extrasDisponibles && producto.extrasDisponibles.length > 0 ? 'Editar Extras y Observación' : 'Editar Observación'
               : totalUnidades > 1
                 ? `Agregar Extras - Unidad ${unidadActual} de ${totalUnidades}`
-                : 'Agregar Extras'
+                : producto.extrasDisponibles && producto.extrasDisponibles.length > 0 ? 'Agregar Extras' : 'Agregar Observación'
             }
           </DialogTitle>
           <DialogDescription className="sr-only">
@@ -62,7 +62,7 @@ export function ModalExtras({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4 pt-4">
+        <div className="flex-1 overflow-y-auto space-y-4 pt-4 pr-3">
           {/* Mensaje informativo para múltiples unidades */}
           {!editandoItemCarrito && totalUnidades > 1 && (
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
@@ -96,39 +96,49 @@ export function ModalExtras({
             </div>
           </div>
 
-          {/* Lista de extras disponibles */}
-          <div className="space-y-2">
-            <h4 className="font-semibold text-slate-800 mb-2">Selecciona los extras:</h4>
+          {/* Lista de extras disponibles - Solo si el producto tiene extras */}
+          {producto.extrasDisponibles && producto.extrasDisponibles.length > 0 ? (
             <div className="space-y-2">
-              {producto.extrasDisponibles.map(extra => {
-                const isSelected = extrasSeleccionados.find(e => e.id === extra.id);
-                return (
-                  <div
-                    key={extra.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                      isSelected
-                        ? 'bg-blue-50 border-blue-300'
-                        : 'bg-white border-slate-200 hover:border-slate-300'
-                    }`}
-                    onClick={() => toggleExtra(extra)}
-                  >
-                    <Checkbox
-                      checked={!!isSelected}
-                      onCheckedChange={() => toggleExtra(extra)}
-                      className="border-2"
-                    />
-                    <div className="flex-1">
-                      <p className="font-semibold text-slate-800">{extra.nombre}</p>
-                      <p className="text-sm text-slate-600">+${extra.precio.toLocaleString('es-AR')}</p>
+              <h4 className="font-semibold text-slate-800 mb-2">Selecciona los extras:</h4>
+              <div className="space-y-2">
+                {producto.extrasDisponibles.map(extra => {
+                  const isSelected = extrasSeleccionados.find(e => e.id === extra.id);
+                  return (
+                    <div
+                      key={extra.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        isSelected
+                          ? 'bg-blue-50 border-blue-300'
+                          : 'bg-white border-slate-200 hover:border-slate-300'
+                      }`}
+                      onClick={() => toggleExtra(extra)}
+                    >
+                      <Checkbox
+                        checked={!!isSelected}
+                        onCheckedChange={() => toggleExtra(extra)}
+                        className="border-2"
+                      />
+                      <div className="flex-1">
+                        <p className="font-semibold text-slate-800">{extra.nombre}</p>
+                        <p className="text-sm text-slate-600">+${extra.precio.toLocaleString('es-AR')}</p>
+                      </div>
+                      {isSelected && (
+                        <Badge className="bg-green-600 text-white">Seleccionado</Badge>
+                      )}
                     </div>
-                    {isSelected && (
-                      <Badge className="bg-green-600 text-white">Seleccionado</Badge>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-slate-700">
+                <span className="font-semibold">ℹ️ Este producto no tiene extras disponibles.</span>
+                <br />
+                Puedes agregar una observación específica para este item.
+              </p>
+            </div>
+          )}
 
           {/* Campo de observación */}
           <div className="mt-4 bg-slate-50 border border-slate-200 rounded-lg p-4">

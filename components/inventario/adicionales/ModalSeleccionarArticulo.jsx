@@ -124,7 +124,7 @@ export function ModalSeleccionarArticulo({
             </p>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto space-y-2">
+          <div className="flex-1 overflow-y-auto space-y-2 pr-2">
             {articulosFiltrados.map((articulo) => {
               const estaSeleccionado = articuloSeleccionado?.id === articulo.id;
               

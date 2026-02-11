@@ -11,7 +11,8 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: '**', // Permite cualquier dominio HTTPS en producción
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
       },
     ],
     formats: ['image/avif', 'image/webp'],

@@ -5,13 +5,27 @@ import { pedidosService } from '../../services/pedidosService';
 import { adicionalesService } from '../../services/adicionalesService';
 import { toast } from '@/hooks/use-toast';
 
+// Patrones para validación: sin símbolos raros (email se valida aparte)
+const SOLO_LETRAS_ESPACIOS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-']*$/; // nombre: letras, espacios, guión, apóstrofe
+const SOLO_NUMEROS_TELEFONO = /^\+?[\d\s\-()]*$/; // teléfono: + opcional, luego solo dígitos, espacios, guiones, paréntesis
+const DIRECCION_SEGURA = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.,\-'/°]*$/; // calle, edificio, piso, observaciones (guión al final = literal)
+const NUMERO_ALTURA = /^[a-zA-Z0-9\s\-°]*$/; // número/altura (ej. "1234" o "1234 B")
+
 // Esquema de validación para el cliente
 const clienteSchema = z.object({
-  nombre: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(100, 'El nombre es demasiado largo'),
-  telefono: z.string().min(1, 'El teléfono es requerido').max(20, 'El teléfono es demasiado largo'),
+  nombre: z
+    .string()
+    .min(2, 'El nombre debe tener al menos 2 caracteres')
+    .max(100, 'El nombre es demasiado largo')
+    .regex(SOLO_LETRAS_ESPACIOS, 'El nombre solo puede contener letras, espacios, guiones o apóstrofes'),
+  telefono: z
+    .string()
+    .min(1, 'El teléfono es requerido')
+    .max(20, 'El teléfono es demasiado largo')
+    .regex(SOLO_NUMEROS_TELEFONO, 'El teléfono solo puede contener números, espacios, guiones o paréntesis')
+    .refine((v) => (v.replace(/\D/g, '').length >= 6), 'El teléfono debe tener al menos 6 dígitos'),
   email: z.preprocess(
     (val) => {
-      // Si es string vacío, null o undefined, convertir a undefined
       if (!val || (typeof val === 'string' && val.trim() === '')) {
         return undefined;
       }
@@ -19,13 +33,15 @@ const clienteSchema = z.object({
     },
     z.string().email('Email inválido').optional()
   ),
-  direccion: z.object({
-    calle: z.string().optional(),
-    numero: z.string().optional(),
-    edificio: z.string().optional(),
-    piso: z.string().optional(),
-    observaciones: z.string().optional(),
-  }).optional(),
+  direccion: z
+    .object({
+      calle: z.string().max(200).regex(DIRECCION_SEGURA, 'Caracteres no permitidos en calle').optional().or(z.literal('')),
+      numero: z.string().max(30).regex(NUMERO_ALTURA, 'Caracteres no permitidos en número').optional().or(z.literal('')),
+      edificio: z.string().max(100).regex(DIRECCION_SEGURA, 'Caracteres no permitidos').optional().or(z.literal('')),
+      piso: z.string().max(50).regex(DIRECCION_SEGURA, 'Caracteres no permitidos').optional().or(z.literal('')),
+      observaciones: z.string().max(300).regex(DIRECCION_SEGURA, 'Caracteres no permitidos').optional().or(z.literal('')),
+    })
+    .optional(),
 });
 
 // Esquema de validación para el carrito
@@ -62,6 +78,11 @@ export const useNuevoPedido = () => {
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [carrito, setCarrito] = useState([]);
+  const CATEGORIA_ULTIMOS = 'ultimos';
+
+  // Productos más solicitados en últimos pedidos (pestaña ÚLTIMOS)
+  const [productosMasSolicitadosIds, setProductosMasSolicitadosIds] = useState([]);
+  const [loadingProductosMasSolicitados, setLoadingProductosMasSolicitados] = useState(false);
   
   // Datos desde el backend
   const [categorias, setCategorias] = useState([]);
@@ -161,7 +182,7 @@ export const useNuevoPedido = () => {
                 nombre: p.nombre,
                 precio: parseFloat(p.precio) || 0,
                 categoria: p.categoria_id,
-                imagen: p.imagen_url || '📦',
+                imagen_url: p.imagen_url, // ✅ Usar imagen_url para Cloudinary
                 extrasDisponibles: extrasDisponibles
               };
             })
@@ -183,16 +204,47 @@ export const useNuevoPedido = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Cargar productos más solicitados cuando se abre el modal (para pestaña ÚLTIMOS)
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    setLoadingProductosMasSolicitados(true);
+    pedidosService
+      .obtenerProductosMasSolicitados(9, 7, 25)
+      .then((res) => {
+        if (!cancelled && res.success && Array.isArray(res.data)) {
+          setProductosMasSolicitadosIds(res.data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setProductosMasSolicitadosIds([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingProductosMasSolicitados(false);
+      });
+    return () => { cancelled = true; };
+  }, [isOpen]);
+
   // Filtrar productos
   const productosFiltrados = useMemo(() => {
     if (!categoriaSeleccionada) return [];
+    
+    if (categoriaSeleccionada === CATEGORIA_ULTIMOS) {
+      const lista = productosMasSolicitadosIds
+        .map(id => productos.find(p => p.id === id))
+        .filter(Boolean);
+      if (busquedaProducto.trim() === '') return lista;
+      return lista.filter(p =>
+        p.nombre.toLowerCase().includes(busquedaProducto.toLowerCase())
+      );
+    }
     
     return productos.filter(p => {
       const matchCategoria = p.categoria === categoriaSeleccionada;
       const matchBusqueda = p.nombre.toLowerCase().includes(busquedaProducto.toLowerCase());
       return matchCategoria && matchBusqueda;
     });
-  }, [productos, categoriaSeleccionada, busquedaProducto]);
+  }, [productos, categoriaSeleccionada, busquedaProducto, productosMasSolicitadosIds]);
 
   // Calcular subtotal
   const calcularSubtotal = useCallback(() => {
@@ -259,7 +311,10 @@ export const useNuevoPedido = () => {
 
   // Agregar producto al carrito
   const agregarProductoConExtras = useCallback((producto, cantidad) => {
-    if (producto.extrasDisponibles && producto.extrasDisponibles.length > 0) {
+    const tieneExtras = producto.extrasDisponibles && producto.extrasDisponibles.length > 0;
+
+    if (tieneExtras) {
+      // ✅ Si tiene extras, SIEMPRE abrir modal (sin importar la cantidad)
       setProductoParaExtras(producto);
       setCantidadProducto(cantidad);
       setTotalUnidades(cantidad);
@@ -270,16 +325,15 @@ export const useNuevoPedido = () => {
       setEditandoItemCarrito(null);
       setModalExtras(true);
     } else {
-      // Si no tiene extras, abrir modal para agregar observación
-      setProductoParaExtras(producto);
-      setCantidadProducto(cantidad);
-      setTotalUnidades(cantidad);
-      setUnidadActual(1);
-      setUnidadesConfiguradas([]);
-      setExtrasSeleccionados([]);
-      setObservacionItem('');
-      setEditandoItemCarrito(null);
-      setModalExtras(true);
+      // Si NO tiene extras, agregar directamente al carrito
+      const nuevoItem = {
+        ...producto,
+        cantidad: cantidad,
+        extrasSeleccionados: [],
+        observacion: undefined,
+        carritoId: Date.now() + Math.random()
+      };
+      setCarrito(prev => [...prev, nuevoItem]);
     }
   }, []);
 
@@ -386,6 +440,39 @@ export const useNuevoPedido = () => {
     }
   }, [editandoItemCarrito, extrasSeleccionados, observacionItem, productoParaExtras, unidadesConfiguradas, unidadActual, totalUnidades, cerrarModalExtras]);
 
+  // Validar datos del paso 2 (cliente) para poder avanzar al resumen. Devuelve { valid, mensaje }.
+  const validarPasoCliente = useCallback((clienteActual, tipoEntregaActual) => {
+    const datosCliente = {
+      nombre: clienteActual.nombre,
+      telefono: clienteActual.telefono,
+      email: clienteActual.email && clienteActual.email.trim() !== '' ? clienteActual.email : undefined,
+      direccion: clienteActual.direccion,
+    };
+    const result = clienteSchema.safeParse(datosCliente);
+    if (!result.success) {
+      const issues = result.error.issues ?? result.error.errors ?? [];
+      const primerError = issues[0];
+      const camposTraducidos = {
+        nombre: 'Nombre',
+        telefono: 'Teléfono',
+        email: 'Email',
+        calle: 'Calle',
+        numero: 'Número',
+      };
+      let mensaje = primerError?.message || 'Revisá los datos del formulario.';
+      if (primerError?.path?.length) {
+        const campo = primerError.path[primerError.path.length - 1];
+        const campoTraducido = camposTraducidos[campo] ?? campo;
+        mensaje = `${campoTraducido}: ${primerError.message}`;
+      }
+      return { valid: false, mensaje };
+    }
+    if (tipoEntregaActual === 'delivery' && !(clienteActual.direccion?.calle?.trim())) {
+      return { valid: false, mensaje: 'Calle: La calle es requerida para delivery.' };
+    }
+    return { valid: true };
+  }, []);
+
   // Crear pedido
   const crearPedido = useCallback(async (onSuccess) => {
     // Validar con Zod
@@ -410,40 +497,34 @@ export const useNuevoPedido = () => {
       pedidoSchema.parse(datosValidar);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const primerError = error.errors && error.errors.length > 0 ? error.errors[0] : null;
-        if (primerError) {
-          // Formatear el mensaje de error de manera más legible
-          let mensaje = primerError.message;
-          if (primerError.path && primerError.path.length > 0) {
-            const campo = primerError.path[primerError.path.length - 1];
-            // Traducir nombres de campos a español
-            const camposTraducidos = {
-              'nombre': 'Nombre',
-              'telefono': 'Teléfono',
-              'email': 'Email',
-              'calle': 'Calle',
-              'numero': 'Número',
-              'cliente': 'Cliente',
-              'carrito': 'Carrito',
-              'tipoEntrega': 'Tipo de entrega',
-              'origen': 'Origen',
-              'tipoPedido': 'Tipo de pedido',
-              'medioPago': 'Medio de pago',
-              'estadoPago': 'Estado de pago',
-              'descuento': 'Descuento'
-            };
-            const campoTraducido = camposTraducidos[campo] || campo;
-            mensaje = `${campoTraducido}: ${primerError.message}`;
-          }
-          toast.error(mensaje || 'Error de validación');
-          console.error('Error de validación Zod:', error.errors);
-        } else {
-          toast.error('Error de validación');
-          console.error('Error de validación Zod (sin detalles):', error);
+        // Zod 3/4 usa .issues (no .errors)
+        const issues = error.issues ?? error.errors ?? [];
+        const primerError = issues.length > 0 ? issues[0] : null;
+        const camposTraducidos = {
+          nombre: 'Nombre',
+          telefono: 'Teléfono',
+          email: 'Email',
+          calle: 'Calle',
+          numero: 'Número',
+          cliente: 'Cliente',
+          carrito: 'Carrito',
+          tipoEntrega: 'Tipo de entrega',
+          origen: 'Origen',
+          tipoPedido: 'Tipo de pedido',
+          medioPago: 'Medio de pago',
+          estadoPago: 'Estado de pago',
+          descuento: 'Descuento',
+        };
+        let mensaje = primerError?.message || 'Revisá los datos del formulario.';
+        if (primerError?.path?.length) {
+          const campo = primerError.path[primerError.path.length - 1];
+          const campoTraducido = camposTraducidos[campo] ?? campo;
+          mensaje = `${campoTraducido}: ${primerError.message}`;
         }
+        toast.error(mensaje);
         return null;
       }
-      console.error('Error no Zod:', error);
+      console.error('Error al validar pedido:', error);
       toast.error('Error de validación');
       return null;
     }
@@ -570,7 +651,9 @@ export const useNuevoPedido = () => {
       }
     } catch (error) {
       console.error('Error al crear pedido:', error);
-      toast.error(`Error al crear pedido: ${error.message || 'Error desconocido'}`);
+      const mensajeBackend = error.response?.data?.mensaje || error.response?.data?.message;
+      const mensaje = mensajeBackend || error.message || 'No se pudo crear el pedido. Intentá de nuevo.';
+      toast.error(`Error al crear pedido: ${mensaje}`);
       return null;
     }
   }, [cliente, carrito, origen, tipoPedido, horaProgramada, estadoPago, tipoEntrega, medioPago, descuento, calcularSubtotal, calcularDescuento, calcularIVA, calcularTotal, resetearModal]);
@@ -591,6 +674,7 @@ export const useNuevoPedido = () => {
     productos,
     loadingCategorias,
     loadingProductos,
+    loadingProductosMasSolicitados,
     modalExtras,
     setModalExtras,
     productoParaExtras,
@@ -640,6 +724,7 @@ export const useNuevoPedido = () => {
     toggleExtra,
     confirmarExtras,
     crearPedido,
+    validarPasoCliente,
   };
 };
 

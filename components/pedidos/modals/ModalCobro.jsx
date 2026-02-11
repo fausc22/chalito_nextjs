@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,7 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
   const [tipoFactura, setTipoFactura] = useState('');
   const [loading, setLoading] = useState(false);
   const [pedidoCompleto, setPedidoCompleto] = useState(null);
+  const submittedRef = useRef(false);
 
   // Obtener pedido completo cuando se abre el modal
   useEffect(() => {
@@ -51,6 +52,11 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
     }
   }, [isOpen, pedidoCompleto]);
 
+  // Reset guard al cerrar modal para permitir nuevo cobro (hooks deben ir antes de cualquier return)
+  useEffect(() => {
+    if (!isOpen) submittedRef.current = false;
+  }, [isOpen]);
+
   const pedidoParaMostrar = pedidoCompleto || pedido;
   if (!pedidoParaMostrar) return null;
 
@@ -62,22 +68,46 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
 
   const handleCobrar = async () => {
     if (!pedidoParaMostrar) return;
-
+    if (submittedRef.current) return;
+    submittedRef.current = true;
     setLoading(true);
     try {
-      // Obtener items del pedido completo si están disponibles
+      // PEDIDO EXISTENTE: usar endpoint de cobro del backend (evita ventas duplicadas)
+      if (pedidoParaMostrar.id !== 'nuevo') {
+        const response = await pedidosService.cobrarPedido(pedidoParaMostrar.id, {
+          medioPago,
+          tipoFactura: tipoFactura || null
+        });
+
+        if (response.success) {
+          toast.success('Pedido cobrado correctamente', {
+            description: `Pedido #${pedidoParaMostrar.id} - Venta registrada`
+          });
+          const pedidoActualizado = response.data?.pedido ?? null;
+          if (onCobroExitoso) onCobroExitoso(pedidoParaMostrar.id, pedidoActualizado);
+          onClose();
+        } else {
+          submittedRef.current = false;
+          if (response.code === 'PEDIDO_YA_PAGADO') {
+            toast.error('El pedido ya está cobrado', {
+              description: 'No se puede cobrar dos veces'
+            });
+            onClose();
+          } else {
+            toast.error(response.error || 'Error al cobrar pedido');
+          }
+        }
+        setLoading(false);
+        return;
+      }
+
+      // PEDIDO NUEVO: flujo anterior (crear venta + luego se crea pedido)
       let items = [];
       if (pedidoParaMostrar.items && pedidoParaMostrar.items.length > 0) {
         items = pedidoParaMostrar.items.map(item => {
-          // El articulo_id puede venir como número o string, asegurarse de que sea número
           const articuloId = item.articulo_id || item.id;
           const articuloIdNum = typeof articuloId === 'string' ? parseInt(articuloId, 10) : articuloId;
-          
-          if (!articuloIdNum || isNaN(articuloIdNum)) {
-            console.error('❌ Item sin articulo_id válido:', item);
-            return null;
-          }
-          
+          if (!articuloIdNum || isNaN(articuloIdNum)) return null;
           return {
             articulo_id: articuloIdNum,
             articulo_nombre: item.articulo_nombre || item.nombre || 'Artículo sin nombre',
@@ -85,80 +115,32 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
             precio: parseFloat(item.precio) || 0,
             subtotal: parseFloat(item.subtotal) || (parseFloat(item.precio) * (item.cantidad || 1)) || 0
           };
-        }).filter(item => item !== null); // Filtrar items inválidos
+        }).filter(item => item !== null);
       }
       
       if (items.length === 0) {
-        toast.error('Error al procesar items del pedido', {
-          description: 'No se pudieron obtener los items del pedido'
-        });
+        toast.error('Error al procesar items del pedido');
+        submittedRef.current = false;
         setLoading(false);
         return;
       }
-      
-      console.log('💰 Items preparados para venta:', items);
 
-      // Preparar datos de la venta
       const ventaData = {
         clienteNombre: pedidoParaMostrar.clienteNombre,
-        cliente: {
-          nombre: pedidoParaMostrar.clienteNombre,
-          telefono: pedidoParaMostrar.telefono || '',
-          email: pedidoParaMostrar.email || null,
-          direccion: pedidoParaMostrar.direccion || ''
-        },
+        cliente: { nombre: pedidoParaMostrar.clienteNombre, telefono: pedidoParaMostrar.telefono || '', email: pedidoParaMostrar.email || null, direccion: pedidoParaMostrar.direccion || '' },
         direccion: pedidoParaMostrar.direccion || '',
         telefono: pedidoParaMostrar.telefono || '',
         email: pedidoParaMostrar.email || null,
-        subtotal: subtotal,
-        ivaTotal: ivaTotal,
-        descuento: descuento,
-        total: total,
-        medioPago: medioPago,
-        tipo_factura: tipoFactura || null,
-        items: items
+        subtotal, ivaTotal, descuento, total,
+        medioPago, tipo_factura: tipoFactura || null, items
       };
 
       const response = await ventasService.crearVenta(ventaData);
 
       if (response.success) {
-        // Si es un pedido existente (no nuevo), actualizar su estado_pago a PAGADO
-        if (pedidoParaMostrar.id !== 'nuevo') {
-          try {
-            // Actualizar el pedido para marcar como pagado
-            await pedidosService.actualizarEstadoPagoPedido(pedidoParaMostrar.id, 'PAGADO', medioPago);
-          } catch (error) {
-            console.warn('No se pudo actualizar el estado de pago del pedido:', error);
-            // Si es rate limit, no es crítico, la venta ya se registró
-            const isRateLimit = error.message?.includes('Rate limit') || 
-                               error.response?.status === 429;
-            if (!isRateLimit) {
-              throw error; // Re-lanzar si no es rate limit
-            }
-          }
-        }
-
-        // Si es un pedido nuevo, no mostrar toast aquí, se mostrará cuando se cree el pedido
-        if (pedidoParaMostrar.id !== 'nuevo') {
-          toast.success('Venta registrada exitosamente', {
-            description: `Pedido #${pedidoParaMostrar.id} cobrado correctamente`
-          });
-        }
-        
-        if (onCobroExitoso) {
-          // Si es un pedido nuevo, pasar el medio de pago seleccionado
-          if (pedidoParaMostrar.id === 'nuevo') {
-            onCobroExitoso(medioPago);
-          } else {
-            onCobroExitoso(pedidoParaMostrar.id);
-          }
-        }
-        
-        // Solo cerrar si no es un pedido nuevo (el nuevo se cerrará después de crearse)
-        if (pedidoParaMostrar.id !== 'nuevo') {
-          onClose();
-        }
+        if (onCobroExitoso) onCobroExitoso(medioPago);
       } else {
+        submittedRef.current = false;
         // Verificar si es rate limit
         const isRateLimit = response.rateLimit === true || 
                            response.error?.includes('Rate limit') ||
@@ -178,6 +160,7 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
         }
       }
     } catch (error) {
+      submittedRef.current = false;
       console.error('Error al cobrar pedido:', error);
       
       // Verificar si es rate limit
@@ -209,17 +192,25 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
           <DialogTitle className="text-xl font-bold">Cobrar Pedido #{pedidoParaMostrar.id}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 pr-2">
           {/* Items del Pedido */}
           {pedidoParaMostrar.items && pedidoParaMostrar.items.length > 0 && (
             <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
               <h3 className="text-base font-semibold text-slate-800 mb-3">📦 Items del Pedido</h3>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-3">
                 {pedidoParaMostrar.items.map((item, index) => {
                   const precioUnitario = parseFloat(item.precio) || 0;
                   const cantidad = item.cantidad || 1;
                   const subtotalItem = parseFloat(item.subtotal) || (precioUnitario * cantidad);
-                  const extras = item.extras || item.personalizaciones || [];
+                  
+                  // Manejar diferentes formatos de extras
+                  let extras = item.extras || item.personalizaciones || [];
+                  
+                  // Si extras es un objeto con una propiedad 'extras' que es un array, extraerlo
+                  if (extras && typeof extras === 'object' && !Array.isArray(extras) && extras.extras && Array.isArray(extras.extras)) {
+                    extras = extras.extras;
+                  }
+                  
                   const tieneExtras = extras && (Array.isArray(extras) ? extras.length > 0 : Object.keys(extras).length > 0);
                   
                   return (

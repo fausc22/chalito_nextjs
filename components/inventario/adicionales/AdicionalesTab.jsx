@@ -203,7 +203,6 @@ export function AdicionalesTab({
           : 'Adicional creado correctamente'
         );
         cerrarModal();
-        setCurrentPage(1);
         onCargarAdicionales();
       } else {
         toast.error(resultado.error || 'Ha ocurrido un error');
@@ -226,7 +225,6 @@ export function AdicionalesTab({
       if (resultado.success) {
         toast.success('Adicional eliminado correctamente');
         setAdicionalEliminar(null);
-        setCurrentPage(1);
         onCargarAdicionales();
       } else {
         toast.error(resultado.error || 'No se pudo eliminar el adicional');
@@ -264,6 +262,14 @@ export function AdicionalesTab({
     }
     return true;
   });
+
+  // Ajustar página actual si queda fuera de rango después de operaciones
+  useEffect(() => {
+    const totalPages = Math.ceil(adicionalesFiltrados.length / itemsPerPage);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [adicionalesFiltrados.length, currentPage, itemsPerPage]);
 
   // Calcular paginación local
   const totalPages = Math.ceil(adicionalesFiltrados.length / itemsPerPage);
@@ -312,7 +318,7 @@ export function AdicionalesTab({
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 items-center w-full sm:w-auto">
-          <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto">
+          <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto bg-green-500 hover:bg-green-600">
             <Plus className="h-4 w-4" />
             Nuevo Adicional
           </Button>

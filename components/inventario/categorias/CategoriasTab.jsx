@@ -84,6 +84,14 @@ export function CategoriasTab({
     };
   }, []);
 
+  // Ajustar página actual si queda fuera de rango después de operaciones
+  useEffect(() => {
+    const totalPages = Math.ceil(categorias.length / itemsPerPage);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [categorias.length, currentPage, itemsPerPage]);
+
   // Abrir modal para crear
   const abrirModalCrear = () => {
     setCategoriaEditando(null);
@@ -250,7 +258,7 @@ export function CategoriasTab({
             Total: {categorias.length} categorías
           </p>
         </div>
-        <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto">
+        <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto bg-green-500 hover:bg-green-600">
           <Plus className="h-4 w-4" />
           Nueva Categoría
         </Button>

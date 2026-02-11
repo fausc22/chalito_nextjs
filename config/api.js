@@ -18,6 +18,15 @@ export const API_CONFIG = {
       ESTADO: (id) => `/pedidos/${id}/estado`,
       OBSERVACIONES: (id) => `/pedidos/${id}/observaciones`,
       ARTICULOS: (id) => `/pedidos/${id}/articulos`,
+      CAPACIDAD: '/pedidos/capacidad',
+      FORZAR_ESTADO: (id) => `/pedidos/${id}/forzar-estado`,
+      COBRAR: (id) => `/pedidos/${id}/cobrar`,
+      COMANDA_PRINT: (id) => `/pedidos/${id}/comanda-print`,
+      TICKET_PRINT: (id) => `/pedidos/${id}/ticket-print`,
+    },
+    CONFIGURACION: {
+      LIST: '/configuracion-sistema',
+      BY_KEY: (clave) => `/configuracion-sistema/${clave}`,
     },
     VENTAS: {
       LIST: '/ventas',
@@ -33,6 +42,7 @@ export const API_CONFIG = {
       UPDATE: '/inventario/articulos',
       DELETE: '/inventario/articulos',
       BY_ID: (id) => `/inventario/articulos/${id}`,
+      UPLOAD_IMAGEN: '/articulos/upload-imagen',
     },
     CATEGORIAS: {
       LIST: '/inventario/categorias',

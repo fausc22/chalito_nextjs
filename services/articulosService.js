@@ -2,6 +2,57 @@ import { apiRequest } from './api';
 import { API_CONFIG } from '../config/api';
 
 export const articulosService = {
+  // ==================== SUBIR IMAGEN A CLOUDINARY ====================
+  // Sube una imagen al backend que la procesa con Cloudinary
+  subirImagenArticulo: async (imagenFile) => {
+    try {
+      // Validar que hay archivo
+      if (!imagenFile) {
+        return {
+          success: false,
+          error: 'No se proporcionó ninguna imagen'
+        };
+      }
+
+      // Crear FormData
+      const formData = new FormData();
+      formData.append('imagen', imagenFile);
+
+      // Subir al backend (que sube a Cloudinary)
+      const response = await apiRequest.post(
+        API_CONFIG.ENDPOINTS.ARTICULOS.UPLOAD_IMAGEN,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      // Verificar respuesta
+      if (response.data?.error === true || response.data?.success === false) {
+        return {
+          success: false,
+          error: response.data.mensaje || 'Error al subir imagen'
+        };
+      }
+
+      // Retornar URL de Cloudinary
+      return {
+        success: true,
+        imagen_url: response.data.imagen_url || response.data.data?.imagen_url,
+        public_id: response.data.public_id || response.data.data?.public_id
+      };
+
+    } catch (error) {
+      console.error('Error al subir imagen:', error);
+      return {
+        success: false,
+        error: error.response?.data?.mensaje || error.message || 'Error al subir imagen'
+      };
+    }
+  },
+
   // Obtener todos los artículos
   obtenerArticulos: async (filtros = {}) => {
     try {
@@ -106,6 +157,26 @@ export const articulosService = {
   // Crear nuevo artículo
   crearArticulo: async (articuloData) => {
     try {
+      // ==================== SUBIDA DE IMAGEN A CLOUDINARY ====================
+      let imagen_url = null;
+
+      // Si hay una imagen seleccionada, subirla primero
+      if (articuloData.imagenFile) {
+        console.log('📸 Subiendo imagen a Cloudinary...');
+        const uploadResult = await articulosService.subirImagenArticulo(articuloData.imagenFile);
+        
+        if (uploadResult.success) {
+          imagen_url = uploadResult.imagen_url;
+          console.log('✅ Imagen subida correctamente:', imagen_url);
+        } else {
+          // Si falla la subida de imagen, mostrar advertencia pero continuar
+          console.warn('⚠️ No se pudo subir la imagen:', uploadResult.error);
+          // Opción: puedes decidir si fallar todo o continuar sin imagen
+          // return { success: false, error: uploadResult.error };
+        }
+      }
+      // ==================== FIN SUBIDA ====================
+
       // Mapear campos del frontend al backend
       const dataToSend = {
         categoria_id: articuloData.categoria_id,
@@ -116,7 +187,7 @@ export const articulosService = {
         stock_actual: articuloData.stock_actual ? parseInt(articuloData.stock_actual) : 0,
         stock_minimo: articuloData.stock_minimo ? parseInt(articuloData.stock_minimo) : 0,
         tipo: articuloData.tipo || 'OTRO',
-        imagen_url: null,
+        imagen_url: imagen_url, // URL de Cloudinary o null
         ingredientes: articuloData.tipo === 'ELABORADO' ? (articuloData.ingredientes || []) : []
       };
 
@@ -178,6 +249,26 @@ export const articulosService = {
   // Actualizar artículo existente
   actualizarArticulo: async (id, articuloData) => {
     try {
+      // ==================== ACTUALIZACIÓN DE IMAGEN CON CLOUDINARY ====================
+      let imagen_url = articuloData.imagen_url; // Mantener URL existente por defecto
+
+      // Si hay una nueva imagen seleccionada, subirla
+      if (articuloData.imagenFile) {
+        console.log('📸 Subiendo nueva imagen a Cloudinary...');
+        const uploadResult = await articulosService.subirImagenArticulo(articuloData.imagenFile);
+        
+        if (uploadResult.success) {
+          imagen_url = uploadResult.imagen_url;
+          console.log('✅ Imagen actualizada correctamente:', imagen_url);
+          // NOTA: Si se desea eliminar la imagen anterior de Cloudinary,
+          // se puede hacer aquí usando el public_id de la imagen anterior
+        } else {
+          console.warn('⚠️ No se pudo subir la nueva imagen:', uploadResult.error);
+          // Mantener la imagen anterior si falla la subida
+        }
+      }
+      // ==================== FIN ACTUALIZACIÓN ====================
+
       // Mapear campos del frontend al backend
       const dataToSend = {
         categoria_id: articuloData.categoria_id,
@@ -189,6 +280,7 @@ export const articulosService = {
         stock_minimo: articuloData.stock_minimo !== undefined && articuloData.stock_minimo !== '' ? parseInt(articuloData.stock_minimo) : 0,
         tipo: articuloData.tipo || 'OTRO',
         activo: articuloData.activo ? 1 : 0,
+        imagen_url: imagen_url, // URL actualizada o existente
         ingredientes: articuloData.tipo === 'ELABORADO' ? (articuloData.ingredientes || []) : []
       };
 
@@ -216,16 +308,28 @@ export const articulosService = {
     try {
       const response = await apiRequest.delete(API_CONFIG.ENDPOINTS.ARTICULOS.BY_ID(id));
 
+      // Verificar si la respuesta del backend indica éxito
+      if (response.data?.success === false) {
+        console.warn('⚠️ Backend rechazó la eliminación:', response.data.message);
+        return {
+          success: false,
+          error: response.data.message || response.data.mensaje || 'No se puede eliminar el artículo'
+        };
+      }
+
       return {
         success: true,
         data: response.data.data || response.data,
-        mensaje: response.data.mensaje || 'Artículo eliminado correctamente'
+        mensaje: response.data.mensaje || response.data.message || 'Artículo eliminado correctamente'
       };
     } catch (error) {
-      console.error('Error al eliminar artículo:', error);
+      console.error('❌ Error al eliminar artículo:', error);
+      // El backend devuelve 400 cuando no se puede eliminar
+      const errorMessage = error.response?.data?.message || error.response?.data?.mensaje || 'Error al eliminar artículo';
+      console.error('   Mensaje de error:', errorMessage);
       return {
         success: false,
-        error: error.response?.data?.mensaje || 'Error al eliminar artículo'
+        error: errorMessage
       };
     }
   },

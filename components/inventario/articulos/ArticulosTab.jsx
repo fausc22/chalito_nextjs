@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Plus, AlertTriangle, Box } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -90,10 +90,28 @@ export function ArticulosTab({
   const mobileViewRef = useRef(null);
   const containerRef = useRef(null);
 
+  // Estados para paginación desktop (tabla)
+  const [currentPageDesktop, setCurrentPageDesktop] = useState(1);
+
   // Resetear paginación cuando cambien los filtros
   useEffect(() => {
     setCurrentPageMobile(1);
+    setCurrentPageDesktop(1);
   }, [filtros.busqueda, filtros.categoria, filtros.tipo, filtros.mostrarInactivos]);
+
+  // Ajustar página actual si queda fuera de rango después de operaciones
+  useEffect(() => {
+    const totalPagesMobile = Math.ceil(articulosFiltrados.length / itemsPerPageMobile);
+    if (currentPageMobile > totalPagesMobile && totalPagesMobile > 0) {
+      setCurrentPageMobile(totalPagesMobile);
+    }
+    // Para desktop, asumimos 8 items por página (lo mismo que en ArticulosTable)
+    const itemsPerPageDesktop = 8;
+    const totalPagesDesktop = Math.ceil(articulosFiltrados.length / itemsPerPageDesktop);
+    if (currentPageDesktop > totalPagesDesktop && totalPagesDesktop > 0) {
+      setCurrentPageDesktop(totalPagesDesktop);
+    }
+  }, [articulosFiltrados.length, currentPageMobile, itemsPerPageMobile, currentPageDesktop]);
 
   // Estado del formulario
   const [formulario, setFormulario] = useState({
@@ -109,6 +127,9 @@ export function ArticulosTab({
     activo: true,
     ingredientes: []
   });
+
+  // Estado para la imagen (para subida a Cloudinary)
+  const [imagenFile, setImagenFile] = useState(null);
 
   // Paginación para vista móvil
   const totalPagesMobile = useMemo(
@@ -142,6 +163,7 @@ export function ArticulosTab({
       activo: true,
       ingredientes: []
     });
+    setImagenFile(null); // Limpiar imagen seleccionada
   };
 
   const validarCamposObligatorios = () => {
@@ -169,7 +191,9 @@ export function ArticulosTab({
 
   const construirPayloadArticulo = (categoria_id) => ({
     ...formulario,
-    categoria_id
+    categoria_id,
+    imagenFile: imagenFile, // Incluir archivo de imagen para subir a Cloudinary
+    imagen_url: articuloSeleccionado?.imagen_url || null // Mantener URL existente al editar
   });
 
   // Handlers
@@ -186,12 +210,23 @@ export function ArticulosTab({
       return;
     }
 
+    // Mostrar toast de progreso si hay imagen
+    if (imagenFile) {
+      toast.info('📸 Subiendo imagen...', {
+        description: 'Por favor espera mientras se procesa la imagen'
+      });
+    }
+
     const resultado = await onCrearArticulo(construirPayloadArticulo(categoria_id));
 
     if (resultado.success) {
       setModalAgregar(false);
       limpiarFormulario();
-      toast.success('Artículo creado correctamente');
+      toast.success(
+        imagenFile 
+          ? 'Artículo creado con imagen correctamente' 
+          : 'Artículo creado correctamente'
+      );
       // Recargar la lista de artículos
       onCargarArticulos();
     } else {
@@ -221,6 +256,13 @@ export function ArticulosTab({
       return;
     }
 
+    // Mostrar toast de progreso si hay nueva imagen
+    if (imagenFile) {
+      toast.info('📸 Actualizando imagen...', {
+        description: 'Por favor espera mientras se procesa la imagen'
+      });
+    }
+
     const resultado = await onEditarArticulo(
       articuloSeleccionado.id,
       construirPayloadArticulo(categoria_id)
@@ -230,7 +272,11 @@ export function ArticulosTab({
       setModalEditar(false);
       setArticuloSeleccionado(null);
       limpiarFormulario();
-      toast.success('Artículo actualizado correctamente');
+      toast.success(
+        imagenFile 
+          ? 'Artículo actualizado con nueva imagen correctamente' 
+          : 'Artículo actualizado correctamente'
+      );
       // Recargar la lista de artículos
       onCargarArticulos();
     } else {
@@ -271,6 +317,7 @@ export function ArticulosTab({
           stock_actual: articuloCompleto.stock_actual !== undefined && articuloCompleto.stock_actual !== null ? articuloCompleto.stock_actual.toString() : '',
           stock_minimo: articuloCompleto.stock_minimo !== undefined && articuloCompleto.stock_minimo !== null ? articuloCompleto.stock_minimo.toString() : '',
           activo: articuloCompleto.activo,
+          imagen_url: articuloCompleto.imagen_url || null, // ✅ Agregar imagen_url para preview
           ingredientes: articuloCompleto.contenido || articuloCompleto.ingredientes || []
         });
         setModalEditar(true);
@@ -298,7 +345,8 @@ export function ArticulosTab({
       tipo: '',
       mostrarInactivos: false
     });
-    setCurrentPageMobile(1); // Reset pagination when clearing filters
+    setCurrentPageMobile(1);
+    setCurrentPageDesktop(1);
   };
 
   const handleCloseModal = () => {
@@ -339,7 +387,7 @@ export function ArticulosTab({
           </p>
         </div>
 
-        <Button onClick={() => setModalAgregar(true)} className="gap-2 w-[200px] sm:w-auto">
+        <Button onClick={() => setModalAgregar(true)} className="gap-2 w-[200px] sm:w-auto bg-green-500 hover:bg-green-600">
           <Plus className="h-4 w-4" />
           Nuevo Artículo
         </Button>
@@ -360,6 +408,8 @@ export function ArticulosTab({
           onEditar={handleEditar}
           onEliminar={handleEliminar}
           scrollRef={containerRef}
+          currentPage={currentPageDesktop}
+          setCurrentPage={setCurrentPageDesktop}
         />
       </div>
 
@@ -433,6 +483,8 @@ export function ArticulosTab({
         onSubmit={modalAgregar ? handleCrearArticulo : handleActualizarArticulo}
         isEditing={modalEditar}
         loading={isMutatingArticulos}
+        imagenFile={imagenFile}
+        setImagenFile={setImagenFile}
       />
 
       {/* AlertDialog Eliminar */}

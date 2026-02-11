@@ -1,8 +1,10 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Package } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useDroppable } from '@dnd-kit/core';
 import { OrderCard } from './OrderCard';
+import { OrderRow } from './OrderRow';
+import { pedidosService } from '../../services/pedidosService';
 import {
   Pagination,
   PaginationContent,
@@ -17,14 +19,69 @@ export function PedidosColumn({
   pedidos,
   onMarcharACocina,
   onListo,
+  onEntregar,
   onEditar,
   onCobrar,
   onCancelar,
+  onImprimir,
   estado,
-  compacto = false
+  compacto = false,
+  vistaTabla = false,
+  cobrandoPedidoId = null,
 }) {
   const [paginaActual, setPaginaActual] = useState(1);
-  const itemsPorPagina = 6; // 3 filas x 2 columnas = 6 items por página
+  const [infoCapacidad, setInfoCapacidad] = useState(null);
+  // Si es vista tabla: 8 filas por página. Si es vista cards: 6 items (3 filas x 2 columnas)
+  const itemsPorPagina = vistaTabla ? 8 : 6;
+  
+  // Función para cargar capacidad
+  const cargarCapacidad = useCallback(async () => {
+    const response = await pedidosService.obtenerCapacidadCocina();
+    if (response.success) {
+      setInfoCapacidad(response.data);
+    }
+  }, []);
+  
+  // Cargar capacidad solo si es la columna "EN PREPARACIÓN"
+  useEffect(() => {
+    if (estado === 'en_cocina' || titulo === 'EN PREPARACIÓN') {
+      cargarCapacidad();
+      // Recargar cada 15 segundos para actualización más frecuente
+      const interval = setInterval(cargarCapacidad, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [estado, titulo, cargarCapacidad]);
+  
+  // Rastrear el número anterior de pedidos para detectar cambios
+  const prevPedidosCountRef = useRef(null);
+  const prevPedidosIdsRef = useRef(null);
+  
+  // Actualizar capacidad cuando cambien los pedidos en la columna "EN PREPARACIÓN"
+  useEffect(() => {
+    if (estado === 'en_cocina' || titulo === 'EN PREPARACIÓN') {
+      const currentPedidosIds = new Set(pedidos.map(p => p.id));
+      
+      // Inicializar referencias en la primera ejecución
+      if (prevPedidosCountRef.current === null) {
+        prevPedidosCountRef.current = pedidos.length;
+        prevPedidosIdsRef.current = currentPedidosIds;
+        return; // No actualizar en la primera ejecución
+      }
+      
+      const pedidosCountChanged = prevPedidosCountRef.current !== pedidos.length;
+      const pedidosIdsChanged = 
+        prevPedidosIdsRef.current.size !== currentPedidosIds.size ||
+        [...prevPedidosIdsRef.current].some(id => !currentPedidosIds.has(id)) ||
+        [...currentPedidosIds].some(id => !prevPedidosIdsRef.current.has(id));
+      
+      // Solo actualizar si realmente cambió la lista de pedidos
+      if (pedidosCountChanged || pedidosIdsChanged) {
+        cargarCapacidad();
+        prevPedidosCountRef.current = pedidos.length;
+        prevPedidosIdsRef.current = currentPedidosIds;
+      }
+    }
+  }, [pedidos, estado, titulo, cargarCapacidad]);
 
   const { setNodeRef, isOver } = useDroppable({
     id: estado,
@@ -57,20 +114,55 @@ export function PedidosColumn({
     }
   };
 
+  // Determinar estilo según el estado
+  const getColumnStyles = () => {
+    if (estado === 'listo') {
+      return {
+        header: 'bg-green-600 text-white',
+        border: 'border-green-400',
+        bg: 'bg-green-50'
+      };
+    }
+    return {
+      header: 'bg-slate-700 text-white',
+      border: 'border-slate-300',
+      bg: 'bg-slate-100'
+    };
+  };
+
+  const columnStyles = getColumnStyles();
+
   return (
-    <div className="h-full rounded-lg border-2 border-slate-300 bg-slate-100 overflow-hidden flex flex-col shadow">
-      <div className="bg-slate-700 text-white px-3 py-2 flex-shrink-0">
+    <div className={`h-full rounded-lg border-2 ${columnStyles.border} ${columnStyles.bg} overflow-hidden flex flex-col shadow`}>
+      <div className={`${columnStyles.header} px-3 py-2 flex-shrink-0`}>
         <h2 className="text-sm font-bold flex items-center justify-between">
-          {titulo}
-          <Badge className="bg-slate-600 text-white text-xs px-2 py-0.5 font-semibold">
-            {pedidos.length}
-          </Badge>
+          <span>{titulo}</span>
+          <div className="flex items-center gap-2">
+            {/* Indicador de capacidad para columna EN PREPARACIÓN */}
+            {(estado === 'en_cocina' || titulo === 'EN PREPARACIÓN') && infoCapacidad && (
+              <Badge 
+                className={`text-xs px-2 py-0.5 font-semibold ${
+                  infoCapacidad.estaLlena 
+                    ? 'bg-red-600 text-white' 
+                    : infoCapacidad.porcentajeUso >= 75
+                    ? 'bg-yellow-600 text-white'
+                    : 'bg-green-600 text-white'
+                }`}
+                title={`Capacidad: ${infoCapacidad.pedidosEnPreparacion}/${infoCapacidad.capacidadMaxima} pedidos`}
+              >
+                {infoCapacidad.pedidosEnPreparacion}/{infoCapacidad.capacidadMaxima}
+              </Badge>
+            )}
+            <Badge className="bg-slate-600 text-white text-xs px-2 py-0.5 font-semibold">
+              {pedidos.length}
+            </Badge>
+          </div>
         </h2>
       </div>
 
       <div
         ref={setNodeRef}
-        className={`flex-1 overflow-y-auto p-3 min-h-0 transition-colors ${
+        className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 transition-colors p-3 ${
           isOver ? 'bg-blue-100 border-2 border-blue-400' : ''
         }`}
       >
@@ -79,7 +171,26 @@ export function PedidosColumn({
             <Package className="h-10 w-10 mx-auto mb-2 opacity-50" />
             <p className="text-xs font-medium">No hay pedidos</p>
           </div>
+        ) : vistaTabla ? (
+          // Vista de tabla con filas - ocupa todo el ancho disponible
+          <div className="w-full">
+            {pedidosPaginados.map(pedido => (
+                  <OrderRow
+                key={pedido.id}
+                pedido={pedido}
+                onMarcharACocina={onMarcharACocina}
+                onListo={onListo}
+                onEntregar={onEntregar}
+                onEditar={onEditar}
+                onCancelar={onCancelar}
+                onCobrar={onCobrar}
+                onImprimir={onImprimir}
+                cobrandoPedidoId={cobrandoPedidoId}
+              />
+            ))}
+          </div>
         ) : (
+          // Vista de cards en grid
           <div className="grid grid-cols-2 gap-3">
             {pedidosPaginados.map(pedido => (
               <OrderCard
@@ -87,9 +198,12 @@ export function PedidosColumn({
                 pedido={pedido}
                 onMarcharACocina={onMarcharACocina}
                 onListo={onListo}
+                onEntregar={onEntregar}
                 onEditar={onEditar}
                 onCancelar={onCancelar}
                 onCobrar={onCobrar}
+                onImprimir={onImprimir}
+                cobrandoPedidoId={cobrandoPedidoId}
               />
             ))}
           </div>
