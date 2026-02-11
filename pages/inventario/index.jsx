@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, Leaf, Tag, Plus } from 'lucide-react';
+import { Box, Carrot, Tag, Plus } from 'lucide-react';
 import { ProtectedRoute } from '../../components/auth/ProtectedRoute';
 import { Layout } from '../../components/layout/Layout';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArticulosTab } from '../../components/inventario/articulos/ArticulosTab';
 import { IngredientesTab } from '../../components/inventario/ingredientes/IngredientesTab';
 import { CategoriasTab } from '../../components/inventario/categorias/CategoriasTab';
+import { AdicionalesTab } from '../../components/inventario/adicionales/AdicionalesTab';
 import { useInventario } from '../../hooks/inventario/useInventario';
 
 function InventarioContent() {
@@ -43,7 +44,21 @@ function InventarioContent() {
     crearIngrediente,
     editarIngrediente,
     eliminarIngrediente,
-    cargarIngredientesActivos
+    cargarIngredientesActivos,
+    // Adicionales
+    adicionales,
+    adicionalesDisponibles,
+    loadingAdicionales,
+    errorAdicionales,
+    metaAdicionales,
+    cargarAdicionales,
+    crearAdicional,
+    editarAdicional,
+    eliminarAdicional,
+    cargarAdicionalesActivos,
+    obtenerAdicionalesPorArticulo,
+    asignarAdicionalesAArticulo,
+    eliminarAdicionalDeArticulo
   } = useInventario();
 
   // Cargar datos iniciales
@@ -52,7 +67,9 @@ function InventarioContent() {
     cargarIngredientes();
     cargarIngredientesActivos();
     cargarCategorias();
-  }, [cargarArticulos, cargarIngredientes, cargarIngredientesActivos, cargarCategorias]);
+    cargarAdicionales();
+    cargarAdicionalesActivos();
+  }, [cargarArticulos, cargarIngredientes, cargarIngredientesActivos, cargarCategorias, cargarAdicionales, cargarAdicionalesActivos]);
 
   return (
     <Layout title="Inventario">
@@ -63,7 +80,7 @@ function InventarioContent() {
             📦Módulo Inventario
           </h1>
           <p className="text-slate-500 text-base">
-            Administrá artículos, ingredientes y categorías
+            Administrá artículos, ingredientes, categorías y adicionales
           </p>
         </div>
 
@@ -74,14 +91,14 @@ function InventarioContent() {
               value="articulos"
               className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 bg-blue-500 !text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 hover:shadow-lg hover:scale-105 data-[state=active]:bg-blue-700 data-[state=active]:!text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 transition-all duration-200 max-[400px]:w-[calc(50%-0.25rem)]"
             >
-              <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Box className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="text-sm sm:text-base">Artículos</span>
             </TabsTrigger>
             <TabsTrigger
               value="ingredientes"
               className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 bg-green-500 !text-white font-semibold rounded-lg shadow-md hover:bg-green-600 hover:shadow-lg hover:scale-105 data-[state=active]:bg-green-700 data-[state=active]:!text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 transition-all duration-200 max-[400px]:w-[calc(50%-0.25rem)]"
             >
-              <Leaf className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Carrot className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="text-sm sm:text-base">Ingredientes</span>
             </TabsTrigger>
             <TabsTrigger
@@ -140,6 +157,22 @@ function InventarioContent() {
               onEditarCategoria={editarCategoria}
               onEliminarCategoria={eliminarCategoria}
               articulos={articulos}
+            />
+          </TabsContent>
+
+          <TabsContent value="adicionales" className="mt-0 bg-white rounded-xl p-8 shadow-sm border border-slate-200 min-h-[400px]">
+            <AdicionalesTab
+              adicionales={adicionales}
+              loadingAdicionales={loadingAdicionales}
+              errorAdicionales={errorAdicionales}
+              metaAdicionales={metaAdicionales}
+              onCargarAdicionales={cargarAdicionales}
+              onCrearAdicional={crearAdicional}
+              onEditarAdicional={editarAdicional}
+              onEliminarAdicional={eliminarAdicional}
+              articulos={articulos}
+              onObtenerAdicionalesPorArticulo={obtenerAdicionalesPorArticulo}
+              onAsignarAdicionalesAArticulo={asignarAdicionalesAArticulo}
             />
           </TabsContent>
         </Tabs>

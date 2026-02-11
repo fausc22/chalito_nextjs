@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Leaf, AlertCircle, AlertTriangle, Pencil, Trash2, X } from 'lucide-react';
+import { Plus, Carrot, AlertCircle, AlertTriangle, Pencil, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -298,7 +298,7 @@ export function IngredientesTab({
       <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4">
         <div className="text-center sm:text-left w-full sm:w-auto">
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center justify-center sm:justify-start gap-2">
-            <Leaf className="h-6 w-6" />
+            <Carrot className="h-6 w-6" />
             Gestión de Ingredientes
           </h2>
           <p className="text-muted-foreground mt-1">
@@ -321,7 +321,7 @@ export function IngredientesTab({
       {/* Contenido */}
       {ingredientes.length === 0 ? (
         <div className="text-center py-12 border-2 border-dashed rounded-lg">
-          <Leaf className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <Carrot className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No hay ingredientes</h3>
           <p className="text-muted-foreground mb-4">
             Comienza creando tu primer ingrediente
@@ -333,7 +333,7 @@ export function IngredientesTab({
         </div>
       ) : ingredientesFiltrados.length === 0 ? (
         <div className="text-center py-12 border-2 border-dashed rounded-lg">
-          <Leaf className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <Carrot className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No se encontraron ingredientes</h3>
           <p className="text-muted-foreground mb-4">
             Probá ajustando los filtros o creá un nuevo ingrediente

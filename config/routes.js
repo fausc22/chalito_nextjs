@@ -8,6 +8,8 @@ export const ROUTES = {
   VENTAS: '/ventas',
   INVENTARIO: '/inventario',
   ARTICULOS: '/inventario', // Alias para compatibilidad
+  GASTOS: '/gastos',
+  FONDOS: '/fondos',
   REPORTES: '/reportes',
   PERFIL: '/perfil',
 };
@@ -21,6 +23,8 @@ export const PROTECTED_ROUTES = [
   ROUTES.PEDIDOS,
   ROUTES.VENTAS,
   ROUTES.INVENTARIO,
+  ROUTES.GASTOS,
+  ROUTES.FONDOS,
   ROUTES.REPORTES,
   ROUTES.PERFIL,
 ];
@@ -31,6 +35,8 @@ export const ROUTE_TITLES = {
   [ROUTES.PEDIDOS]: 'Pedidos',
   [ROUTES.VENTAS]: 'Ventas',
   [ROUTES.INVENTARIO]: 'Inventario',
+  [ROUTES.GASTOS]: 'Gastos',
+  [ROUTES.FONDOS]: 'Fondos',
   [ROUTES.REPORTES]: 'Reportes',
   [ROUTES.PERFIL]: 'Perfil',
 };

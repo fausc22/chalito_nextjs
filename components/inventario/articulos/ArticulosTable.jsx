@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { Pencil, Trash2, Package } from 'lucide-react';
+import { Pencil, Trash2, Utensils } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -87,7 +87,7 @@ export const ArticulosTable = ({
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-16">
-          <Package className="h-16 w-16 text-muted-foreground mb-4" />
+          <Utensils className="h-16 w-16 text-muted-foreground mb-4" />
           <h3 className="text-xl font-semibold text-gray-700 mb-2">
             No se encontraron artículos
           </h3>
@@ -161,7 +161,7 @@ export const ArticulosTable = ({
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Package className="h-4 w-4 text-muted-foreground" />
+                        <Utensils className="h-4 w-4 text-muted-foreground" />
                       </div>
                     )}
                   </div>
@@ -264,7 +264,7 @@ export const ArticulosTable = ({
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Package className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
+                      <Utensils className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
                     </div>
                   )}
                 </div>

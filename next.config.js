@@ -9,6 +9,10 @@ const nextConfig = {
         protocol: 'http',
         hostname: 'localhost',
       },
+      {
+        protocol: 'https',
+        hostname: '**', // Permite cualquier dominio HTTPS en producción
+      },
     ],
     formats: ['image/avif', 'image/webp'],
   },

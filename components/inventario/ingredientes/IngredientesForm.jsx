@@ -1,3 +1,4 @@
+import { Carrot, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -35,19 +36,20 @@ export const IngredientesForm = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="pb-2 border-b-2 border-slate-200">
-          <DialogTitle className="text-2xl font-bold">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0 pb-2">
+          <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <Carrot className="h-5 w-5" />
             {isEditing ? 'Editar Ingrediente' : 'Crear Nuevo Ingrediente'}
           </DialogTitle>
-          <DialogDescription className="text-base">
+          <DialogDescription className="sr-only">
             {isEditing
               ? 'Modifica los datos del ingrediente'
               : 'Completa los datos para agregar un nuevo ingrediente'}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 pt-4">
           {/* Nombre */}
           <div className="space-y-2">
             <Label htmlFor="nombre" className="text-sm font-medium">
@@ -58,7 +60,7 @@ export const IngredientesForm = ({
               value={formulario.nombre || ''}
               onChange={(e) => handleChange('nombre', e.target.value)}
               placeholder="Ej: Lechuga, Tomate, Queso..."
-              className="border-2 focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+              className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
               required
             />
           </div>
@@ -74,7 +76,7 @@ export const IngredientesForm = ({
               onChange={(e) => handleChange('descripcion', e.target.value)}
               placeholder="Descripción opcional del ingrediente"
               rows={3}
-              className="border-2 focus:border-violet-600 focus:ring-2 focus:ring-violet-100 resize-none"
+              className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 resize-none"
             />
           </div>
 
@@ -91,7 +93,7 @@ export const IngredientesForm = ({
               min="0"
               step="0.01"
               placeholder="0.00"
-              className="border-2 focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+              className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
             />
             <p className="text-sm text-muted-foreground">
               Costo adicional si el cliente lo agrega extra
@@ -125,25 +127,28 @@ export const IngredientesForm = ({
             </div>
           )}
 
-          <DialogFooter className="gap-2 sm:gap-0 pt-6 border-t-2 border-slate-200">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-              className="border-2 h-11 px-6 text-base"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="h-11 px-8 text-base font-semibold bg-emerald-600 hover:bg-emerald-700"
-            >
-              {loading ? 'Guardando...' : (isEditing ? 'Actualizar Ingrediente' : 'Crear Ingrediente')}
-            </Button>
-          </DialogFooter>
         </form>
+
+        <DialogFooter className="gap-2 flex-shrink-0 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={loading}
+            className="h-11 px-6"
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            onClick={handleSubmit}
+            disabled={loading}
+            className="bg-green-600 hover:bg-green-700 gap-2 h-11 px-6"
+          >
+            <Check className="h-4 w-4" />
+            {loading ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

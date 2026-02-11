@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { Edit, Trash2, Package, DollarSign, Tag } from 'lucide-react';
+import { Edit, Trash2, Utensils, DollarSign, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +26,7 @@ export function ArticulosCard({ articulo, onEditar, onEliminar }) {
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <Package className="h-8 w-8 text-muted-foreground" />
+                  <Utensils className="h-8 w-8 text-muted-foreground" />
                 </div>
               )}
             </div>
@@ -81,7 +81,7 @@ export function ArticulosCard({ articulo, onEditar, onEliminar }) {
             </div>
 
             <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-              <Package className="h-4 w-4 text-orange-500 flex-shrink-0" />
+              <Utensils className="h-4 w-4 text-orange-500 flex-shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">Tipo</p>
                 <p className="font-medium text-xs truncate">{articulo.tipo}</p>
@@ -89,7 +89,7 @@ export function ArticulosCard({ articulo, onEditar, onEliminar }) {
             </div>
 
             <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-              <Package className="h-4 w-4 text-amber-500 flex-shrink-0" />
+              <Utensils className="h-4 w-4 text-amber-500 flex-shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">Stock</p>
                 <p className="font-medium text-xs truncate">

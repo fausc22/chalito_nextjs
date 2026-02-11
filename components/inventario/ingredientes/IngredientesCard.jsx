@@ -1,4 +1,4 @@
-import { Edit, Trash2, Leaf, DollarSign } from 'lucide-react';
+import { Edit, Trash2, Carrot, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ export function IngredientesCard({ ingrediente, onEditar, onEliminar }) {
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <Leaf className="h-4 w-4 text-green-500" />
+                <Carrot className="h-4 w-4 text-green-500" />
                 <h3 className="font-semibold text-base">{ingrediente.nombre}</h3>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Plus, AlertTriangle, Package } from 'lucide-react';
+import { Plus, AlertTriangle, Box } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -331,7 +331,7 @@ export function ArticulosTab({
       <div className="flex flex-col sm:flex-row justify-between items-center sm:items-center gap-4">
         <div className="text-center sm:text-left w-full sm:w-auto">
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center justify-center sm:justify-start gap-2">
-            <Package className="h-6 w-6" />
+            <Box className="h-6 w-6" />
             Gestión de Artículos
           </h2>
           <p className="text-muted-foreground mt-1">

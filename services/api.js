@@ -150,13 +150,34 @@ apiClient.interceptors.response.use(
       }
     }
 
+    // Manejar rate limiting (429) - debe manejarse antes de otros 4xx
+    if (error.response?.status === 429) {
+      const retryAfter = error.response?.headers?.['retry-after'] || 300; // 5 minutos por defecto
+      console.warn(`⚠️ Rate limit excedido. Esperar ${retryAfter} segundos antes de reintentar.`);
+      // Devolver como respuesta para que los componentes puedan manejarlo
+      return Promise.resolve({
+        data: {
+          success: false,
+          error: true,
+          status: 429,
+          mensaje: `Rate limit excedido. Esperar ${retryAfter} segundos.`,
+          rateLimit: true,
+          retryAfter: parseInt(retryAfter)
+        },
+        status: 429,
+        statusText: 'Too Many Requests',
+        headers: error.response.headers,
+        config: error.config
+      });
+    }
+
     // Manejar errores del servidor (500+)
     if (error.response?.status >= 500) {
       toast.error('Error del servidor. Intenta nuevamente.');
       return Promise.reject(error);
     }
 
-    // Para errores 4xx (excepto 401 que ya se maneja arriba),
+    // Para errores 4xx (excepto 401 y 429 que ya se manejan arriba),
     // NO rechazamos la promesa para evitar el error overlay de Next.js
     // En su lugar, devolvemos un objeto con la información del error
     if (error.response?.status >= 400 && error.response?.status < 500) {
