@@ -28,6 +28,12 @@ export const API_CONFIG = {
       LIST: '/configuracion-sistema',
       BY_KEY: (clave) => `/configuracion-sistema/${clave}`,
     },
+    HEALTH: {
+      WORKER: '/health/worker',
+    },
+    METRICS: {
+      PEDIDOS_ATRASADOS: '/metrics/pedidos-atrasados',
+    },
     VENTAS: {
       LIST: '/ventas',
       CREATE: '/ventas',

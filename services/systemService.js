@@ -22,9 +22,16 @@ export const systemService = {
         };
       }
 
+      const raw = response.data || {};
+      const payload = raw.data || raw;
+      const active = payload.active === true || payload.running === true;
+
       return {
         success: true,
-        data: response.data.data || response.data || { active: false }
+        data: {
+          ...payload,
+          active
+        }
       };
     } catch (error) {
       console.error('Error al obtener health del worker:', error);
@@ -52,11 +59,13 @@ export const systemService = {
         };
       }
 
-      const data = response.data.data || response.data || {};
+      const raw = response.data || {};
+      const data = raw.metrics || raw.data || raw || {};
+
       return {
         success: true,
         data: {
-          count: data.count || 0,
+          count: data.count ?? data.cantidad_atrasados ?? 0,
           pedidos: data.pedidos || []
         }
       };
