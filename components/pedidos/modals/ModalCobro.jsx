@@ -5,7 +5,6 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Banknote, CreditCard, Building2, Smartphone, Wallet, FileText } from 'lucide-react';
-import { ventasService } from '@/services/ventasService';
 import { pedidosService } from '@/services/pedidosService';
 import { toast } from '@/hooks/use-toast';
 
@@ -101,7 +100,8 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
         return;
       }
 
-      // PEDIDO NUEVO: flujo anterior (crear venta + luego se crea pedido)
+      // PEDIDO NUEVO: solo capturar datos de cobro.
+      // La venta se crea después de crear el pedido para tener pedido_id real.
       let items = [];
       if (pedidoParaMostrar.items && pedidoParaMostrar.items.length > 0) {
         items = pedidoParaMostrar.items.map(item => {
@@ -126,6 +126,7 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
       }
 
       const ventaData = {
+        pedido_id: null,
         clienteNombre: pedidoParaMostrar.clienteNombre,
         cliente: { nombre: pedidoParaMostrar.clienteNombre, telefono: pedidoParaMostrar.telefono || '', email: pedidoParaMostrar.email || null, direccion: pedidoParaMostrar.direccion || '' },
         direccion: pedidoParaMostrar.direccion || '',
@@ -135,30 +136,15 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
         medioPago, tipo_factura: tipoFactura || null, items
       };
 
-      const response = await ventasService.crearVenta(ventaData);
-
-      if (response.success) {
-        if (onCobroExitoso) onCobroExitoso(medioPago);
-      } else {
-        submittedRef.current = false;
-        // Verificar si es rate limit
-        const isRateLimit = response.rateLimit === true || 
-                           response.error?.includes('Rate limit') ||
-                           response.error?.includes('rate limit');
-        
-        if (isRateLimit) {
-          const retryAfter = response.retryAfter || 300;
-          const minutos = Math.round(retryAfter / 60);
-          toast.error('Rate limit excedido', {
-            description: `Por favor espera ${minutos} minuto${minutos !== 1 ? 's' : ''} antes de intentar nuevamente. El pedido no se ha cobrado.`,
-            duration: 10000 // Mostrar por más tiempo
-          });
-        } else {
-          toast.error('Error al registrar venta', {
-            description: response.error || 'No se pudo registrar la venta'
-          });
-        }
+      if (onCobroExitoso) {
+        onCobroExitoso({
+          medioPago,
+          tipoFactura: tipoFactura || null,
+          ventaData
+        });
       }
+      // No cerrar aquí: el flujo "nuevo + pagado" necesita conservar
+      // datos temporales hasta confirmar y crear el pedido.
     } catch (error) {
       submittedRef.current = false;
       console.error('Error al cobrar pedido:', error);

@@ -86,10 +86,16 @@ export const ConnectionStatusProvider = ({ children }) => {
   // Función para verificar health del worker y métricas
   const checkSystemHealth = useCallback(async () => {
     try {
-      const [healthResult, metricsResult] = await Promise.all([
+      const [healthSettled, metricsSettled] = await Promise.allSettled([
         systemService.obtenerHealthWorker(),
         systemService.obtenerMetricasPedidosAtrasados()
       ]);
+      const healthResult = healthSettled.status === 'fulfilled'
+        ? healthSettled.value
+        : { success: false, data: { active: false }, error: healthSettled.reason?.message || 'Error al obtener health' };
+      const metricsResult = metricsSettled.status === 'fulfilled'
+        ? metricsSettled.value
+        : { success: false, data: { count: 0, pedidos: [] }, error: metricsSettled.reason?.message || 'Error al obtener métricas' };
 
       // Worker activo por health endpoint o por heartbeat reciente (fallback robusto)
       const heartbeatIsFresh = (Date.now() - lastWorkerHeartbeatAt) <= WORKER_HEARTBEAT_TIMEOUT_MS;

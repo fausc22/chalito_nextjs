@@ -12,7 +12,14 @@ export const systemService = {
    */
   obtenerHealthWorker: async () => {
     try {
-      const response = await apiRequest.get(API_CONFIG.ENDPOINTS.HEALTH.WORKER);
+      const response = await apiRequest
+        .get(API_CONFIG.ENDPOINTS.HEALTH.WORKER)
+        .catch((error) => ({
+          data: {
+            error: true,
+            mensaje: error?.message || 'Network error'
+          }
+        }));
 
       if (response.data?.error === true) {
         return {
@@ -42,7 +49,14 @@ export const systemService = {
    */
   obtenerMetricasPedidosAtrasados: async () => {
     try {
-      const response = await apiRequest.get(API_CONFIG.ENDPOINTS.METRICS.PEDIDOS_ATRASADOS);
+      const response = await apiRequest
+        .get(API_CONFIG.ENDPOINTS.METRICS.PEDIDOS_ATRASADOS)
+        .catch((error) => ({
+          data: {
+            error: true,
+            mensaje: error?.message || 'Network error'
+          }
+        }));
 
       if (response.data?.error === true) {
         return {

@@ -19,6 +19,7 @@ import { ModalImprimir } from '../../components/pedidos/modals/ModalImprimir';
 import { usePedidos } from '../../hooks/pedidos/usePedidos';
 import { useNuevoPedido } from '../../hooks/pedidos/useNuevoPedido';
 import { useEditarPedido } from '../../hooks/pedidos/useEditarPedido';
+import { ventasService } from '../../services/ventasService';
 import { toast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import Head from 'next/head';
@@ -35,6 +36,7 @@ function VentasContent() {
   const [pedidoPendienteCrear, setPedidoPendienteCrear] = useState(null);
   const [mostrarConfirmacionFacturacion, setMostrarConfirmacionFacturacion] = useState(false);
   const [medioPagoParaCrear, setMedioPagoParaCrear] = useState(null);
+  const [datosCobroPendiente, setDatosCobroPendiente] = useState(null);
   const [notificacionesCount, setNotificacionesCount] = useState(0);
   const [modoCocinaOpen, setModoCocinaOpen] = useState(false);
   const [activeId, setActiveId] = useState(null);
@@ -135,9 +137,14 @@ function VentasContent() {
     // El toast de éxito ya se muestra en useNuevoPedido.js
   };
 
-  const handleCobroExitosoYCrearPedido = async (medioPagoSeleccionado) => {
-    // Guardar el medio de pago y mostrar modal de confirmación
-    setMedioPagoParaCrear(medioPagoSeleccionado);
+  const handleCobroExitosoYCrearPedido = async (cobroData) => {
+    // Compatibilidad: aceptar string antiguo o payload nuevo
+    const payload = typeof cobroData === 'string'
+      ? { medioPago: cobroData, tipoFactura: null, ventaData: null }
+      : (cobroData || {});
+
+    setMedioPagoParaCrear(payload.medioPago || null);
+    setDatosCobroPendiente(payload);
     setMostrarConfirmacionFacturacion(true);
   };
 
@@ -162,28 +169,8 @@ function VentasContent() {
       nuevoPedido.setMedioPago(medioPagoParaCrear);
       nuevoPedido.setEstadoPago('paid');
       
-      // Crear el pedido con los datos actualizados
-      // Usar un callback que no muestre el modal de cobro de nuevo
-      const handleCrearPedidoFinal = async (pedidoCreado) => {
-        if (pedidoCreado) {
-          // Mostrar toast de éxito
-          toast.success('Pedido creado exitosamente', {
-            description: `Pedido #${pedidoCreado.id} creado y cobrado correctamente`
-          });
-          
-          // Recargar pedidos
-          if (recargarPedidos) {
-            await recargarPedidos();
-          }
-          // Limpiar datos pendientes
-          setPedidoPendienteCrear(null);
-          setMedioPagoParaCrear(null);
-          // Cerrar modal de nuevo pedido
-          nuevoPedido.setIsOpen(false);
-        }
-      };
-      
-      const pedido = await nuevoPedido.crearPedido(handleCrearPedidoFinal);
+      // Crear el pedido primero para obtener ID real y luego registrar la venta asociada
+      const pedido = await nuevoPedido.crearPedido();
       if (!pedido) {
         // Si falló, volver a abrir el modal de cobro
         setPedidoACobrar(pedidoPendienteCrear);
@@ -191,7 +178,55 @@ function VentasContent() {
         toast.error('Error al crear el pedido', {
           description: 'No se pudo crear el pedido después del cobro'
         });
+        return;
       }
+
+      const itemsVenta = (pedido.items || []).map((item) => {
+        const articuloId = item.articulo_id || item.id;
+        const articuloIdNum = typeof articuloId === 'string' ? parseInt(articuloId, 10) : articuloId;
+        return {
+          articulo_id: articuloIdNum,
+          articulo_nombre: item.articulo_nombre || item.nombre || 'Artículo sin nombre',
+          cantidad: item.cantidad || 1,
+          precio: parseFloat(item.precio) || 0,
+          subtotal: parseFloat(item.subtotal) || ((parseFloat(item.precio) || 0) * (item.cantidad || 1))
+        };
+      }).filter(item => item.articulo_id && !isNaN(item.articulo_id));
+
+      const ventaData = {
+        ...(datosCobroPendiente?.ventaData || {}),
+        pedido_id: parseInt(pedido.id, 10),
+        clienteNombre: pedido.clienteNombre,
+        direccion: pedido.direccion || '',
+        telefono: pedido.telefono || '',
+        email: pedido.email || null,
+        subtotal: pedido.subtotal || datosCobroPendiente?.ventaData?.subtotal || 0,
+        ivaTotal: pedido.ivaTotal || datosCobroPendiente?.ventaData?.ivaTotal || 0,
+        descuento: pedido.descuento || datosCobroPendiente?.ventaData?.descuento || 0,
+        total: pedido.total || datosCobroPendiente?.ventaData?.total || 0,
+        medioPago: medioPagoParaCrear,
+        tipo_factura: datosCobroPendiente?.tipoFactura || null,
+        items: itemsVenta
+      };
+
+      const ventaResponse = await ventasService.crearVenta(ventaData);
+      if (!ventaResponse.success) {
+        toast.error('Pedido creado, pero falló la venta', {
+          description: ventaResponse.error || 'No se pudo registrar la venta asociada'
+        });
+      } else {
+        toast.success('Pedido creado y cobrado correctamente', {
+          description: `Pedido #${pedido.id} - Venta #${ventaResponse.data?.id || 'OK'}`
+        });
+      }
+
+      if (recargarPedidos) {
+        await recargarPedidos();
+      }
+      setPedidoPendienteCrear(null);
+      setMedioPagoParaCrear(null);
+      setDatosCobroPendiente(null);
+      nuevoPedido.setIsOpen(false);
     } else {
       toast.error('Error al procesar el pedido', {
         description: 'Faltan datos para crear el pedido'
@@ -541,6 +576,7 @@ function VentasContent() {
           setModalCobro(false);
           setPedidoACobrar(null);
           setPedidoPendienteCrear(null);
+          setDatosCobroPendiente(null);
         }}
         onCobroExitoso={(pedidoIdOrMedioPago, pedidoActualizado) => {
           if (pedidoACobrar && pedidoACobrar.id === 'nuevo') {

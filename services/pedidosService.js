@@ -700,9 +700,11 @@ export const pedidosService = {
   cobrarPedido: async (pedidoId, { medioPago = 'efectivo', tipoFactura = null, cuentaId = null } = {}) => {
     try {
       const medioPagoBackend = mapearMedioPagoFrontendABackend(medioPago) || 'EFECTIVO';
+      const pedidoIdNum = parseInt(pedidoId, 10);
       const response = await apiRequest.post(
         API_CONFIG.ENDPOINTS.PEDIDOS.COBRAR(pedidoId),
         {
+          pedido_id: Number.isFinite(pedidoIdNum) ? pedidoIdNum : null,
           medio_pago: medioPagoBackend,
           tipo_factura: tipoFactura || null,
           cuenta_id: cuentaId || null
