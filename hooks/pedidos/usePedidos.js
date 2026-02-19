@@ -18,7 +18,7 @@ export const usePedidos = () => {
   const [busquedaPedidos, setBusquedaPedidos] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { updatePollingStatus, updateWebsocketStatus } = useConnectionStatus();
+  const { updatePollingStatus, updateWebsocketStatus, markWorkerHeartbeat } = useConnectionStatus();
 
   // Función para cargar pedidos
   const cargarPedidos = useCallback(async () => {
@@ -109,6 +109,33 @@ export const usePedidos = () => {
     }, 500);
   }, [cargarPedidos, pedidos]);
 
+  const handlePedidoCobrado = useCallback((data) => {
+    console.log('💰 [usePedidos] Pedido cobrado recibido via WebSocket:', data);
+    if (data?.pedidoId == null) return;
+
+    const pedidoId = String(data.pedidoId);
+
+    setPedidos(prev => prev.map(p => {
+      if (p.id !== pedidoId) return p;
+      return {
+        ...p,
+        ...(data.pedido || {}),
+        paymentStatus: 'paid',
+        estado_pago: 'PAGADO',
+        actualizadoRecientemente: true
+      };
+    }));
+
+    setTimeout(() => {
+      setPedidos(prev => prev.map(p =>
+        p.id === pedidoId ? { ...p, actualizadoRecientemente: false } : p
+      ));
+    }, 2000);
+
+    // Refresca para garantizar consistencia con backend (totales, venta relacionada, etc.)
+    cargarPedidos();
+  }, [cargarPedidos]);
+
   const handleCapacidadActualizada = useCallback((data) => {
     console.log('📊 [usePedidos] Capacidad actualizada via WebSocket:', data);
     // La capacidad se maneja en PedidosColumn, que recarga automáticamente
@@ -146,9 +173,11 @@ export const usePedidos = () => {
   const { isConnected: socketConnected } = useSocket(
     handlePedidoCreado,
     handlePedidoEstadoCambiado,
+    handlePedidoCobrado,
     handleCapacidadActualizada,
     handlePedidosAtrasados,
-    handlePedidoActualizado
+    handlePedidoActualizado,
+    markWorkerHeartbeat
   );
 
   // Actualizar estado de conexión cuando cambia el WebSocket

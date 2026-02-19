@@ -30,38 +30,93 @@ export const ConnectionStatusProvider = ({ children }) => {
   const [lastPollingError, setLastPollingError] = useState(null);
   const [pollingActive, setPollingActive] = useState(true);
   const [websocketConnected, setWebsocketConnected] = useState(false);
+  const [lastWorkerHeartbeatAt, setLastWorkerHeartbeatAt] = useState(Date.now());
+  const WORKER_HEARTBEAT_TIMEOUT_MS = 15000;
+
+  const parseWorkerActive = useCallback((payload) => {
+    if (typeof payload === 'boolean') return payload;
+    if (!payload || typeof payload !== 'object') return false;
+    if (typeof payload.active === 'boolean') return payload.active;
+    if (typeof payload.isActive === 'boolean') return payload.isActive;
+    if (typeof payload.connected === 'boolean') return payload.connected;
+    if (typeof payload.running === 'boolean') return payload.running;
+    if (typeof payload.status === 'string') {
+      const normalized = payload.status.toLowerCase();
+      if (['active', 'running', 'ok', 'healthy', 'connected'].includes(normalized)) {
+        return true;
+      }
+      if (['inactive', 'stopped', 'down', 'disconnected', 'error'].includes(normalized)) {
+        return false;
+      }
+    }
+    if (payload.worker && typeof payload.worker.active === 'boolean') {
+      return payload.worker.active;
+    }
+    return false;
+  }, []);
+
+  const resolveSystemStatus = useCallback((isWorkerRunningNow, atrasadosCount) => {
+    if (!isWorkerRunningNow) {
+      setStatus(CONNECTION_STATUS.INACTIVE);
+      return;
+    }
+    if (atrasadosCount > 0) {
+      setStatus(CONNECTION_STATUS.WITH_DELAYS);
+      return;
+    }
+    setStatus(CONNECTION_STATUS.ACTIVE);
+  }, []);
+
+  const markWorkerHeartbeat = useCallback((payload = {}) => {
+    const active = parseWorkerActive(payload);
+    if (!active) {
+      setWorkerActive(false);
+      resolveSystemStatus(false, pedidosAtrasadosCount);
+      return;
+    }
+
+    const rawTimestamp = payload.timestamp ?? payload.ts ?? payload.lastHeartbeat;
+    const parsedTimestamp = Number(rawTimestamp);
+    const heartbeatAt = Number.isFinite(parsedTimestamp) ? parsedTimestamp : Date.now();
+    setLastWorkerHeartbeatAt(heartbeatAt);
+    setWorkerActive(true);
+    resolveSystemStatus(true, pedidosAtrasadosCount);
+  }, [parseWorkerActive, pedidosAtrasadosCount, resolveSystemStatus]);
 
   // Función para verificar health del worker y métricas
   const checkSystemHealth = useCallback(async () => {
     try {
-      // Verificar health del worker
-      const healthResult = await systemService.obtenerHealthWorker();
-      const isWorkerActive = healthResult.success && healthResult.data?.active === true;
-      setWorkerActive(isWorkerActive);
+      const [healthResult, metricsResult] = await Promise.all([
+        systemService.obtenerHealthWorker(),
+        systemService.obtenerMetricasPedidosAtrasados()
+      ]);
+
+      // Worker activo por health endpoint o por heartbeat reciente (fallback robusto)
+      const heartbeatIsFresh = (Date.now() - lastWorkerHeartbeatAt) <= WORKER_HEARTBEAT_TIMEOUT_MS;
+      const workerActiveFromHealth = healthResult.success && parseWorkerActive(healthResult.data);
+      const isWorkerRunningNow = workerActiveFromHealth || heartbeatIsFresh;
+      setWorkerActive(isWorkerRunningNow);
+      if (isWorkerRunningNow) {
+        setLastWorkerHeartbeatAt(Date.now());
+      }
 
       // Verificar métricas de pedidos atrasados
-      const metricsResult = await systemService.obtenerMetricasPedidosAtrasados();
       const atrasadosCount = metricsResult.success ? (metricsResult.data?.count || 0) : 0;
       setPedidosAtrasadosCount(atrasadosCount);
 
-      // Determinar estado del sistema basado en worker y métricas
-      if (!isWorkerActive) {
-        setStatus(CONNECTION_STATUS.INACTIVE);
-      } else if (atrasadosCount > 0) {
-        setStatus(CONNECTION_STATUS.WITH_DELAYS);
-      } else {
-        setStatus(CONNECTION_STATUS.ACTIVE);
-      }
+      resolveSystemStatus(isWorkerRunningNow, atrasadosCount);
 
       setLastPollingError(null);
     } catch (error) {
       console.error('Error al verificar health del sistema:', error);
-      // En caso de error, asumir worker inactivo
-      setWorkerActive(false);
-      setStatus(CONNECTION_STATUS.INACTIVE);
+      // No degradar inmediatamente a inactivo por error transitorio;
+      // usar timeout de heartbeat para decidir el estado real.
+      const heartbeatIsFresh = (Date.now() - lastWorkerHeartbeatAt) <= WORKER_HEARTBEAT_TIMEOUT_MS;
+      setWorkerActive(heartbeatIsFresh);
+      resolveSystemStatus(heartbeatIsFresh, pedidosAtrasadosCount);
       setLastPollingError(error.message);
     }
-  }, []);
+  }, [lastWorkerHeartbeatAt, parseWorkerActive, pedidosAtrasadosCount, resolveSystemStatus]);
 
   // Polling de health y métricas cada 30 segundos
   useEffect(() => {
@@ -75,6 +130,17 @@ export const ConnectionStatusProvider = ({ children }) => {
 
     return () => clearInterval(interval);
   }, [checkSystemHealth]);
+
+  // Heartbeat watchdog: si no llega señal en 15s, marcar inactivo
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const heartbeatIsFresh = (Date.now() - lastWorkerHeartbeatAt) <= WORKER_HEARTBEAT_TIMEOUT_MS;
+      setWorkerActive(heartbeatIsFresh);
+      resolveSystemStatus(heartbeatIsFresh, pedidosAtrasadosCount);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [lastWorkerHeartbeatAt, pedidosAtrasadosCount, resolveSystemStatus]);
 
   // Mantener compatibilidad con código existente que usa updateWebsocketStatus y updatePollingStatus
   // Estos métodos ya no afectan el estado principal, pero se mantienen para no romper código existente
@@ -127,6 +193,7 @@ export const ConnectionStatusProvider = ({ children }) => {
   const value = {
     status,
     workerActive,
+    lastWorkerHeartbeatAt,
     pedidosAtrasadosCount,
     websocketConnected,
     pollingActive,
@@ -135,6 +202,7 @@ export const ConnectionStatusProvider = ({ children }) => {
     updatePollingStatus,
     getStatusTooltip,
     getStatusText,
+    markWorkerHeartbeat,
     refreshHealth: checkSystemHealth,
   };
 

@@ -1,22 +1,31 @@
 import { Check, Package, Printer, Edit, Trash2, Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/use-toast';
 
 /**
  * Reglas de UI unificadas para botones (OrderCard, OrderRow, ghost).
- * LISTO: visible mientras estado !== 'listo' y !== 'entregado' (es decir recibido | en_cocina).
- * COBRAR: visible solo si estado_pago === 'DEBE'; oculto si PAGADO.
+ * LISTO: visible solo en EN PREPARACION (en_cocina).
+ * COBRAR: visible si el pedido aun no esta pago (independiente del estado).
+ * ENTREGAR: visible solo en LISTO y PAGADO.
  */
 export function shouldShowListo(pedido) {
   const e = pedido?.estado;
-  return e === 'recibido' || e === 'en_cocina';
+  return e === 'en_cocina';
+}
+
+export function isPedidoPaid(pedido) {
+  if (!pedido) return false;
+  const estadoPago = pedido.estado_pago ?? (pedido.paymentStatus === 'paid' ? 'PAGADO' : 'DEBE');
+  return estadoPago === 'PAGADO' || pedido.paymentStatus === 'paid';
+}
+
+export function shouldShowEntregar(pedido) {
+  if (!pedido) return false;
+  return pedido.estado === 'listo' && isPedidoPaid(pedido);
 }
 
 export function shouldShowCobrar(pedido) {
   if (!pedido) return false;
-  const estadoPago = pedido.estado_pago ?? (pedido.paymentStatus === 'paid' ? 'PAGADO' : 'DEBE');
-  const isPaid = pedido.paymentStatus === 'paid';
-  return estadoPago === 'DEBE' || !isPaid;
+  return !isPedidoPaid(pedido);
 }
 
 /**
@@ -37,10 +46,10 @@ export function PedidoAcciones({
   cobrandoPedidoId = null,
 }) {
   const estado = pedido.estado;
-  const isPaid = pedido.paymentStatus === 'paid';
+  const isPaid = isPedidoPaid(pedido);
 
   const showListo = shouldShowListo(pedido);
-  const showEntregar = estado === 'listo';
+  const showEntregar = shouldShowEntregar(pedido);
   const showCobrar = shouldShowCobrar(pedido);
   const isCobrandoEste = cobrandoPedidoId != null && String(pedido.id) === String(cobrandoPedidoId);
 
@@ -59,7 +68,6 @@ export function PedidoAcciones({
   const handleEntregar = (e) => {
     if (isGhost) return;
     if (!isPaid) {
-      toast.error('Debe cobrarse antes de entregar');
       return;
     }
     const button = e?.currentTarget;
@@ -84,28 +92,28 @@ export function PedidoAcciones({
 
   return (
     <div className={`flex gap-1.5 flex-shrink-0 flex-wrap ${isCard ? 'w-full overflow-hidden' : ''}`}>
-      {/* LISTO: cuando recibido o en_cocina */}
+      {/* LISTO: solo en en_cocina */}
       {showListo && (
         <Button
-          disabled={isGhost || estado === 'recibido'}
-          onClick={estado === 'en_cocina' ? handleListo : undefined}
+          disabled={isGhost}
+          onClick={handleListo}
           className={`flex-1 min-w-0 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed ${btnClassBase}`}
           size="sm"
-          title={estado === 'recibido' ? 'Se enviará a cocina automáticamente' : 'Marcar como listo'}
+          title="Marcar como listo"
         >
           <Check className={`${btnClassIcon} mr-1`} />
           LISTO
         </Button>
       )}
 
-      {/* ENTREGAR: cuando listo */}
+      {/* ENTREGAR: solo cuando listo y pagado */}
       {showEntregar && (
         <Button
           disabled={isGhost}
           onClick={handleEntregar}
           className={`flex-1 min-w-0 bg-green-600 hover:bg-green-700 text-white ${btnClassBase}`}
           size="sm"
-          title={isPaid ? 'Entregar pedido' : 'Debe cobrarse antes de entregar'}
+          title="Entregar pedido"
         >
           <Package className={`${btnClassIcon} mr-1`} />
           ENTREGAR

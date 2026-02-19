@@ -77,6 +77,12 @@ export const API_CONFIG = {
       ESTADO: (id) => `/comandas/${id}/estado`,
       OBSERVACIONES: (id) => `/comandas/${id}/observaciones`,
     },
+    HEALTH: {
+      WORKER: '/health/worker',
+    },
+    METRICS: {
+      PEDIDOS_ATRASADOS: '/metrics/pedidos-atrasados',
+    },
     GASTOS: {
       LIST: '/gastos',
       CREATE: '/gastos',
