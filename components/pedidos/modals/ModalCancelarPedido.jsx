@@ -12,7 +12,7 @@ import {
 export function ModalCancelarPedido({ pedido, isOpen, onClose, onConfirmar }) {
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent>
+      <AlertDialogContent className="w-[calc(100vw-0.75rem)] sm:max-w-lg">
         <AlertDialogHeader>
           <AlertDialogTitle>¿Cancelar pedido?</AlertDialogTitle>
           <AlertDialogDescription>

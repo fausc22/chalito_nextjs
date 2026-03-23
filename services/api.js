@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { API_CONFIG } from '../config/api';
 import { toast } from '@/hooks/use-toast';
+import { setPollingBlocked } from './rateLimitManager';
 
 // Token Manager
 export const tokenManager = {
@@ -152,17 +153,22 @@ apiClient.interceptors.response.use(
 
     // Manejar rate limiting (429) - debe manejarse antes de otros 4xx
     if (error.response?.status === 429) {
-      const retryAfter = error.response?.headers?.['retry-after'] || 300; // 5 minutos por defecto
-      console.warn(`⚠️ Rate limit excedido. Esperar ${retryAfter} segundos antes de reintentar.`);
+      const retryAfterHeader = error.response?.headers?.['retry-after'] ||
+        error.response?.headers?.['Retry-After'];
+      const { blockedUntil } = setPollingBlocked({ retryAfterHeader, retryAfterSeconds: 60 });
+      const retryAfterSeconds = Math.max(60, Math.ceil((blockedUntil - Date.now()) / 1000));
+
+      console.warn(`⚠️ Rate limit excedido. Polling pausado por ${retryAfterSeconds} segundos.`);
       // Devolver como respuesta para que los componentes puedan manejarlo
       return Promise.resolve({
         data: {
           success: false,
           error: true,
           status: 429,
-          mensaje: `Rate limit excedido. Esperar ${retryAfter} segundos.`,
+          mensaje: `Rate limit excedido. Polling pausado por ${retryAfterSeconds} segundos.`,
           rateLimit: true,
-          retryAfter: parseInt(retryAfter)
+          retryAfter: retryAfterSeconds,
+          pollingBlockedUntil: blockedUntil
         },
         status: 429,
         statusText: 'Too Many Requests',

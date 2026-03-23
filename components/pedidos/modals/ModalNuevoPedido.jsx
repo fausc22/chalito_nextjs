@@ -1,4 +1,5 @@
-import { ShoppingCart, ChevronRight, ChevronLeft, Check, Search, Package, Edit, Trash2, Store, Truck, Phone, MessageSquare, Globe, Clock, Banknote, CreditCard, Building2, Smartphone, XCircle, CheckCircle, Settings } from 'lucide-react';
+import { useState } from 'react';
+import { ShoppingCart, ChevronRight, ChevronLeft, Check, Search, Package, Edit, Trash2, Store, Truck, Phone, MessageSquare, Globe, Clock, Banknote, CreditCard, Building2, Smartphone, XCircle, CheckCircle, Settings, ChevronUp, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ProductCard } from '../ProductCard';
 import { toast } from '@/hooks/use-toast';
+import { getSufijoPresentacion, getExtrasSinPresentacion } from '@/lib/extrasUtils';
 
 // Helper para obtener icono según el valor
 const getOrigenIcon = (valor) => {
@@ -34,6 +36,170 @@ const getMedioPagoIcon = (valor) => {
 
 const getEstadoPagoIcon = (valor) => {
   return valor === 'paid' ? CheckCircle : XCircle;
+};
+
+const CartSummaryMobile = ({
+  carrito,
+  calcularSubtotal,
+  calcularDescuento,
+  descuento,
+  setDescuento,
+  carritoExpandidoMobile,
+  setCarritoExpandidoMobile,
+  modificarCantidad,
+  eliminarDelCarrito,
+  editarExtrasItem,
+}) => {
+  const totalSinDescuento = calcularSubtotal();
+  const totalConDescuento = totalSinDescuento - calcularDescuento();
+
+  if (!carrito || carrito.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="lg:hidden">
+      <div className="bg-slate-50 border-t border-slate-200 rounded-t-xl px-3 pt-2 pb-3 shadow-[0_-6px_14px_rgba(15,23,42,0.06)]">
+        <button
+          type="button"
+          onClick={() => setCarritoExpandidoMobile((prev) => !prev)}
+          className="w-full flex items-center justify-between gap-2"
+        >
+          <div className="flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4 text-slate-700" />
+            <span className="text-sm font-semibold text-slate-900">
+              Carrito ({carrito.length})
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-slate-900">
+              ${totalConDescuento.toLocaleString('es-AR')}
+            </span>
+            {carritoExpandidoMobile ? (
+              <ChevronDown className="h-4 w-4 text-slate-500" />
+            ) : (
+              <ChevronUp className="h-4 w-4 text-slate-500" />
+            )}
+          </div>
+        </button>
+
+        <div
+          className={`mt-2 transition-[max-height,opacity] duration-200 ease-out ${
+            carritoExpandidoMobile ? 'max-h-[260px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
+          }`}
+        >
+          <div className="bg-white rounded-lg border border-slate-200 px-2 pt-2 pb-2">
+            <div className="flex-1 min-h-0 max-h-[170px] overflow-y-auto space-y-2 pr-1">
+              {carrito.map((item) => (
+                <div
+                  key={item.carritoId}
+                  className="bg-white border border-slate-200 rounded-md px-2 py-1.5"
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-xs leading-tight uppercase truncate text-slate-900">
+                        {item.nombre}
+                        {getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [])}
+                      </p>
+                      {getExtrasSinPresentacion(item.extras ?? item.extrasSeleccionados ?? []).length > 0 && (
+                        <p className="text-[11px] text-slate-600 mt-0.5">
+                          {getExtrasSinPresentacion(item.extras ?? item.extrasSeleccionados ?? []).length} extras
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => editarExtrasItem(item)}
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        <Edit className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => eliminarDelCarrito(item.carritoId)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                    <div className="mt-1 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                          className="h-6 w-6 border-slate-300 bg-white text-xs text-slate-900"
+                        onClick={() =>
+                          modificarCantidad(item.carritoId, (item.quantity ?? item.cantidad ?? 1) - 1)
+                        }
+                      >
+                        -
+                      </Button>
+                      <span className="text-xs font-semibold w-5 text-center">
+                        {item.quantity ?? item.cantidad ?? 1}
+                      </span>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                          className="h-6 w-6 border-slate-300 bg-white text-xs text-slate-900"
+                        onClick={() =>
+                          modificarCantidad(item.carritoId, (item.quantity ?? item.cantidad ?? 1) + 1)
+                        }
+                      >
+                        +
+                      </Button>
+                    </div>
+                    <p className="text-xs font-bold text-slate-900">
+                      ${(() => {
+                        const quantity = item.quantity ?? item.cantidad ?? 1;
+                        const price = item.price ?? item.precio ?? 0;
+                        const extras = item.extras ?? item.extrasSeleccionados ?? [];
+                        const precioBase = price * quantity;
+                        const precioExtras = extras.reduce(
+                          (sum, extra) => sum + ((extra.precio || 0) * quantity),
+                          0
+                        );
+                        return (precioBase + precioExtras).toLocaleString('es-AR');
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-2 border-t border-slate-200 pt-1.5 space-y-1">
+              <div className="flex justify-between text-[11px]">
+                <span className="text-slate-600">Subtotal</span>
+                <span className="font-semibold text-slate-900">
+                  ${totalSinDescuento.toLocaleString('es-AR')}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="number"
+                  placeholder="Descuento %"
+                  value={descuento || ''}
+                  onChange={(e) => setDescuento(parseFloat(e.target.value) || 0)}
+                  className="h-7 text-[11px] bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                />
+              </div>
+
+              {calcularDescuento() > 0 && (
+                <div className="flex justify-between text-[11px] text-emerald-700">
+                  <span className="font-medium">Descuento</span>
+                  <span className="font-semibold">
+                    -${calcularDescuento().toLocaleString('es-AR')}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
 };
 
 // Sanitización de inputs: evitan guardar caracteres no permitidos
@@ -92,6 +258,8 @@ export function ModalNuevoPedido({
   validarPasoCliente,
   onSuccess
 }) {
+  const [carritoExpandidoMobile, setCarritoExpandidoMobile] = useState(true);
+
   const handleClose = (open) => {
     if (!open) {
       resetearModal();
@@ -116,18 +284,23 @@ export function ModalNuevoPedido({
         descuento: calcularDescuento(),
         total: calcularTotal(),
         items: carrito.map(item => {
-          const precioBase = parseFloat(item.precio) || 0;
-          const cantidad = parseInt(item.cantidad) || 1;
-          const precioExtras = (item.extrasSeleccionados || []).reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
+          const precioBase = parseFloat(item.price ?? item.precio) || 0;
+          const cantidad = parseInt(item.quantity ?? item.cantidad, 10) || 1;
+          const extras = item.extras ?? item.extrasSeleccionados ?? [];
+          const precioExtras = extras.reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
           const subtotalItem = (precioBase + precioExtras) * cantidad;
           
           return {
-            id: item.id,
-            articulo_id: item.id,
+            id: item.product_id ?? item.id,
+            product_id: item.product_id ?? item.id,
+            quantity: cantidad,
+            articulo_id: item.product_id ?? item.id,
             nombre: item.nombre,
             cantidad: cantidad,
             precio: precioBase + precioExtras,
-            subtotal: subtotalItem
+            subtotal: subtotalItem,
+            extras,
+            observaciones: item.observaciones ?? item.observacion ?? null
           };
         }),
         medioPago: medioPago,
@@ -178,7 +351,7 @@ export function ModalNuevoPedido({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-6xl h-[90vh] flex flex-col bg-slate-100">
+      <DialogContent className="w-[calc(100vw-0.75rem)] sm:w-full max-w-6xl h-[92dvh] sm:h-[90vh] flex flex-col bg-slate-100 p-3 sm:p-6">
         <DialogHeader className="flex-shrink-0 pb-3">
           <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
@@ -190,10 +363,10 @@ export function ModalNuevoPedido({
         </DialogHeader>
 
         {pasoModal === 1 ? (
-          // PASO 1: Armar Pedido - Diseño minimalista
-          <div className="flex-1 flex gap-4 min-h-0 bg-slate-100">
-            {/* Columna principal: Categorías y Productos - 60% */}
-            <div className="w-[60%] flex flex-col min-h-0">
+          // PASO 1: Armar Pedido
+          <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0 bg-slate-100">
+            {/* Columna principal: Categorías y Productos */}
+            <div className="w-full lg:w-[60%] flex flex-col min-h-0">
               {/* Categorías como tabs: HAMBURGUESAS, SÁNDWICHES, EMPANADAS, PAPAS, BEBIDAS | ÚLTIMOS */}
               <div className="flex items-center gap-1.5 mb-3 border-b-2 border-slate-400 pb-1.5 flex-shrink-0 overflow-x-auto">
                 {loadingCategorias ? (
@@ -235,19 +408,6 @@ export function ModalNuevoPedido({
                         );
                       });
                     })()}
-                    <Separator orientation="vertical" className="h-6 bg-slate-400 flex-shrink-0" />
-                    <button
-                      onClick={() => setCategoriaSeleccionada('ultimos')}
-                      className={`
-                        px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all whitespace-nowrap flex-shrink-0
-                        ${categoriaSeleccionada === 'ultimos'
-                          ? 'bg-blue-600 text-white border-b-2 border-blue-600'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }
-                      `}
-                    >
-                      ÚLTIMOS
-                    </button>
                   </>
                 )}
               </div>
@@ -264,7 +424,7 @@ export function ModalNuevoPedido({
               </div>
 
               {/* Grid de productos con scroll */}
-              <div className="flex-1 overflow-y-auto min-h-0 pr-3">
+              <div className="flex-1 overflow-y-auto min-h-0 pr-0 sm:pr-3 pb-[150px] lg:pb-0">
                 {categoriaSeleccionada === 'ultimos' && loadingProductosMasSolicitados ? (
                   <div className="text-center py-8 text-slate-400">
                     <Package className="h-12 w-12 mx-auto mb-3 opacity-50 animate-pulse" />
@@ -276,7 +436,7 @@ export function ModalNuevoPedido({
                     <p className="text-sm">No se encontraron productos</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {productosFiltrados.map(producto => (
                       <ProductCard
                         key={producto.id}
@@ -289,8 +449,8 @@ export function ModalNuevoPedido({
               </div>
             </div>
 
-            {/* Sidebar derecha: Carrito - 40% - Empieza desde arriba, ocupa toda la altura */}
-            <div className="w-[40%] flex flex-col border-l-2 border-slate-400 pl-4 h-full">
+            {/* Sidebar derecha: Carrito - solo desktop */}
+            <div className="hidden lg:flex lg:w-[40%] flex-col lg:border-l border-slate-300 lg:pl-4 h-full mt-4 lg:mt-0">
               <div className="flex items-center justify-between mb-2 flex-shrink-0">
                 <h3 className="text-lg font-bold text-slate-900">Carrito</h3>
                 <Badge variant="outline" className="bg-slate-100 text-sm font-semibold">
@@ -307,121 +467,136 @@ export function ModalNuevoPedido({
                 </div>
               ) : (
                 <div className="flex flex-col flex-1 min-h-0 h-full">
-                  {/* Lista del carrito con scroll - ocupa todo el alto disponible */}
-                  <div className="flex-1 overflow-y-auto space-y-3 mb-3 min-h-0 pr-2">
-                    {carrito.map(item => (
-                      <div key={item.carritoId} className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm text-slate-900 truncate leading-tight uppercase">{item.nombre}</p>
-                            {item.extrasDisponibles && item.extrasDisponibles.length > 0 && (
-                              <Badge variant="outline" className="text-xs mt-1 bg-yellow-50 text-yellow-700 border-yellow-300 px-1.5 py-0.5">
-                                {item.extrasSeleccionados.length} extras
-                              </Badge>
+                  {/* Detalle del carrito: con scroll interno de items,
+                      manteniendo fijo el bloque de subtotal/descuento/total */}
+                  <div
+                    className={`flex-1 min-h-0 lg:h-full ${
+                      carritoExpandidoMobile ? '' : 'hidden lg:block'
+                    }`}
+                  >
+                    <div className="max-h-[260px] lg:max-h-none lg:h-full flex flex-col bg-transparent">
+                      {/* Lista de items scrollable */}
+                      <div className="flex-1 min-h-0 overflow-y-auto space-y-3 mb-3 pr-2">
+                        {carrito.map(item => (
+                          <div key={item.carritoId} className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-sm text-slate-900 truncate leading-tight uppercase">
+                                  {item.nombre}{getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [])}
+                                </p>
+                                {item.extrasDisponibles && item.extrasDisponibles.length > 0 && (
+                                  <Badge variant="outline" className="text-xs mt-1 bg-yellow-50 text-yellow-700 border-yellow-300 px-1.5 py-0.5">
+                                    {(item.extras ?? item.extrasSeleccionados ?? []).length} extras
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex gap-1 ml-2 flex-shrink-0">
+                                {/* ✅ Botón de editar SIEMPRE visible (para agregar observaciones) */}
+                                <button
+                                  onClick={() => editarExtrasItem(item)}
+                                  className="text-blue-600 hover:text-blue-700 transition-colors"
+                                  title={item.extrasDisponibles && item.extrasDisponibles.length > 0 ? "Editar extras y observación" : "Editar observación"}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => eliminarDelCarrito(item.carritoId)}
+                                  className="text-red-600 hover:text-red-700 transition-colors"
+                                  title="Eliminar"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 w-7 p-0 border border-slate-300 hover:bg-slate-200 text-sm font-semibold"
+                                  onClick={() => modificarCantidad(item.carritoId, (item.quantity ?? item.cantidad ?? 1) - 1)}
+                                >
+                                  -
+                                </Button>
+                                <span className="font-bold text-sm w-6 text-center">{item.quantity ?? item.cantidad ?? 1}</span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 w-7 p-0 border border-slate-300 hover:bg-slate-200 text-sm font-semibold"
+                                  onClick={() => modificarCantidad(item.carritoId, (item.quantity ?? item.cantidad ?? 1) + 1)}
+                                >
+                                  +
+                                </Button>
+                              </div>
+                              <p className="font-bold text-sm text-slate-900">
+                                ${(() => {
+                                  const quantity = item.quantity ?? item.cantidad ?? 1;
+                                  const price = item.price ?? item.precio ?? 0;
+                                  const extras = item.extras ?? item.extrasSeleccionados ?? [];
+                                  const precioBase = price * quantity;
+                                  const precioExtras = extras.reduce((sum, extra) => sum + ((extra.precio || 0) * quantity), 0);
+                                  return (precioBase + precioExtras).toLocaleString('es-AR');
+                                })()}
+                              </p>
+                            </div>
+
+                            {getExtrasSinPresentacion(item.extras ?? item.extrasSeleccionados ?? []).length > 0 && (
+                              <div className="mt-2 pt-2 border-t border-slate-200 text-xs text-slate-700 space-y-0.5">
+                                {getExtrasSinPresentacion(item.extras ?? item.extrasSeleccionados ?? []).map((extra, idx) => (
+                                  <p key={idx} className="font-medium">+ {extra.nombre} (+${((extra.precio || 0) * (item.quantity ?? item.cantidad ?? 1)).toLocaleString('es-AR')})</p>
+                                ))}
+                              </div>
+                            )}
+
+                            {(item.observaciones || item.observacion) && (
+                              <div className="mt-2 pt-2 border-t border-slate-200">
+                                <p className="text-xs text-slate-600 italic">
+                                  <span className="font-semibold">Obs:</span> {item.observaciones || item.observacion}
+                                </p>
+                              </div>
                             )}
                           </div>
-                          <div className="flex gap-1 ml-2 flex-shrink-0">
-                            {/* ✅ Botón de editar SIEMPRE visible (para agregar observaciones) */}
-                            <button
-                              onClick={() => editarExtrasItem(item)}
-                              className="text-blue-600 hover:text-blue-700 transition-colors"
-                              title={item.extrasDisponibles && item.extrasDisponibles.length > 0 ? "Editar extras y observación" : "Editar observación"}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => eliminarDelCarrito(item.carritoId)}
-                              className="text-red-600 hover:text-red-700 transition-colors"
-                              title="Eliminar"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
+                        ))}
+                      </div>
 
-                        <div className="flex items-center justify-between mb-2">
+                      {/* Resumen del carrito fijo en la parte inferior del detalle */}
+                      <div className="border-t border-slate-200 pt-2 mt-1 flex-shrink-0">
+                        <div className="bg-white border border-slate-300 rounded-md p-2 space-y-1.5">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-700 font-medium">Subtotal:</span>
+                            <span className="font-bold text-slate-900">
+                              ${calcularSubtotal().toLocaleString('es-AR')}
+                            </span>
+                          </div>
+                          
+                          {/* Descuento */}
                           <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 w-7 p-0 border border-slate-300 hover:bg-slate-200 text-sm font-semibold"
-                              onClick={() => modificarCantidad(item.carritoId, item.cantidad - 1)}
-                            >
-                              -
-                            </Button>
-                            <span className="font-bold text-sm w-6 text-center">{item.cantidad}</span>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 w-7 p-0 border border-slate-300 hover:bg-slate-200 text-sm font-semibold"
-                              onClick={() => modificarCantidad(item.carritoId, item.cantidad + 1)}
-                            >
-                              +
-                            </Button>
+                            <Input
+                              type="number"
+                              placeholder="Descuento"
+                              value={descuento || ''}
+                              onChange={(e) => setDescuento(parseFloat(e.target.value) || 0)}
+                              className="h-7 text-sm"
+                            />
+                            <span className="text-sm text-slate-600 font-medium">%</span>
                           </div>
-                          <p className="font-bold text-sm text-slate-900">
-                            ${(() => {
-                              const precioBase = item.precio * item.cantidad;
-                              const precioExtras = (item.extrasSeleccionados || []).reduce((sum, extra) => sum + (extra.precio * item.cantidad), 0);
-                              return (precioBase + precioExtras).toLocaleString('es-AR');
-                            })()}
-                          </p>
+                          
+                          {calcularDescuento() > 0 && (
+                            <div className="flex justify-between text-sm text-green-600">
+                              <span className="font-medium">Descuento:</span>
+                              <span className="font-bold">
+                                -${calcularDescuento().toLocaleString('es-AR')}
+                              </span>
+                            </div>
+                          )}
+
+                          <Separator className="my-1" />
+                          <div className="flex justify-between text-base font-bold text-slate-900">
+                            <span>Total:</span>
+                            <span>${(calcularSubtotal() - calcularDescuento()).toLocaleString('es-AR')}</span>
+                          </div>
                         </div>
-
-                        {item.extrasSeleccionados.length > 0 && (
-                          <div className="mt-2 pt-2 border-t-2 border-slate-400 text-xs text-slate-700 space-y-0.5">
-                            {item.extrasSeleccionados.map((extra, idx) => (
-                              <p key={idx} className="font-medium">+ {extra.nombre} (+${(extra.precio * item.cantidad).toLocaleString('es-AR')})</p>
-                            ))}
-                          </div>
-                        )}
-
-                        {item.observacion && (
-                          <div className="mt-2 pt-2 border-t-2 border-slate-400">
-                            <p className="text-xs text-slate-600 italic">
-                              <span className="font-semibold">Obs:</span> {item.observacion}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Resumen del carrito - siempre visible */}
-                  <div className="border-t-2 border-slate-400 pt-2 flex-shrink-0">
-                    <div className="bg-white border border-slate-300 rounded-md p-2 space-y-1.5">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-700 font-medium">Subtotal:</span>
-                        <span className="font-bold text-slate-900">
-                          ${calcularSubtotal().toLocaleString('es-AR')}
-                        </span>
-                      </div>
-                      
-                      {/* Descuento */}
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          placeholder="Descuento"
-                          value={descuento || ''}
-                          onChange={(e) => setDescuento(parseFloat(e.target.value) || 0)}
-                          className="h-7 text-sm"
-                        />
-                        <span className="text-sm text-slate-600 font-medium">%</span>
-                      </div>
-                      
-                      {calcularDescuento() > 0 && (
-                        <div className="flex justify-between text-sm text-green-600">
-                          <span className="font-medium">Descuento:</span>
-                          <span className="font-bold">
-                            -${calcularDescuento().toLocaleString('es-AR')}
-                          </span>
-                        </div>
-                      )}
-
-                      <Separator className="my-1" />
-                      <div className="flex justify-between text-base font-bold text-slate-900">
-                        <span>Total:</span>
-                        <span>${(calcularSubtotal() - calcularDescuento()).toLocaleString('es-AR')}</span>
                       </div>
                     </div>
                   </div>
@@ -431,11 +606,11 @@ export function ModalNuevoPedido({
           </div>
         ) : pasoModal === 2 ? (
           // PASO 2: Datos del Cliente
-          <div className="py-3 pr-3 space-y-4 overflow-y-auto flex-1 min-h-0">
+          <div className="py-2 sm:py-3 pr-0 sm:pr-3 space-y-4 overflow-y-auto flex-1 min-h-0">
             {/* Datos Básicos del Cliente */}
-            <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
+            <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
               <h3 className="text-base font-semibold text-slate-800 mb-3">👤 Datos del Cliente</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs font-medium">Nombre del Cliente *</Label>
                   <Input
@@ -473,12 +648,12 @@ export function ModalNuevoPedido({
             </div>
 
             {/* Tipo de Entrega */}
-            <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
+            <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
               <h3 className="text-base font-semibold text-slate-800 mb-3 flex items-center gap-2">
                 <Truck className="h-4 w-4" />
                 Tipo de Entrega
               </h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Button
                   variant={tipoEntrega === 'retiro' ? 'default' : 'outline'}
                   className={`h-12 text-sm font-medium ${tipoEntrega === 'retiro' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
@@ -500,12 +675,12 @@ export function ModalNuevoPedido({
 
             {/* Campos de Dirección (solo si es Delivery) */}
             {tipoEntrega === 'delivery' && (
-              <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
+              <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
                 <h3 className="text-base font-semibold text-slate-800 mb-3 flex items-center gap-2">
                   <Package className="h-4 w-4" />
                   Dirección de Entrega
                 </h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs font-medium">Calle *</Label>
                     <Input
@@ -581,12 +756,12 @@ export function ModalNuevoPedido({
             )}
 
             {/* Configuración Adicional */}
-            <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
+            <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
               <h3 className="text-base font-semibold text-slate-800 mb-3 flex items-center gap-2">
                 <Settings className="h-4 w-4" />
                 Configuración del Pedido
               </h3>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 <div>
                   <Label className="text-xs font-medium">Origen del Pedido</Label>
                   <Select value={origen} onValueChange={setOrigen}>
@@ -725,23 +900,24 @@ export function ModalNuevoPedido({
           </div>
         ) : (
           // PASO 3: Resumen
-          <div className="py-3 space-y-4 overflow-y-auto flex-1 min-h-0 pr-2">
+          <div className="py-2 sm:py-3 space-y-4 overflow-y-auto flex-1 min-h-0 pr-0 sm:pr-2">
             {/* Resumen del Pedido */}
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
               <h3 className="text-lg font-semibold text-slate-800 mb-4">📋 Resumen del Pedido</h3>
               
               {/* Items del pedido - Con botones de editar/eliminar */}
-              <div className="space-y-2 mb-4">
+              <div className="space-y-2 mb-4 max-h-[40vh] md:max-h-none overflow-y-auto pr-1">
                 <h4 className="font-medium text-sm text-slate-700 mb-2">Items:</h4>
                 {carrito.map((item) => (
-                  <div key={item.carritoId} className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-sm">
+                  <div key={item.carritoId} className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm text-slate-900 leading-tight uppercase">{item.nombre}</p>
-                        <p className="text-xs text-slate-600 mt-0.5">Cantidad: {item.cantidad}</p>
+                        <p className="font-semibold text-sm text-slate-900 leading-tight uppercase">
+                          {item.nombre}{getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [])}
+                        </p>
                         {item.extrasDisponibles && item.extrasDisponibles.length > 0 && (
                           <Badge variant="outline" className="text-xs mt-1 bg-yellow-50 text-yellow-700 border-yellow-300 px-1.5 py-0.5">
-                            {item.extrasSeleccionados.length} extras
+                            {(item.extras ?? item.extrasSeleccionados ?? []).length} extras
                           </Badge>
                         )}
                       </div>
@@ -763,18 +939,18 @@ export function ModalNuevoPedido({
                       </div>
                     </div>
 
-                    {item.extrasSeleccionados.length > 0 && (
+                    {getExtrasSinPresentacion(item.extras ?? item.extrasSeleccionados ?? []).length > 0 && (
                       <div className="mt-2 pt-2 border-t border-slate-200 text-xs text-slate-700 space-y-0.5">
-                        {item.extrasSeleccionados.map((extra, eIdx) => (
-                          <p key={eIdx} className="font-medium">+ {extra.nombre} (+${(extra.precio * item.cantidad).toLocaleString('es-AR')})</p>
+                        {getExtrasSinPresentacion(item.extras ?? item.extrasSeleccionados ?? []).map((extra, eIdx) => (
+                          <p key={eIdx} className="font-medium">+ {extra.nombre} (+${((extra.precio || 0) * (item.quantity ?? item.cantidad ?? 1)).toLocaleString('es-AR')})</p>
                         ))}
                       </div>
                     )}
 
-                    {item.observacion && (
+                    {(item.observaciones || item.observacion) && (
                       <div className="mt-2 pt-2 border-t border-slate-200">
                         <p className="text-xs text-slate-600 italic">
-                          <span className="font-semibold">Obs:</span> {item.observacion}
+                          <span className="font-semibold">Obs:</span> {item.observaciones || item.observacion}
                         </p>
                       </div>
                     )}
@@ -783,8 +959,11 @@ export function ModalNuevoPedido({
                       <span className="text-xs text-slate-600 font-medium">Subtotal:</span>
                       <p className="font-bold text-sm text-slate-900">
                         ${(() => {
-                          const precioBase = item.precio * item.cantidad;
-                          const precioExtras = (item.extrasSeleccionados || []).reduce((sum, extra) => sum + (extra.precio * item.cantidad), 0);
+                          const quantity = item.quantity ?? item.cantidad ?? 1;
+                          const price = item.price ?? item.precio ?? 0;
+                          const extras = item.extras ?? item.extrasSeleccionados ?? [];
+                          const precioBase = price * quantity;
+                          const precioExtras = extras.reduce((sum, extra) => sum + ((extra.precio || 0) * quantity), 0);
                           return (precioBase + precioExtras).toLocaleString('es-AR');
                         })()}
                       </p>
@@ -794,7 +973,7 @@ export function ModalNuevoPedido({
               </div>
 
               {/* Datos del cliente */}
-              <div className="mb-4 pb-4 border-b-2 border-slate-400">
+              <div className="mb-4 pb-4 border-b border-slate-200">
                 <h4 className="font-medium text-sm text-slate-700 mb-1.5">Cliente:</h4>
                 <p className="text-xs text-slate-600">{cliente.nombre}</p>
                 <p className="text-xs text-slate-600">{cliente.telefono}</p>
@@ -850,31 +1029,67 @@ export function ModalNuevoPedido({
           </div>
         )}
 
-        {/* Botones de navegación */}
-        <DialogFooter className="flex justify-between gap-3 pt-4 border-t flex-shrink-0">
+        {/* Botones de navegación + carrito compacto mobile */}
+        <DialogFooter className="flex flex-col sm:flex-row justify-between gap-3 pt-2 lg:pt-4 lg:border-t flex-shrink-0">
           {pasoModal === 1 ? (
             <>
-              <Button
-                variant="outline"
-                onClick={() => handleClose(false)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={() => setPasoModal(2)}
-                disabled={carrito.length === 0}
-                className="gap-2 bg-green-600 hover:bg-green-700"
-              >
-                Siguiente: Datos del Cliente
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              {/* Mobile: panel inferior con resumen + botón principal */}
+              <div className="w-full flex flex-col gap-2 lg:hidden">
+                <CartSummaryMobile
+                  carrito={carrito}
+                  calcularSubtotal={calcularSubtotal}
+                  calcularDescuento={calcularDescuento}
+                  descuento={descuento}
+                  setDescuento={setDescuento}
+                  carritoExpandidoMobile={carritoExpandidoMobile}
+                  setCarritoExpandidoMobile={setCarritoExpandidoMobile}
+                  modificarCantidad={modificarCantidad}
+                  eliminarDelCarrito={eliminarDelCarrito}
+                  editarExtrasItem={editarExtrasItem}
+                />
+                <div className="flex justify-between gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => handleClose(false)}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={() => setPasoModal(2)}
+                    disabled={carrito.length === 0}
+                    className="flex-[1.4] gap-2 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    Siguiente: Datos del Cliente
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Desktop: layout clásico (botones lado a lado) */}
+              <div className="hidden lg:flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => handleClose(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => setPasoModal(2)}
+                  disabled={carrito.length === 0}
+                  className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Siguiente: Datos del Cliente
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </>
           ) : pasoModal === 2 ? (
             <>
               <Button
                 variant="outline"
                 onClick={() => setPasoModal(1)}
-                className="gap-2"
+                className="gap-2 w-full sm:w-auto"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Volver
@@ -888,7 +1103,7 @@ export function ModalNuevoPedido({
                   }
                   setPasoModal(3);
                 }}
-                className="gap-2 bg-green-600 hover:bg-green-700"
+                className="gap-2 bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
               >
                 Siguiente: Resumen
                 <ChevronRight className="h-4 w-4" />
@@ -899,14 +1114,14 @@ export function ModalNuevoPedido({
               <Button
                 variant="outline"
                 onClick={() => setPasoModal(2)}
-                className="gap-2"
+                className="gap-2 w-full sm:w-auto"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Volver
               </Button>
               <Button
                 onClick={handleCrearPedido}
-                className="bg-green-600 hover:bg-green-700 gap-2"
+                className="bg-green-600 hover:bg-green-700 text-white gap-2 w-full sm:w-auto"
               >
                 <Check className="h-5 w-5" />
                 Crear Pedido

@@ -226,6 +226,12 @@ export const ArticulosForm = ({
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    const peso = Number(formulario.peso);
+    if (!Number.isInteger(peso) || peso < 1 || peso > 4) {
+      toast.error('El peso de preparación es obligatorio y debe estar entre 1 y 4');
+      return;
+    }
+
     // Validación: Si es ELABORADO, debe tener ingredientes
     if (formulario.tipo === 'ELABORADO' && formulario.ingredientes.length === 0) {
       toast.error('Un artículo ELABORADO debe tener al menos un ingrediente');
@@ -250,7 +256,7 @@ export const ArticulosForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 pt-4 pr-2">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 pt-4 pl-4 pr-4">
           {/* Código y Nombre */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -372,11 +378,11 @@ export const ArticulosForm = ({
             </div>
           </div>
 
-          {/* Precio y Tipo */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Precio, Tipo y Peso */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="precio" className="text-sm font-medium">
-                Precio ($) <span className="text-red-500">*</span>
+                Precio venta ($) <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="precio"
@@ -405,6 +411,25 @@ export const ArticulosForm = ({
                   <SelectItem value="ELABORADO">ELABORADO</SelectItem>
                   <SelectItem value="BEBIDA">BEBIDA</SelectItem>
                   <SelectItem value="OTRO">OTRO</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="peso" className="text-sm font-medium">
+                Tiempo de preparación <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={(formulario.peso ?? '1').toString()}
+                onValueChange={(value) => handleChange('peso', value)}
+              >
+                <SelectTrigger id="peso" className="border-2">
+                  <SelectValue placeholder="Seleccionar peso" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 - Muy rápido (ej: empanadas, papas)</SelectItem>
+                  <SelectItem value="2">2 - Rápido medio (ej: pizzas)</SelectItem>
+                  <SelectItem value="3">3 - Medio (ej: hamburguesas)</SelectItem>
+                  <SelectItem value="4">4 - Complejo (ej: lomos, vacío, bondiola)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

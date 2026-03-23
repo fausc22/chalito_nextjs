@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import { ProtectedRoute } from '../../components/auth/ProtectedRoute';
 import { NavBar } from '../../components/layout/NavBar';
@@ -19,6 +19,7 @@ import { ModalImprimir } from '../../components/pedidos/modals/ModalImprimir';
 import { usePedidos } from '../../hooks/pedidos/usePedidos';
 import { useNuevoPedido } from '../../hooks/pedidos/useNuevoPedido';
 import { useEditarPedido } from '../../hooks/pedidos/useEditarPedido';
+import { useWebOrderAlerts } from '../../contexts/WebOrderAlertsContext';
 import { ventasService } from '../../services/ventasService';
 import { toast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -26,7 +27,10 @@ import Head from 'next/head';
 
 function VentasContent() {
   const [demoraCocina, setDemoraCocina] = useState(20);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
+  const navBarRef = useRef(null);
+  const [navbarHeightPx, setNavbarHeightPx] = useState(64);
   const [pedidoCancelar, setPedidoCancelar] = useState(null);
   const [modalPedidosEntregados, setModalPedidosEntregados] = useState(false);
   const [modalCobro, setModalCobro] = useState(false);
@@ -41,6 +45,8 @@ function VentasContent() {
   const [modoCocinaOpen, setModoCocinaOpen] = useState(false);
   const [activeId, setActiveId] = useState(null);
   const [activePedido, setActivePedido] = useState(null);
+  const [pedidoDragConfirm, setPedidoDragConfirm] = useState(null);
+  const [dragConfirmLoading, setDragConfirmLoading] = useState(false);
   const [vistaTabla, setVistaTabla] = useState(false); // Estado para alternar entre vista de cards y tabla
 
   const {
@@ -49,7 +55,6 @@ function VentasContent() {
     pedidosEntregados,
     busquedaPedidos,
     setBusquedaPedidos,
-    handleDragEnd,
     handleMarcharACocina,
     handleListo,
     handleEntregar,
@@ -61,6 +66,7 @@ function VentasContent() {
 
   const nuevoPedido = useNuevoPedido();
   const editarPedido = useEditarPedido();
+  const { soundEnabled, setSoundEnabled } = useWebOrderAlerts();
 
   // Configuración de sensores para drag & drop optimizados
   const sensors = useSensors(
@@ -81,6 +87,51 @@ function VentasContent() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [nuevoPedido]);
+
+  // Medir altura real del NavBar para posicionar overlays (mobile/tablet).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const measure = () => {
+      if (!navBarRef.current) return;
+      const h = navBarRef.current.getBoundingClientRect().height;
+      if (Number.isFinite(h) && h > 0) setNavbarHeightPx(h);
+    };
+    // En algunos dispositivos cambia tras primer render (font/layout).
+    const t = window.setTimeout(() => {
+      measure();
+      requestAnimationFrame(measure);
+    }, 0);
+    window.addEventListener('resize', measure);
+    return () => {
+      window.clearTimeout(t);
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
+
+  // Breakpoint mobile/tablet para controlar comportamiento de sidebar
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia('(max-width: 1279px)');
+    const syncViewport = (eventOrMedia) => {
+      const matches = eventOrMedia.matches;
+      setIsMobileOrTablet(matches);
+      // En mobile/tablet mantener sidebar cerrada al entrar/cambiar viewport
+      if (matches) {
+        setSidebarOpen(false);
+      }
+    };
+
+    syncViewport(mediaQuery);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', syncViewport);
+      return () => mediaQuery.removeEventListener('change', syncViewport);
+    }
+
+    mediaQuery.addListener(syncViewport);
+    return () => mediaQuery.removeListener(syncViewport);
+  }, []);
 
   const handleEditar = (pedido) => {
     // Verificar que no esté ENTREGADO o CANCELADO
@@ -268,6 +319,35 @@ function VentasContent() {
     setVistaTabla(!vistaTabla);
   };
 
+  const handleManualDragEnd = (event) => {
+    setActiveId(null);
+    setActivePedido(null);
+
+    const { active, over } = event;
+    if (!over || !active?.data?.current) return;
+
+    const pedido = active.data.current.pedido;
+    const estadoActual = active.data.current.estado;
+    const overData = over.data?.current || {};
+    const isEnPreparacionTarget = overData.estado === 'en_cocina';
+
+    // Solo permitir flujo manual: RECIBIDO -> EN PREPARACION
+    if (estadoActual === 'recibido' && isEnPreparacionTarget) {
+      setPedidoDragConfirm(pedido);
+    }
+  };
+
+  const confirmarDragManual = async () => {
+    if (!pedidoDragConfirm) return;
+    setDragConfirmLoading(true);
+    try {
+      await handleMarcharACocina(String(pedidoDragConfirm.id));
+    } finally {
+      setDragConfirmLoading(false);
+      setPedidoDragConfirm(null);
+    }
+  };
+
   return (
     <>
       <Head>
@@ -275,11 +355,17 @@ function VentasContent() {
       </Head>
 
       <div className="min-h-screen flex flex-col">
-        <NavBar />
+        <div ref={navBarRef}>
+          <NavBar
+            showSidebarToggle={isMobileOrTablet}
+            sidebarOpen={sidebarOpen}
+            onSidebarToggle={() => setSidebarOpen((prev) => !prev)}
+          />
+        </div>
 
         <main className="flex-1 bg-gray-50 flex flex-row min-h-0 overflow-hidden relative">
           {/* Sidebar desktop - dentro del flujo del documento */}
-          <div className="hidden lg:block flex-shrink-0">
+          <div className="hidden xl:block flex-shrink-0">
             <PedidosSidebar
               demoraCocina={demoraCocina}
               setDemoraCocina={setDemoraCocina}
@@ -290,6 +376,8 @@ function VentasContent() {
               notificacionesCount={notificacionesCount}
               busquedaPedidos={busquedaPedidos}
               setBusquedaPedidos={setBusquedaPedidos}
+              soundEnabled={soundEnabled}
+              onSoundToggle={setSoundEnabled}
               isOpen={sidebarOpen}
               setIsOpen={setSidebarOpen}
               isMobile={false}
@@ -299,7 +387,7 @@ function VentasContent() {
           </div>
 
           {/* Sidebar móvil - overlay fixed */}
-          <div className="lg:hidden">
+          <div className="xl:hidden w-0 min-w-0 overflow-visible flex-shrink-0">
             <PedidosSidebar
               demoraCocina={demoraCocina}
               setDemoraCocina={setDemoraCocina}
@@ -310,10 +398,13 @@ function VentasContent() {
               notificacionesCount={notificacionesCount}
               busquedaPedidos={busquedaPedidos}
               setBusquedaPedidos={setBusquedaPedidos}
+              soundEnabled={soundEnabled}
+              onSoundToggle={setSoundEnabled}
               isOpen={sidebarOpen}
               setIsOpen={setSidebarOpen}
               isMobile={true}
               vistaTabla={vistaTabla}
+              navbarHeightPx={navbarHeightPx}
               onCambiarVista={handleCambiarVista}
             />
           </div>
@@ -335,14 +426,12 @@ function VentasContent() {
                 setActivePedido(pedidoEncontrado || null);
               }}
               onDragEnd={(event) => {
-                setActiveId(null);
-                setActivePedido(null);
-                handleDragEnd(event);
+                handleManualDragEnd(event);
               }}
             >
-              <div className="flex-1 w-full px-3 sm:px-4 lg:px-6 py-3 min-h-0 flex flex-col">
-                <div className="flex gap-3 h-[calc(100vh-140px)] w-full transition-all duration-300">
-                  <div className="h-full w-[40%] transition-all duration-300">
+              <div className="flex-1 w-full h-full px-2 sm:px-4 lg:px-6 py-2 sm:py-3 min-h-0 flex flex-col">
+                <div className="flex gap-3 flex-1 min-h-0 w-full transition-all duration-300 flex-col lg:flex-row lg:h-full">
+                  <div className="w-full min-h-[320px] lg:min-h-0 lg:h-full lg:flex-[4_4_0%] transition-all duration-300">
                     <PedidosColumn
                       titulo="RECIBIDOS"
                       pedidos={pedidosRecibidos}
@@ -360,7 +449,7 @@ function VentasContent() {
                     />
                   </div>
 
-                  <div className="h-full w-[60%] transition-all duration-300">
+                  <div className="w-full min-h-[320px] lg:min-h-0 lg:h-full lg:flex-[6_6_0%] transition-all duration-300">
                     <PedidosColumn
                       titulo="EN PREPARACIÓN"
                       pedidos={pedidosEnCocina}
@@ -511,15 +600,17 @@ function VentasContent() {
         }}
       />
 
-      <ModoCocina
-        isOpen={modoCocinaOpen}
-        onClose={() => setModoCocinaOpen(false)}
-        onPedidoActualizado={(pedidoId, actualizaciones) => {
-          // Actualizar el pedido en la lista principal cuando se marca como lista desde ModoCocina
-          actualizarPedido(pedidoId, actualizaciones);
-        }}
-        modoCocina={false}
-      />
+      {modoCocinaOpen && (
+        <ModoCocina
+          isOpen={modoCocinaOpen}
+          onClose={() => setModoCocinaOpen(false)}
+          onPedidoActualizado={(pedidoId, actualizaciones) => {
+            // Actualizar el pedido en la lista principal cuando se marca como lista desde ModoCocina
+            actualizarPedido(pedidoId, actualizaciones);
+          }}
+          modoCocina={false}
+        />
+      )}
 
       <ModalExtras
         isOpen={nuevoPedido.modalExtras || editarPedido.modalExtras}
@@ -605,6 +696,45 @@ function VentasContent() {
             </AlertDialogCancel>
             <AlertDialogAction onClick={confirmarFacturacionYCrearPedido}>
               OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmación para mover manualmente pedido a EN PREPARACIÓN */}
+      <AlertDialog
+        open={!!pedidoDragConfirm}
+        onOpenChange={(open) => {
+          if (!open && !dragConfirmLoading) {
+            setPedidoDragConfirm(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mover pedido a preparación</AlertDialogTitle>
+            <AlertDialogDescription>
+              Este pedido se adelantará manualmente a En preparación y dejará de esperar la transición automática.
+              ¿Querés continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                if (!dragConfirmLoading) {
+                  setPedidoDragConfirm(null);
+                }
+              }}
+              disabled={dragConfirmLoading}
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmarDragManual}
+              disabled={dragConfirmLoading}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Aceptar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

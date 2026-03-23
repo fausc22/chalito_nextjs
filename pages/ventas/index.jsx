@@ -42,7 +42,7 @@ function VentasContent() {
                         💳 Módulo de Ventas
                     </h1>
                     <p className="text-slate-500 text-base">
-                        Consulta el historial de ventas y gestiona los ingresos del negocio
+                        Consultá el historial de ventas y gestioná los ingresos del negocio
                     </p>
                 </div>
 

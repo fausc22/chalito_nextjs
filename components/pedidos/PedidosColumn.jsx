@@ -28,11 +28,14 @@ export function PedidosColumn({
   compacto = false,
   vistaTabla = false,
   cobrandoPedidoId = null,
+  highlightedPedidoIds = new Set(),
+  newWebOrderIds = new Set(),
+  newAnimatedPedidoIds = new Set(),
 }) {
   const [paginaActual, setPaginaActual] = useState(1);
   const [infoCapacidad, setInfoCapacidad] = useState(null);
-  // Si es vista tabla: 8 filas por página. Si es vista cards: 6 items (3 filas x 2 columnas)
-  const itemsPorPagina = vistaTabla ? 8 : 6;
+  // Si es vista tabla: 6 filas por página. Si es vista cards: 6 items (3 filas x 2 columnas)
+  const itemsPorPagina = 6;
   
   // Función para cargar capacidad
   const cargarCapacidad = useCallback(async () => {
@@ -86,8 +89,9 @@ export function PedidosColumn({
   const { setNodeRef, isOver } = useDroppable({
     id: estado,
     data: {
-      estado: estado
-    }
+      tipo: 'column',
+      estado: estado,
+    },
   });
 
   // Calcular paginación
@@ -131,16 +135,23 @@ export function PedidosColumn({
   };
 
   const columnStyles = getColumnStyles();
+  const listMaxHeightClass = (() => {
+    // Ajustes solo mobile/tablet: limitar altura visible para favorecer lectura
+    // y dejar el resto para scroll interno (sin afectar la paginación).
+    if (estado === 'recibido') return 'max-h-[270px] lg:max-h-none';
+    if (estado === 'en_cocina' || titulo === 'EN PREPARACIÓN') return 'max-h-[560px] lg:max-h-none';
+    return 'lg:max-h-none';
+  })();
 
   return (
-    <div className={`h-full rounded-lg border-2 ${columnStyles.border} ${columnStyles.bg} overflow-hidden flex flex-col shadow`}>
-      <div className={`${columnStyles.header} px-3 py-2 flex-shrink-0`}>
-        <h2 className="text-sm font-bold flex items-center justify-between">
+    <div className={`h-full rounded-lg border-2 ${columnStyles.border} ${columnStyles.bg} flex flex-col shadow lg:shadow-none lg:overflow-hidden`}>
+      <div className={`${columnStyles.header} px-2 sm:px-3 py-2 flex-shrink-0 lg:rounded-t-lg`}>
+        <h2 className="text-sm font-bold flex items-center justify-between gap-2 flex-wrap">
           <span>{titulo}</span>
           <div className="flex items-center gap-2">
             {/* Indicador de capacidad para columna EN PREPARACIÓN */}
             {(estado === 'en_cocina' || titulo === 'EN PREPARACIÓN') && infoCapacidad && (
-              <Badge 
+              <Badge
                 className={`text-xs px-2 py-0.5 font-semibold ${
                   infoCapacidad.estaLlena 
                     ? 'bg-red-600 text-white' 
@@ -162,8 +173,8 @@ export function PedidosColumn({
 
       <div
         ref={setNodeRef}
-        className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 transition-colors p-3 ${
-          isOver ? 'bg-blue-100 border-2 border-blue-400' : ''
+        className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 transition-colors p-2 sm:p-3 ${listMaxHeightClass} ${
+          estado === 'en_cocina' && isOver ? 'bg-blue-50 ring-2 ring-blue-200' : ''
         }`}
       >
         {pedidos.length === 0 ? (
@@ -175,7 +186,7 @@ export function PedidosColumn({
           // Vista de tabla con filas - ocupa todo el ancho disponible
           <div className="w-full">
             {pedidosPaginados.map(pedido => (
-                  <OrderRow
+              <OrderRow
                 key={pedido.id}
                 pedido={pedido}
                 onMarcharACocina={onMarcharACocina}
@@ -186,12 +197,16 @@ export function PedidosColumn({
                 onCobrar={onCobrar}
                 onImprimir={onImprimir}
                 cobrandoPedidoId={cobrandoPedidoId}
+                isHighlighted={highlightedPedidoIds.has(String(pedido.id))}
+                isNewWebOrder={newWebOrderIds.has(String(pedido.id))}
+                isNew={newAnimatedPedidoIds.has(String(pedido.id))}
+                isDraggable={estado === 'recibido'}
               />
             ))}
           </div>
         ) : (
           // Vista de cards en grid
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 items-stretch">
             {pedidosPaginados.map(pedido => (
               <OrderCard
                 key={pedido.id}
@@ -204,6 +219,10 @@ export function PedidosColumn({
                 onCobrar={onCobrar}
                 onImprimir={onImprimir}
                 cobrandoPedidoId={cobrandoPedidoId}
+                isHighlighted={highlightedPedidoIds.has(String(pedido.id))}
+                isNewWebOrder={newWebOrderIds.has(String(pedido.id))}
+                isNew={newAnimatedPedidoIds.has(String(pedido.id))}
+                isDraggable={estado === 'recibido'}
               />
             ))}
           </div>
@@ -211,10 +230,10 @@ export function PedidosColumn({
       </div>
 
       {/* Paginación - siempre visible en el pie */}
-      <div className="bg-slate-200 border-t border-slate-300 px-3 py-2 flex items-center justify-center flex-shrink-0">
+      <div className="bg-slate-200 border-t border-slate-300 px-2 sm:px-3 py-2 flex items-center justify-center flex-shrink-0 overflow-x-auto">
         {totalPaginas > 1 && (
           <Pagination>
-            <PaginationContent className="gap-1">
+            <PaginationContent className="gap-1 flex-nowrap">
               <PaginationItem>
                 <PaginationPrevious
                   onClick={() => irAPagina(paginaActual - 1)}

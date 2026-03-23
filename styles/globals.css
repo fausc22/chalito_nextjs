@@ -77,6 +77,22 @@
   }
 }
 
+/* Animación "respiración" para pedidos nuevos web */
+@keyframes breathe {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.25);
+  }
+  50% {
+    opacity: 0.94;
+    box-shadow: 0 0 0 6px rgba(250, 204, 21, 0.12);
+  }
+}
+
+.animate-breathe {
+  animation: breathe 2s ease-in-out infinite;
+}
+
 /* Reset y estilos base */
 * {
   box-sizing: border-box;
@@ -301,6 +317,17 @@ a:hover {
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
+}
+
+/* KDS: scrollbar minimal en cards */
+.kds-card-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.kds-card-scroll::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+.kds-card-scroll::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
 }
 
 ::-webkit-scrollbar-track {

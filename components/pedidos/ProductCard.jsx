@@ -28,7 +28,7 @@ export function ProductCard({ producto, onAgregar }) {
             src={producto.imagen_url}
             alt={producto.nombre}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            className="object-cover"
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
             unoptimized
             onError={() => setImageError(true)}

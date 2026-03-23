@@ -68,7 +68,7 @@ export function ModalImprimir({ pedido, isOpen, onClose }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[calc(100vw-0.75rem)] sm:w-full sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Imprimir Pedido #{pedido.id}</DialogTitle>
         </DialogHeader>
@@ -106,8 +106,8 @@ export function ModalImprimir({ pedido, isOpen, onClose }) {
           </Button>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={loading}>
+        <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+          <Button variant="outline" onClick={onClose} disabled={loading} className="w-full sm:w-auto">
             Cancelar
           </Button>
         </DialogFooter>

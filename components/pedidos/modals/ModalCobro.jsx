@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Banknote, CreditCard, Building2, Smartphone, Wallet, FileText } from 'lucide-react';
 import { pedidosService } from '@/services/pedidosService';
 import { toast } from '@/hooks/use-toast';
+import { getItemExtras } from '@/lib/extrasUtils';
 
 export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
   const [medioPago, setMedioPago] = useState('efectivo');
@@ -173,12 +174,12 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-0.75rem)] sm:w-full max-w-2xl max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto p-3 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Cobrar Pedido #{pedidoParaMostrar.id}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4 pr-2">
+        <div className="space-y-4 py-3 sm:py-4 pr-0 sm:pr-2">
           {/* Items del Pedido */}
           {pedidoParaMostrar.items && pedidoParaMostrar.items.length > 0 && (
             <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
@@ -189,15 +190,8 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
                   const cantidad = item.cantidad || 1;
                   const subtotalItem = parseFloat(item.subtotal) || (precioUnitario * cantidad);
                   
-                  // Manejar diferentes formatos de extras
-                  let extras = item.extras || item.personalizaciones || [];
-                  
-                  // Si extras es un objeto con una propiedad 'extras' que es un array, extraerlo
-                  if (extras && typeof extras === 'object' && !Array.isArray(extras) && extras.extras && Array.isArray(extras.extras)) {
-                    extras = extras.extras;
-                  }
-                  
-                  const tieneExtras = extras && (Array.isArray(extras) ? extras.length > 0 : Object.keys(extras).length > 0);
+                  const { extras } = getItemExtras(item);
+                  const tieneExtras = extras && extras.length > 0;
                   
                   return (
                     <div key={index} className="border-b border-slate-200 pb-2 last:border-b-0">
@@ -209,41 +203,11 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
                           {tieneExtras && (
                             <div className="text-xs text-slate-600 mt-1 ml-4">
                               <div className="font-medium mb-1">Extras:</div>
-                              {Array.isArray(extras) ? (
-                                extras.map((extra, idx) => {
-                                  // Manejar diferentes formatos de extra
-                                  let nombreExtra = '';
-                                  let precioExtra = null;
-                                  
-                                  if (typeof extra === 'string') {
-                                    nombreExtra = extra;
-                                  } else if (typeof extra === 'object' && extra !== null) {
-                                    nombreExtra = extra.nombre || extra.name || JSON.stringify(extra);
-                                    precioExtra = extra.precio || extra.price || null;
-                                  } else {
-                                    nombreExtra = String(extra);
-                                  }
-                                  
-                                  return (
-                                    <div key={idx} className="ml-2">
-                                      • {nombreExtra} {precioExtra ? `(+$${parseFloat(precioExtra).toLocaleString('es-AR', { minimumFractionDigits: 2 })})` : ''}
-                                    </div>
-                                  );
-                                })
-                              ) : (
-                                Object.entries(extras).map(([key, value]) => {
-                                  // Convertir value a string si es un objeto
-                                  const valueStr = typeof value === 'object' && value !== null 
-                                    ? (value.nombre || value.name || JSON.stringify(value))
-                                    : String(value);
-                                  
-                                  return (
-                                    <div key={key} className="ml-2">
-                                      • {key}: {valueStr}
-                                    </div>
-                                  );
-                                })
-                              )}
+                              {extras.map((extra, idx) => (
+                                <div key={idx} className="ml-2">
+                                  • {extra.nombre}  {extra.precio > 0 ? `+$${extra.precio.toLocaleString('es-AR')}` : ''}
+                                </div>
+                              ))}
                             </div>
                           )}
                           {item.observaciones && (
@@ -356,7 +320,7 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
           {/* Método de Pago */}
           <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
             <h3 className="text-base font-semibold text-slate-800 mb-3">💳 Método de Pago</h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Button
                 variant={medioPago === 'efectivo' ? 'default' : 'outline'}
                 className={`h-12 text-sm font-medium ${medioPago === 'efectivo' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
@@ -391,7 +355,7 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
               </Button>
               <Button
                 variant={medioPago === 'mercadopago' ? 'default' : 'outline'}
-                className={`h-12 text-sm font-medium col-span-2 ${medioPago === 'mercadopago' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                className={`h-12 text-sm font-medium sm:col-span-2 ${medioPago === 'mercadopago' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
                 onClick={() => setMedioPago('mercadopago')}
               >
                 <Smartphone className="h-4 w-4 mr-1.5" />
@@ -401,18 +365,19 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
           <Button
             variant="outline"
             onClick={onClose}
             disabled={loading}
+            className="w-full sm:w-auto"
           >
             Cancelar
           </Button>
           <Button
             onClick={handleCobrar}
             disabled={loading}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
           >
             {loading ? 'Registrando...' : 'Confirmar Cobro'}
           </Button>

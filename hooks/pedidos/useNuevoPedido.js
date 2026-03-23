@@ -1,15 +1,26 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { z } from 'zod';
 import { articulosService } from '../../services/articulosService';
 import { pedidosService } from '../../services/pedidosService';
 import { adicionalesService } from '../../services/adicionalesService';
 import { toast } from '@/hooks/use-toast';
+import { crearItemCarrito, mergeItemEnCarrito, reagruparCarrito } from './cartUtils';
+import { formatDireccionEntrega } from '../../lib/formatters';
 
 // Patrones para validación: sin símbolos raros (email se valida aparte)
 const SOLO_LETRAS_ESPACIOS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-']*$/; // nombre: letras, espacios, guión, apóstrofe
 const SOLO_NUMEROS_TELEFONO = /^\+?[\d\s\-()]*$/; // teléfono: + opcional, luego solo dígitos, espacios, guiones, paréntesis
 const DIRECCION_SEGURA = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.,\-'/°]*$/; // calle, edificio, piso, observaciones (guión al final = literal)
 const NUMERO_ALTURA = /^[a-zA-Z0-9\s\-°]*$/; // número/altura (ej. "1234" o "1234 B")
+
+// Normalización para comparar nombres de categorías (ignora tildes y mayúsculas/minúsculas)
+const normalizarCategoria = (value) =>
+  (value ?? '')
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .trim();
 
 // Esquema de validación para el cliente
 const clienteSchema = z.object({
@@ -89,6 +100,7 @@ export const useNuevoPedido = () => {
   const [productos, setProductos] = useState([]);
   const [loadingCategorias, setLoadingCategorias] = useState(true);
   const [loadingProductos, setLoadingProductos] = useState(true);
+  const datosInicialesCargadosRef = useRef(false);
 
   // Modal de extras
   const [modalExtras, setModalExtras] = useState(false);
@@ -100,6 +112,38 @@ export const useNuevoPedido = () => {
   const [unidadActual, setUnidadActual] = useState(1);
   const [totalUnidades, setTotalUnidades] = useState(1);
   const [unidadesConfiguradas, setUnidadesConfiguradas] = useState([]);
+
+  // Mapa de categorías: id -> nombre (necesario para decidir flujo por categoría)
+  const categoriaIdToNombre = useMemo(() => {
+    const map = new Map();
+    categorias.forEach((cat) => {
+      const id = cat?.id ?? cat?.categoria_id ?? cat?.categoriaId;
+      if (id === undefined || id === null) return;
+      const nombre = cat?.nombre ?? cat?.nombre_categoria ?? cat?.nombreCategoria ?? '';
+      map.set(String(id), nombre);
+    });
+    return map;
+  }, [categorias]);
+
+  const esCategoriaSandwiches = useCallback(
+    (producto) => {
+      const catId = producto?.categoria ?? producto?.categoria_id ?? producto?.categoriaId;
+      const nombre = categoriaIdToNombre.get(String(catId ?? ''));
+      const n = normalizarCategoria(nombre);
+      return n === 'SANDWICHES' || n.includes('SANDWICH');
+    },
+    [categoriaIdToNombre]
+  );
+
+  const esCategoriaPapas = useCallback(
+    (producto) => {
+      const catId = producto?.categoria ?? producto?.categoria_id ?? producto?.categoriaId;
+      const nombre = categoriaIdToNombre.get(String(catId ?? ''));
+      const n = normalizarCategoria(nombre);
+      return n === 'PAPAS' || n.includes('PAPA');
+    },
+    [categoriaIdToNombre]
+  );
 
   // Paso 2: Datos Cliente
   const [tipoEntrega, setTipoEntrega] = useState('retiro');
@@ -124,8 +168,10 @@ export const useNuevoPedido = () => {
   const [estadoPago, setEstadoPago] = useState('pending');
   const [descuento, setDescuento] = useState(0); // Porcentaje de descuento
 
-  // Cargar categorías y productos desde el backend
+  // Cargar categorías y productos solo al abrir modal (una vez)
   useEffect(() => {
+    if (!isOpen || datosInicialesCargadosRef.current) return;
+
     const cargarDatos = async () => {
       // Cargar categorías
       setLoadingCategorias(true);
@@ -201,8 +247,9 @@ export const useNuevoPedido = () => {
     };
 
     cargarDatos();
+    datosInicialesCargadosRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isOpen]);
 
   // Cargar productos más solicitados cuando se abre el modal (para pestaña ÚLTIMOS)
   useEffect(() => {
@@ -249,8 +296,11 @@ export const useNuevoPedido = () => {
   // Calcular subtotal
   const calcularSubtotal = useCallback(() => {
     return carrito.reduce((sum, item) => {
-      const precioBase = item.precio * item.cantidad;
-      const precioExtras = item.extrasSeleccionados.reduce((s, e) => s + e.precio, 0) * item.cantidad;
+      const quantity = parseInt(item.quantity ?? item.cantidad, 10) || 1;
+      const price = parseFloat(item.price ?? item.precio) || 0;
+      const extras = item.extras ?? item.extrasSeleccionados ?? [];
+      const precioBase = price * quantity;
+      const precioExtras = extras.reduce((s, e) => s + (parseFloat(e.precio) || 0), 0) * quantity;
       return sum + precioBase + precioExtras;
     }, 0);
   }, [carrito]);
@@ -313,8 +363,32 @@ export const useNuevoPedido = () => {
   const agregarProductoConExtras = useCallback((producto, cantidad) => {
     const tieneExtras = producto.extrasDisponibles && producto.extrasDisponibles.length > 0;
 
+    const esCategoriaHamburguesas = (() => {
+      const catId = producto?.categoria ?? producto?.categoria_id ?? producto?.categoriaId;
+      const nombre = categoriaIdToNombre.get(String(catId ?? ''));
+      const n = normalizarCategoria(nombre);
+      return n === 'HAMBURGUESAS' || n.includes('HAMBURGUES');
+    })();
+
+    const esCategoriaEspecialObservacion = esCategoriaHamburguesas || esCategoriaSandwiches(producto) || esCategoriaPapas(producto);
+
+    // Si pertenece a HAMBURGUESAS / SANDWICHES / PAPAS y NO tiene extras,
+    // abrir el modal grande de observaciones (ModalExtras) para capturar observación.
+    if (!tieneExtras && esCategoriaEspecialObservacion) {
+      setProductoParaExtras({ ...producto, _editarProductoTitulo: true });
+      setCantidadProducto(cantidad);
+      setTotalUnidades(cantidad);
+      setUnidadActual(1);
+      setUnidadesConfiguradas([]);
+      setExtrasSeleccionados([]);
+      setObservacionItem('');
+      setEditandoItemCarrito(null);
+      setModalExtras(true);
+      return;
+    }
+
     if (tieneExtras) {
-      // ✅ Si tiene extras, SIEMPRE abrir modal (sin importar la cantidad)
+      // ✅ Si tiene extras, SIEMPRE abrir modal completo (sin importar la cantidad)
       setProductoParaExtras(producto);
       setCantidadProducto(cantidad);
       setTotalUnidades(cantidad);
@@ -324,18 +398,22 @@ export const useNuevoPedido = () => {
       setObservacionItem('');
       setEditandoItemCarrito(null);
       setModalExtras(true);
-    } else {
-      // Si NO tiene extras, agregar directamente al carrito
-      const nuevoItem = {
-        ...producto,
-        cantidad: cantidad,
-        extrasSeleccionados: [],
-        observacion: undefined,
-        carritoId: Date.now() + Math.random()
-      };
-      setCarrito(prev => [...prev, nuevoItem]);
+      return;
     }
-  }, []);
+
+    // Resto de categorías: si NO tiene extras, agregar directamente al carrito agrupando por identidad
+    const nuevoItem = crearItemCarrito({
+      product_id: producto.id,
+      nombre: producto.nombre,
+      price: producto.precio,
+      extras: [],
+      observaciones: '',
+      quantity: cantidad,
+      sourceProduct: producto,
+    });
+
+    setCarrito((prev) => mergeItemEnCarrito(prev, nuevoItem));
+  }, [esCategoriaSandwiches, esCategoriaPapas, categoriaIdToNombre]);
 
   // Modificar cantidad en carrito
   const modificarCantidad = useCallback((carritoId, nuevaCantidad) => {
@@ -344,7 +422,7 @@ export const useNuevoPedido = () => {
     } else {
       setCarrito(prev => prev.map(item =>
         item.carritoId === carritoId
-          ? { ...item, cantidad: nuevaCantidad }
+          ? { ...item, quantity: nuevaCantidad, cantidad: nuevaCantidad }
           : item
       ));
     }
@@ -357,16 +435,33 @@ export const useNuevoPedido = () => {
 
   // Editar extras de un item del carrito
   const editarExtrasItem = useCallback((item) => {
-    setProductoParaExtras(item);
-    setCantidadProducto(item.cantidad);
-    setExtrasSeleccionados([...item.extrasSeleccionados]);
-    setObservacionItem(item.observacion || '');
+    const tieneExtras = item?.extrasDisponibles && item.extrasDisponibles.length > 0;
+
+    const esCategoriaHamburguesas = (() => {
+      const catId = item?.categoria ?? item?.categoria_id ?? item?.categoriaId;
+      const nombre = categoriaIdToNombre.get(String(catId ?? ''));
+      const n = normalizarCategoria(nombre);
+      return n === 'HAMBURGUESAS' || n.includes('HAMBURGUES');
+    })();
+
+    const esCategoriaEspecialObservacion =
+      esCategoriaHamburguesas || esCategoriaSandwiches(item) || esCategoriaPapas(item);
+
+    const productoParaModal =
+      !tieneExtras && esCategoriaEspecialObservacion
+        ? { ...item, _editarProductoTitulo: true }
+        : item;
+
+    setProductoParaExtras(productoParaModal);
+    setCantidadProducto(item.quantity ?? item.cantidad ?? 1);
+    setExtrasSeleccionados([...(item.extras ?? item.extrasSeleccionados ?? [])]);
+    setObservacionItem(item.observaciones || item.observacion || '');
     setEditandoItemCarrito(item.carritoId);
     setTotalUnidades(1);
     setUnidadActual(1);
     setUnidadesConfiguradas([]);
     setModalExtras(true);
-  }, []);
+  }, [esCategoriaPapas, esCategoriaSandwiches, categoriaIdToNombre]);
 
   // Cerrar modal de extras
   const cerrarModalExtras = useCallback(() => {
@@ -397,15 +492,20 @@ export const useNuevoPedido = () => {
   const confirmarExtras = useCallback(() => {
     if (editandoItemCarrito) {
       // Estamos editando un item existente
-      setCarrito(prev => prev.map(item =>
-        item.carritoId === editandoItemCarrito
-          ? { 
-              ...item, 
-              extrasSeleccionados: [...extrasSeleccionados],
-              observacion: observacionItem.trim() || undefined
-            }
-          : item
-      ));
+      setCarrito(prev => {
+        const updated = prev.map(item =>
+          item.carritoId === editandoItemCarrito
+            ? { 
+                ...item,
+                extras: [...extrasSeleccionados],
+                extrasSeleccionados: [...extrasSeleccionados],
+                observaciones: observacionItem.trim(),
+                observacion: observacionItem.trim() || undefined
+              }
+            : item
+        );
+        return reagruparCarrito(updated);
+      });
       cerrarModalExtras();
     } else {
       // Agregando nuevos productos
@@ -427,14 +527,18 @@ export const useNuevoPedido = () => {
         // El modal sigue abierto para la siguiente unidad
       } else {
         // Esta era la última unidad, agregar todas al carrito
-        const nuevosItems = unidadesActualizadas.map(unidad => ({
-          ...unidad.producto,
-          cantidad: 1, // Cada unidad es un item separado
-          extrasSeleccionados: unidad.extras,
-          observacion: unidad.observacion,
-          carritoId: Date.now() + Math.random()
-        }));
-        setCarrito(prev => [...prev, ...nuevosItems]);
+        const nuevosItems = unidadesActualizadas.map(unidad =>
+          crearItemCarrito({
+            product_id: unidad.producto.id,
+            nombre: unidad.producto.nombre,
+            price: unidad.producto.precio,
+            extras: unidad.extras,
+            observaciones: unidad.observacion || '',
+            quantity: 1,
+            sourceProduct: unidad.producto
+          })
+        );
+        setCarrito(prev => nuevosItems.reduce((acc, item) => mergeItemEnCarrito(acc, item), prev));
         cerrarModalExtras();
       }
     }
@@ -529,14 +633,13 @@ export const useNuevoPedido = () => {
       return null;
     }
 
-    // Preparar datos del pedido para el backend
-    const direccionCompleta = [
-      cliente.direccion.calle,
-      cliente.direccion.numero,
-      cliente.direccion.edificio && `Ed. ${cliente.direccion.edificio}`,
-      cliente.direccion.piso && `Piso ${cliente.direccion.piso}`,
-      cliente.direccion.observaciones
-    ].filter(Boolean).join(', ');
+    // Preparar datos del pedido para el backend (formato chalito_carta)
+    const direccionCompleta = formatDireccionEntrega({
+      calle: cliente.direccion?.calle,
+      numero: cliente.direccion?.numero,
+      edificio: cliente.direccion?.edificio,
+      piso: cliente.direccion?.piso
+    });
 
     const pedidoData = {
       clienteNombre: cliente.nombre,
@@ -554,21 +657,24 @@ export const useNuevoPedido = () => {
       horaProgramada: tipoPedido === 'programado' ? horaProgramada : null,
       timestamp: Date.now(),
       items: carrito.map(item => {
-        const precioBase = parseFloat(item.precio) || 0;
-        const cantidad = parseInt(item.cantidad) || 1;
-        const precioExtras = (item.extrasSeleccionados || []).reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
+        const precioBase = parseFloat(item.price ?? item.precio) || 0;
+        const cantidad = parseInt(item.quantity ?? item.cantidad, 10) || 1;
+        const extras = item.extras ?? item.extrasSeleccionados ?? [];
+        const precioExtras = extras.reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
         const subtotalItem = (precioBase + precioExtras) * cantidad;
 
         return {
-          id: item.id,
-          articulo_id: item.id, // También incluir articulo_id para compatibilidad
+          id: item.product_id ?? item.id,
+          product_id: item.product_id ?? item.id,
+          quantity: cantidad,
+          articulo_id: item.product_id ?? item.id, // También incluir articulo_id para compatibilidad
           nombre: item.nombre,
           articulo_nombre: item.nombre, // También incluir articulo_nombre para compatibilidad
           cantidad: cantidad,
           precio: precioBase, // Precio base del producto
           subtotal: subtotalItem,
-          extras: item.extrasSeleccionados || [],
-          observaciones: item.observacion || null // Corregido: usar observacion (sin 's')
+          extras,
+          observaciones: item.observaciones ?? item.observacion ?? null
         };
       }),
       subtotal: calcularSubtotal() - calcularDescuento(),
@@ -581,7 +687,7 @@ export const useNuevoPedido = () => {
       // Si no hay medio de pago seleccionado y el estado es "paid", usar 'efectivo' por defecto
       // IMPORTANTE: El medio de pago se guarda siempre que esté seleccionado, independientemente del estado de pago
       medioPago: medioPago ? medioPago : (estadoPago === 'paid' ? 'efectivo' : null),
-      observaciones: ''
+      observaciones: tipoEntrega === 'delivery' ? (cliente.direccion?.observaciones || '') : ''
     };
 
     // Log para depuración
@@ -604,14 +710,15 @@ export const useNuevoPedido = () => {
           horaProgramada: tipoPedido === 'programado' ? horaProgramada : null,
           timestamp: Date.now(),
           items: carrito.map(item => {
-            const precioBase = parseFloat(item.precio) || 0;
-            const cantidad = parseInt(item.cantidad) || 1;
-            const precioExtras = (item.extrasSeleccionados || []).reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
+            const precioBase = parseFloat(item.price ?? item.precio) || 0;
+            const cantidad = parseInt(item.quantity ?? item.cantidad, 10) || 1;
+            const extras = item.extras ?? item.extrasSeleccionados ?? [];
+            const precioExtras = extras.reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
             const subtotalItem = (precioBase + precioExtras) * cantidad;
             
             return {
-              id: item.id,
-              articulo_id: item.id,
+              id: item.product_id ?? item.id,
+              articulo_id: item.product_id ?? item.id,
               nombre: item.nombre,
               cantidad: cantidad,
               precio: precioBase + precioExtras,

@@ -1,7 +1,10 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { pedidosService } from '../../services/pedidosService';
 import { useSocket } from '../useSocket';
 import { useConnectionStatus } from '../../contexts/ConnectionStatusContext';
+import { useWebOrderAlerts } from '../../contexts/WebOrderAlertsContext';
+import { getPollingRemainingMs, isPollingBlocked } from '../../services/rateLimitManager';
+import { toast } from '@/hooks/use-toast';
 
 // Función para normalizar texto eliminando tildes y convirtiendo a minúsculas
 const normalizarTexto = (texto) => {
@@ -18,18 +21,63 @@ export const usePedidos = () => {
   const [busquedaPedidos, setBusquedaPedidos] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const pedidosRef = useRef([]);
+  const websocketRefreshTimeoutRef = useRef(null);
   const { updatePollingStatus, updateWebsocketStatus, markWorkerHeartbeat } = useConnectionStatus();
+  const { playSoundThrottled } = useWebOrderAlerts();
+
+  // Sincronizar ref con pedidos para diff en cargarPedidos
+  useEffect(() => {
+    pedidosRef.current = pedidos;
+  }, [pedidos]);
 
   // Función para cargar pedidos
-  const cargarPedidos = useCallback(async () => {
-    setLoading(true);
+  const cargarPedidos = useCallback(async ({ source = 'manual' } = {}) => {
+    const isBackgroundSource = source === 'polling' || source === 'websocket' || source === 'initial';
+    if (isBackgroundSource && isPollingBlocked()) {
+      const remainingSeconds = Math.max(1, Math.ceil(getPollingRemainingMs() / 1000));
+      updatePollingStatus(false, `Rate limit activo. Polling pausado ${remainingSeconds} segundos.`);
+      return;
+    }
+
+    if (source !== 'polling' && source !== 'websocket') {
+      setLoading(true);
+    }
     setError(null);
     try {
       const response = await pedidosService.obtenerPedidos();
       if (response.success) {
-        setPedidos(response.data || []);
-        // Separar pedidos entregados
-        const entregados = (response.data || []).filter(p => p.estado === 'entregado');
+        const newList = response.data || [];
+        const prevList = pedidosRef.current || [];
+
+        // 1) SONIDO PRIMERO: si hay nuevos pedidos WEB (solo cuando viene por websocket)
+        if (source === 'websocket') {
+          const prevIds = new Set(prevList.map((p) => String(p.id)));
+          const newWebOrders = newList.filter((p) => {
+            const id = String(p.id);
+            if (prevIds.has(id)) return false;
+            const origen = (p.origen || p.origen_pedido || '').toString().toLowerCase();
+            return origen === 'web';
+          });
+          if (newWebOrders.length > 0) {
+            playSoundThrottled();
+          }
+        }
+
+        // 2) Fusionar con datos previos para preservar campos locales (ej: horaEntrega)
+        const mergedList = newList.map((nuevo) => {
+          const prev = prevList.find((p) => String(p.id) === String(nuevo.id));
+          if (!prev) return nuevo;
+          return {
+            ...nuevo,
+            // Preservar horaEntrega local si el backend no la envía
+            horaEntrega: nuevo.horaEntrega ?? prev.horaEntrega,
+          };
+        });
+
+        // 3) ACTUALIZAR ESTADO (aparece la card)
+        setPedidos(mergedList);
+        const entregados = mergedList.filter((p) => p.estado === 'entregado');
         setPedidosEntregados(entregados);
         // Actualizar estado de conexión: polling exitoso
         updatePollingStatus(true, null);
@@ -49,24 +97,40 @@ export const usePedidos = () => {
     } finally {
       setLoading(false);
     }
-  }, [updatePollingStatus]);
+  }, [updatePollingStatus, playSoundThrottled]);
+
+  const scheduleWebsocketRefresh = useCallback((delayMs = 800) => {
+    if (websocketRefreshTimeoutRef.current) return;
+    websocketRefreshTimeoutRef.current = setTimeout(() => {
+      websocketRefreshTimeoutRef.current = null;
+      cargarPedidos({ source: 'websocket' });
+    }, delayMs);
+  }, [cargarPedidos]);
 
   // Cargar pedidos desde el backend al montar el componente
   useEffect(() => {
-    cargarPedidos();
+    cargarPedidos({ source: 'initial' });
     
     // Polling optimizado: cada 45 segundos (balance entre latencia y carga)
     // Se puede optimizar más con If-Modified-Since en el backend
-    const interval = setInterval(cargarPedidos, 45000);
+    const interval = setInterval(() => cargarPedidos({ source: 'polling' }), 45000);
     return () => clearInterval(interval);
   }, [cargarPedidos]);
+
+  useEffect(() => {
+    return () => {
+      if (websocketRefreshTimeoutRef.current) {
+        clearTimeout(websocketRefreshTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Integrar WebSockets (Fase 3)
   const handlePedidoCreado = useCallback((data) => {
     console.log('📦 [usePedidos] Pedido creado recibido via WebSocket:', data);
-    // Recargar pedidos para obtener el nuevo pedido con todos sus datos
-    cargarPedidos();
-  }, [cargarPedidos]);
+    // Coalesce de eventos websocket para evitar ráfagas de requests
+    scheduleWebsocketRefresh();
+  }, [scheduleWebsocketRefresh]);
 
   const handlePedidoEstadoCambiado = useCallback((data) => {
     console.log('🔄 [usePedidos] Estado cambiado recibido via WebSocket:', data);
@@ -94,20 +158,15 @@ export const usePedidos = () => {
     // Si cambió a entregado, actualizar lista de entregados
     if (nuevoEstado === 'entregado') {
       setPedidosEntregados(prev => {
-        const pedido = pedidos.find(p => p.id === String(data.pedidoId));
+        const pedido = pedidosRef.current.find(p => p.id === String(data.pedidoId));
         if (pedido && !prev.find(p => p.id === String(data.pedidoId))) {
           return [...prev, { ...pedido, estado: 'entregado' }];
         }
         return prev;
       });
     }
-    
-    // Recargar para obtener datos completos del pedido actualizado
-    // Usar timeout para evitar múltiples recargas si hay varios eventos
-    setTimeout(() => {
-      cargarPedidos();
-    }, 500);
-  }, [cargarPedidos, pedidos]);
+
+  }, []);
 
   const handlePedidoCobrado = useCallback((data) => {
     console.log('💰 [usePedidos] Pedido cobrado recibido via WebSocket:', data);
@@ -132,9 +191,7 @@ export const usePedidos = () => {
       ));
     }, 2000);
 
-    // Refresca para garantizar consistencia con backend (totales, venta relacionada, etc.)
-    cargarPedidos();
-  }, [cargarPedidos]);
+  }, []);
 
   const handleCapacidadActualizada = useCallback((data) => {
     console.log('📊 [usePedidos] Capacidad actualizada via WebSocket:', data);
@@ -166,8 +223,7 @@ export const usePedidos = () => {
         ped.id === String(data.pedidoId) ? { ...ped, actualizadoRecientemente: false } : ped
       ));
     }, 2000);
-    cargarPedidos();
-  }, [cargarPedidos]);
+  }, []);
 
   // Conectar WebSocket
   const { isConnected: socketConnected } = useSocket(
@@ -205,60 +261,74 @@ export const usePedidos = () => {
   );
 
   // EN PREPARACIÓN: en_cocina y listo (listo no oculta; solo salen al entregar; cobrar no los saca de la columna)
-  const pedidosEnCocina = useMemo(() =>
-    pedidosFiltrados.filter(p => p.estado === 'en_cocina' || p.estado === 'listo'),
+  const pedidosEnCocina = useMemo(
+    () => pedidosFiltrados.filter((p) => p.estado === 'en_cocina' || p.estado === 'listo'),
     [pedidosFiltrados]
   );
 
+  const handleMarcharACocina = useCallback(
+    async (pedidoId) => {
+      const ahoraMs = Date.now();
+      const response = await pedidosService.actualizarEstadoPedido(pedidoId, 'en_cocina', {
+        // Flujo manual (drag/boton): excluir del motor automatico
+        transicionAutomatica: false
+      });
 
-  const handleDragEnd = useCallback(async (event) => {
-    const { active, over } = event;
-    if (!over) return;
-
-    const pedidoId = active.data.current.pedido.id;
-    const estadoActual = active.data.current.estado;
-    const estadoDestino = over.id;
-
-    // ⚠️ DESHABILITAR: No permitir drag & drop desde RECIBIDOS a EN_PREPARACION
-    // El sistema ahora lo hace automáticamente
-    if (estadoActual === 'recibido' && estadoDestino === 'en_cocina') {
-      console.warn('⚠️ Drag & Drop desde RECIBIDOS a EN_PREPARACION deshabilitado. El sistema lo hace automáticamente.');
-      return; // No hacer nada, el sistema maneja esta transición
-    }
-
-    // Permitir otros drag & drop (dentro de EN_PREPARACION para reordenar visual, etc.)
-    if (estadoActual !== estadoDestino) {
-      // Actualizar estado en el backend
-      const response = await pedidosService.actualizarEstadoPedido(pedidoId, estadoDestino);
-      
       if (response.success) {
-        // Actualizar estado localmente
-        setPedidos(prev =>
-          prev.map(p =>
-            p.id === pedidoId ? { ...p, estado: estadoDestino } : p
+        setPedidos((prev) =>
+          prev.map((p) =>
+            p.id === pedidoId
+              ? {
+                  ...p,
+                  estado: 'en_cocina',
+                  transicionAutomatica: false,
+                  horaInicioPreparacion: ahoraMs
+                }
+              : p
           )
         );
-      } else {
-        console.error('Error al actualizar estado:', response.error);
-        // Podrías mostrar un toast de error aquí
+        return { success: true };
       }
-    }
-  }, []);
 
-  const handleMarcharACocina = useCallback(async (pedidoId) => {
-    const response = await pedidosService.actualizarEstadoPedido(pedidoId, 'en_cocina');
-    
-    if (response.success) {
-      setPedidos(prev =>
-        prev.map(p =>
-          p.id === pedidoId ? { ...p, estado: 'en_cocina' } : p
-        )
-      );
-    } else {
       console.error('Error al marcar pedido a cocina:', response.error);
-      // El toast se mostrará desde el servicio si es necesario
-    }
-  }, []);
+
+      const rawMessage = (response.error || '').toString();
+      const msg = rawMessage.toLowerCase();
+
+      // Caso 1: capacidad máxima de cocina alcanzada
+      if (
+        msg.includes('capacidad') ||
+        msg.includes('llena') ||
+        msg.includes('lleno') ||
+        msg.includes('maxima') ||
+        msg.includes('máxima')
+      ) {
+        toast.error('No se puede adelantar el pedido. La cocina ya alcanzó la capacidad máxima.');
+        return { success: false, reason: 'capacity', error: rawMessage };
+      }
+
+      // Caso 2: pedido ya fue procesado / ya no está en RECIBIDO
+      if (
+        msg.includes('ya fue actualizado') ||
+        msg.includes('ya fue procesado') ||
+        msg.includes('ya no se encuentra en estado') ||
+        msg.includes('no está en estado') ||
+        msg.includes('ya está en preparación') ||
+        msg.includes('ya esta en preparacion')
+      ) {
+        toast.error('El pedido ya fue actualizado.');
+        return { success: false, reason: 'already-updated', error: rawMessage };
+      }
+
+      // Caso genérico: error inesperado
+      toast.error('No se pudo adelantar el pedido', {
+        description: 'Ocurrió un error inesperado al intentar mover el pedido a preparación.',
+      });
+
+      return { success: false, reason: 'unknown', error: rawMessage };
+    },
+    [setPedidos]
+  );
 
   const handleListo = useCallback(async (pedidoId) => {
     // Encontrar el pedido antes de actualizar
@@ -450,7 +520,6 @@ export const usePedidos = () => {
     pedidosEnCocina,
     busquedaPedidos,
     setBusquedaPedidos,
-    handleDragEnd,
     handleMarcharACocina,
     handleListo,
     handleEntregar,

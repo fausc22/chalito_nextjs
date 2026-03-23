@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { Pencil, Trash2, Utensils, Package } from 'lucide-react';
+import { Pencil, Trash2, Utensils, Calculator } from 'lucide-react';
 import { ArticuloImagenTable } from './ArticuloImagenTable';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ export const ArticulosTable = ({
   articulos = [],
   onEditar,
   onEliminar,
+  onVerCostos,
   scrollRef,
   currentPage: currentPageProp,
   setCurrentPage: setCurrentPageProp,
@@ -137,20 +138,20 @@ export const ArticulosTable = ({
 
   return (
     <div ref={tableRef}>
-      {/* Vista Desktop - Tabla */}
-      <div className="hidden lg:block overflow-x-auto mb-8">
-        <Table className="w-full bg-white rounded-lg overflow-hidden shadow-sm">
+      {/* Vista Desktop - Tabla: sin scroll horizontal; columnas proporcionales al 100% del ancho */}
+      <div className="hidden lg:block mb-8 min-w-0 overflow-x-hidden">
+        <Table className="w-full max-w-full table-fixed bg-white rounded-lg shadow-sm">
           <TableHeader className="bg-slate-50">
             <TableRow>
-              <TableHead className="w-[100px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-l-2 border-r-2 border-b-2 border-gray-200 py-4">Imagen</TableHead>
-              <TableHead className="text-center text-sm font-bold text-slate-800 uppercase tracking-wider max-w-[300px] min-w-[200px] border-r-2 border-b-2 border-gray-200 py-4">Nombre</TableHead>
-              <TableHead className="text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Descripción</TableHead>
-              <TableHead className="text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Categoría</TableHead>
-              <TableHead className="text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Tipo</TableHead>
-              <TableHead className="text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Precio</TableHead>
-              <TableHead className="w-[80px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Stock</TableHead>
-              <TableHead className="text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Estado</TableHead>
-              <TableHead className="text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Acciones</TableHead>
+              <TableHead className="w-[8%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-l-2 border-r-2 border-b-2 border-gray-200 py-4">Imagen</TableHead>
+              <TableHead className="w-[14%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Nombre</TableHead>
+              <TableHead className="w-[18%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Descripción</TableHead>
+              <TableHead className="w-[10%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Categoría</TableHead>
+              <TableHead className="w-[9%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Tipo</TableHead>
+              <TableHead className="w-[9%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Precio</TableHead>
+              <TableHead className="w-[7%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Stock</TableHead>
+              <TableHead className="w-[8%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Estado</TableHead>
+              <TableHead className="w-[17%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -161,29 +162,31 @@ export const ArticulosTable = ({
                   index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                 }`}
               >
-                {/* Imagen */}
-                <TableCell className="text-center py-1">
+                {/* Imagen: contenido en la celda para no invadir NOMBRE */}
+                <TableCell className="text-center py-1 pr-2 min-w-0 overflow-hidden align-middle">
                   <ArticuloImagenTable 
                     imagen_url={articulo.imagen_url} 
                     nombre={articulo.nombre} 
                   />
                 </TableCell>
 
-                {/* Nombre */}
-                <TableCell className="font-medium max-w-[300px] text-center py-1">
-                  <div className="break-words uppercase">{articulo.nombre}</div>
+                {/* Nombre: wrap en varias líneas como descripción; padding para no tocar la imagen */}
+                <TableCell className="font-medium text-center py-1 min-w-0 pl-3 align-middle">
+                  <div className="break-words uppercase text-left max-w-full" title={articulo.nombre}>
+                    {articulo.nombre}
+                  </div>
                 </TableCell>
 
                 {/* Descripción */}
-                <TableCell className="max-w-xs text-center py-1">
-                  <div className="break-words text-sm text-muted-foreground line-clamp-2">
+                <TableCell className="text-center py-1 min-w-0">
+                  <div className="break-words text-sm text-muted-foreground line-clamp-2 max-w-full overflow-hidden">
                     {articulo.descripcion || 'Sin descripción'}
                   </div>
                 </TableCell>
 
                 {/* Categoría */}
-                <TableCell className="max-w-[150px] text-center py-1">
-                  <div className="flex justify-center">
+                <TableCell className="text-center py-1 min-w-0">
+                  <div className="flex justify-center min-w-0">
                     <Badge variant="outline" className="max-w-full truncate" title={articulo.categoria}>
                       {articulo.categoria}
                     </Badge>
@@ -191,34 +194,45 @@ export const ArticulosTable = ({
                 </TableCell>
 
                 {/* Tipo */}
-                <TableCell className="text-center py-1">
+                <TableCell className="text-center py-1 min-w-0">
                   <Badge className={getTipoBadgeClass(articulo.tipo || 'OTRO')}>
                     {articulo.tipo || 'OTRO'}
                   </Badge>
                 </TableCell>
 
                 {/* Precio */}
-                <TableCell className="text-right py-1 px-4">
+                <TableCell className="text-right py-1 px-2 min-w-0">
                   <span className="font-semibold text-green-600">
                     ${articulo.precio}
                   </span>
                 </TableCell>
 
                 {/* Stock */}
-                <TableCell className="text-center py-1">
+                <TableCell className="text-center py-1 min-w-0">
                   <span className="font-medium">{articulo.stock_actual || 0}</span>
                 </TableCell>
 
                 {/* Estado */}
-                <TableCell className="text-center py-1">
+                <TableCell className="text-center py-1 min-w-0">
                   <Badge className={getEstadoBadgeClass(articulo.activo)}>
                     {articulo.activo ? 'Activo' : 'Inactivo'}
                   </Badge>
                 </TableCell>
 
                 {/* Acciones */}
-                <TableCell className="text-center py-1">
-                  <div className="flex gap-2 justify-center">
+                <TableCell className="text-center py-1 min-w-0">
+                  <div className="flex gap-1 sm:gap-2 justify-center flex-wrap">
+                    {onVerCostos && (articulo.tipo === 'ELABORADO') && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => onVerCostos(articulo)}
+                        title="Ver costos"
+                        className="hover:scale-110 hover:bg-emerald-50 hover:border-emerald-300 transition-all text-emerald-700"
+                      >
+                        <Calculator className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="icon"
@@ -253,6 +267,7 @@ export const ArticulosTable = ({
             articulo={articulo}
             onEditar={onEditar}
             onEliminar={onEliminar}
+            onVerCostos={onVerCostos}
             getTipoBadgeClass={getTipoBadgeClass}
             getEstadoBadgeClass={getEstadoBadgeClass}
           />
@@ -340,6 +355,7 @@ function ArticuloMobileCard({
   articulo, 
   onEditar, 
   onEliminar, 
+  onVerCostos, 
   getTipoBadgeClass, 
   getEstadoBadgeClass 
 }) {
@@ -421,6 +437,17 @@ function ArticuloMobileCard({
 
         {/* ⚙️ ACCIONES */}
         <div className="flex gap-2 pt-2">
+          {onVerCostos && articulo.tipo === 'ELABORADO' && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => onVerCostos(articulo)}
+              title="Ver costos"
+              className="h-10 w-10 shrink-0 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 border-2"
+            >
+              <Calculator className="h-4 w-4" strokeWidth={2} />
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"

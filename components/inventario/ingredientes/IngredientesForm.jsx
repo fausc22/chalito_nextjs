@@ -5,6 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -49,7 +56,7 @@ export const IngredientesForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 pt-4 pr-2">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 pt-4 pl-4 pr-4">
           {/* Nombre */}
           <div className="space-y-2">
             <Label htmlFor="nombre" className="text-sm font-medium">
@@ -80,23 +87,47 @@ export const IngredientesForm = ({
             />
           </div>
 
-          {/* Precio Extra */}
+          {/* Unidad base (para costos) */}
           <div className="space-y-2">
-            <Label htmlFor="precio_extra" className="text-sm font-medium">
-              Precio Extra
+            <Label htmlFor="unidad_base" className="text-sm font-medium">
+              Unidad base para costos
+            </Label>
+            <Select
+              value={formulario.unidad_base || 'UNIDADES'}
+              onValueChange={(value) => handleChange('unidad_base', value)}
+            >
+              <SelectTrigger id="unidad_base" className="border-2">
+                <SelectValue placeholder="Seleccionar unidad base" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="UNIDADES">UNIDADES → pan, huevo, fetas</SelectItem>
+                <SelectItem value="GRAMOS">GRAMOS → queso, panceta</SelectItem>
+                <SelectItem value="KILOS">KILOS → carne, papas</SelectItem>
+                <SelectItem value="LITROS">LITROS → aceite, salsa</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Esta es la unidad base que se usará para calcular costos (por ejemplo, costo por kilo, por litro o por unidad).
+            </p>
+          </div>
+
+          {/* Costo unitario base */}
+          <div className="space-y-2">
+            <Label htmlFor="costo_unitario_base" className="text-sm font-medium">
+              Costo por unidad
             </Label>
             <Input
-              id="precio_extra"
+              id="costo_unitario_base"
               type="number"
-              value={formulario.precio_extra !== undefined ? formulario.precio_extra : ''}
-              onChange={(e) => handleChange('precio_extra', e.target.value)}
+              value={formulario.costo_unitario_base !== undefined && formulario.costo_unitario_base !== null ? formulario.costo_unitario_base : ''}
+              onChange={(e) => handleChange('costo_unitario_base', e.target.value)}
               min="0"
               step="0.01"
               placeholder="0.00"
               className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
             />
-            <p className="text-sm text-muted-foreground">
-              Costo adicional si el cliente lo agrega extra
+            <p className="text-xs text-muted-foreground">
+              ¿Cuánto cuesta 1 kilo / 1 litro / 1 unidad de este insumo? Ejemplo: carne → costo por kilo, aceite → costo por litro, pan → costo por unidad.
             </p>
           </div>
 

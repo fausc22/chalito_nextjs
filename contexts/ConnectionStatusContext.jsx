@@ -1,5 +1,11 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { systemService } from '../services/systemService';
+import {
+  getPollingBlockedUntil,
+  getPollingRemainingMs,
+  isPollingBlocked,
+  setPollingBlocked
+} from '../services/rateLimitManager';
 
 const ConnectionStatusContext = createContext();
 
@@ -29,8 +35,13 @@ export const ConnectionStatusProvider = ({ children }) => {
   const [pedidosAtrasadosCount, setPedidosAtrasadosCount] = useState(0);
   const [lastPollingError, setLastPollingError] = useState(null);
   const [pollingActive, setPollingActive] = useState(true);
+  const [pollingBlockedUntil, setPollingBlockedUntil] = useState(getPollingBlockedUntil());
   const [websocketConnected, setWebsocketConnected] = useState(false);
   const [lastWorkerHeartbeatAt, setLastWorkerHeartbeatAt] = useState(Date.now());
+  const checkInFlightRef = useRef(false);
+  const lastWorkerHeartbeatRef = useRef(Date.now());
+  const pedidosAtrasadosCountRef = useRef(0);
+  const pollingErrorTimeoutRef = useRef(null);
   const WORKER_HEARTBEAT_TIMEOUT_MS = 15000;
 
   const parseWorkerActive = useCallback((payload) => {
@@ -79,12 +90,35 @@ export const ConnectionStatusProvider = ({ children }) => {
     const parsedTimestamp = Number(rawTimestamp);
     const heartbeatAt = Number.isFinite(parsedTimestamp) ? parsedTimestamp : Date.now();
     setLastWorkerHeartbeatAt(heartbeatAt);
+    lastWorkerHeartbeatRef.current = heartbeatAt;
     setWorkerActive(true);
     resolveSystemStatus(true, pedidosAtrasadosCount);
   }, [parseWorkerActive, pedidosAtrasadosCount, resolveSystemStatus]);
 
+  useEffect(() => {
+    lastWorkerHeartbeatRef.current = lastWorkerHeartbeatAt;
+  }, [lastWorkerHeartbeatAt]);
+
+  useEffect(() => {
+    pedidosAtrasadosCountRef.current = pedidosAtrasadosCount;
+  }, [pedidosAtrasadosCount]);
+
   // Función para verificar health del worker y métricas
   const checkSystemHealth = useCallback(async () => {
+    if (checkInFlightRef.current) {
+      return;
+    }
+
+    if (isPollingBlocked()) {
+      const blockedUntil = getPollingBlockedUntil();
+      const remainingSeconds = Math.max(1, Math.ceil(getPollingRemainingMs() / 1000));
+      setPollingBlockedUntil(blockedUntil);
+      setPollingActive(false);
+      setLastPollingError(`Rate limit activo. Reintentando en ${remainingSeconds} segundos.`);
+      return;
+    }
+
+    checkInFlightRef.current = true;
     try {
       const [healthSettled, metricsSettled] = await Promise.allSettled([
         systemService.obtenerHealthWorker(),
@@ -97,18 +131,37 @@ export const ConnectionStatusProvider = ({ children }) => {
         ? metricsSettled.value
         : { success: false, data: { count: 0, pedidos: [] }, error: metricsSettled.reason?.message || 'Error al obtener métricas' };
 
+      const healthRateLimit = healthResult.rateLimit === true;
+      const metricsRateLimit = metricsResult.rateLimit === true;
+      if (healthRateLimit || metricsRateLimit) {
+        const retryAfterSeconds = Number(healthResult.retryAfter || metricsResult.retryAfter || 0);
+        const { blockedUntil } = setPollingBlocked({ retryAfterSeconds });
+        const remainingSeconds = Math.max(1, Math.ceil((blockedUntil - Date.now()) / 1000));
+
+        setPollingBlockedUntil(blockedUntil);
+        setPollingActive(false);
+        setLastPollingError(`Rate limit activo. Polling pausado ${remainingSeconds} segundos.`);
+        return;
+      }
+
+      setPollingBlockedUntil(0);
+      setPollingActive(true);
+
       // Worker activo por health endpoint o por heartbeat reciente (fallback robusto)
-      const heartbeatIsFresh = (Date.now() - lastWorkerHeartbeatAt) <= WORKER_HEARTBEAT_TIMEOUT_MS;
+      const heartbeatIsFresh = (Date.now() - lastWorkerHeartbeatRef.current) <= WORKER_HEARTBEAT_TIMEOUT_MS;
       const workerActiveFromHealth = healthResult.success && parseWorkerActive(healthResult.data);
       const isWorkerRunningNow = workerActiveFromHealth || heartbeatIsFresh;
       setWorkerActive(isWorkerRunningNow);
       if (isWorkerRunningNow) {
-        setLastWorkerHeartbeatAt(Date.now());
+        const now = Date.now();
+        lastWorkerHeartbeatRef.current = now;
+        setLastWorkerHeartbeatAt(now);
       }
 
       // Verificar métricas de pedidos atrasados
       const atrasadosCount = metricsResult.success ? (metricsResult.data?.count || 0) : 0;
       setPedidosAtrasadosCount(atrasadosCount);
+      pedidosAtrasadosCountRef.current = atrasadosCount;
 
       resolveSystemStatus(isWorkerRunningNow, atrasadosCount);
 
@@ -117,12 +170,14 @@ export const ConnectionStatusProvider = ({ children }) => {
       console.error('Error al verificar health del sistema:', error);
       // No degradar inmediatamente a inactivo por error transitorio;
       // usar timeout de heartbeat para decidir el estado real.
-      const heartbeatIsFresh = (Date.now() - lastWorkerHeartbeatAt) <= WORKER_HEARTBEAT_TIMEOUT_MS;
+      const heartbeatIsFresh = (Date.now() - lastWorkerHeartbeatRef.current) <= WORKER_HEARTBEAT_TIMEOUT_MS;
       setWorkerActive(heartbeatIsFresh);
-      resolveSystemStatus(heartbeatIsFresh, pedidosAtrasadosCount);
+      resolveSystemStatus(heartbeatIsFresh, pedidosAtrasadosCountRef.current);
       setLastPollingError(error.message);
+    } finally {
+      checkInFlightRef.current = false;
     }
-  }, [lastWorkerHeartbeatAt, parseWorkerActive, pedidosAtrasadosCount, resolveSystemStatus]);
+  }, [parseWorkerActive, resolveSystemStatus]);
 
   // Polling de health y métricas cada 30 segundos
   useEffect(() => {
@@ -140,13 +195,13 @@ export const ConnectionStatusProvider = ({ children }) => {
   // Heartbeat watchdog: si no llega señal en 15s, marcar inactivo
   useEffect(() => {
     const interval = setInterval(() => {
-      const heartbeatIsFresh = (Date.now() - lastWorkerHeartbeatAt) <= WORKER_HEARTBEAT_TIMEOUT_MS;
+      const heartbeatIsFresh = (Date.now() - lastWorkerHeartbeatRef.current) <= WORKER_HEARTBEAT_TIMEOUT_MS;
       setWorkerActive(heartbeatIsFresh);
-      resolveSystemStatus(heartbeatIsFresh, pedidosAtrasadosCount);
+      resolveSystemStatus(heartbeatIsFresh, pedidosAtrasadosCountRef.current);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [lastWorkerHeartbeatAt, pedidosAtrasadosCount, resolveSystemStatus]);
+  }, [resolveSystemStatus]);
 
   // Mantener compatibilidad con código existente que usa updateWebsocketStatus y updatePollingStatus
   // Estos métodos ya no afectan el estado principal, pero se mantienen para no romper código existente
@@ -160,11 +215,24 @@ export const ConnectionStatusProvider = ({ children }) => {
     if (error) {
       setLastPollingError(error);
       // Limpiar el error después de 10 segundos para permitir reintentos
-      setTimeout(() => {
+      if (pollingErrorTimeoutRef.current) {
+        clearTimeout(pollingErrorTimeoutRef.current);
+      }
+      pollingErrorTimeoutRef.current = setTimeout(() => {
         setLastPollingError(null);
       }, 10000);
     } else {
+      if (pollingErrorTimeoutRef.current) {
+        clearTimeout(pollingErrorTimeoutRef.current);
+        pollingErrorTimeoutRef.current = null;
+      }
       setLastPollingError(null);
+    }
+  }, []);
+
+  useEffect(() => () => {
+    if (pollingErrorTimeoutRef.current) {
+      clearTimeout(pollingErrorTimeoutRef.current);
     }
   }, []);
 
@@ -203,6 +271,7 @@ export const ConnectionStatusProvider = ({ children }) => {
     pedidosAtrasadosCount,
     websocketConnected,
     pollingActive,
+    pollingBlockedUntil,
     lastPollingError,
     updateWebsocketStatus,
     updatePollingStatus,

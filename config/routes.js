@@ -12,6 +12,7 @@ export const ROUTES = {
   FONDOS: '/fondos',
   REPORTES: '/reportes',
   PERFIL: '/perfil',
+  COCINA: '/cocina',
 };
 
 export const PUBLIC_ROUTES = [
@@ -27,6 +28,7 @@ export const PROTECTED_ROUTES = [
   ROUTES.FONDOS,
   ROUTES.REPORTES,
   ROUTES.PERFIL,
+  ROUTES.COCINA,
 ];
 
 export const ROUTE_TITLES = {
@@ -39,4 +41,5 @@ export const ROUTE_TITLES = {
   [ROUTES.FONDOS]: 'Fondos',
   [ROUTES.REPORTES]: 'Reportes',
   [ROUTES.PERFIL]: 'Perfil',
+  [ROUTES.COCINA]: 'Cocina',
 };

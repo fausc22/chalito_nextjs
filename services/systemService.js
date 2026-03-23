@@ -25,7 +25,10 @@ export const systemService = {
         return {
           success: false,
           error: response.data.mensaje || 'Error al obtener estado del worker',
-          data: { active: false }
+          data: { active: false },
+          rateLimit: response.data?.rateLimit === true || response.status === 429,
+          retryAfter: response.data?.retryAfter,
+          pollingBlockedUntil: response.data?.pollingBlockedUntil
         };
       }
 
@@ -38,7 +41,9 @@ export const systemService = {
       return {
         success: false,
         error: error.response?.data?.mensaje || error.message || 'Error al obtener estado del worker',
-        data: { active: false }
+        data: { active: false },
+        rateLimit: error.response?.status === 429,
+        retryAfter: error.response?.data?.retryAfter
       };
     }
   },
@@ -62,7 +67,10 @@ export const systemService = {
         return {
           success: false,
           error: response.data.mensaje || 'Error al obtener métricas',
-          data: { count: 0, pedidos: [] }
+          data: { count: 0, pedidos: [] },
+          rateLimit: response.data?.rateLimit === true || response.status === 429,
+          retryAfter: response.data?.retryAfter,
+          pollingBlockedUntil: response.data?.pollingBlockedUntil
         };
       }
 
@@ -79,7 +87,9 @@ export const systemService = {
       return {
         success: false,
         error: error.response?.data?.mensaje || error.message || 'Error al obtener métricas',
-        data: { count: 0, pedidos: [] }
+        data: { count: 0, pedidos: [] },
+        rateLimit: error.response?.status === 429,
+        retryAfter: error.response?.data?.retryAfter
       };
     }
   }

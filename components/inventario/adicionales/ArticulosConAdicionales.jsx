@@ -1,8 +1,16 @@
-import { useState, useEffect } from 'react';
-import { Edit, Package, X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Edit, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { articulosService } from '../../../services/articulosService';
 import { toast } from '@/hooks/use-toast';
 
@@ -14,6 +22,28 @@ export function ArticulosConAdicionales({
 }) {
   const [articulosConAdicionales, setArticulosConAdicionales] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Paginación: 6 ítems por página fijo (como pediste)
+  const ITEMS_PER_PAGE = 6;
+  const [currentPage, setCurrentPage] = useState(1);
+  const containerRef = useRef(null);
+
+  const totalPages = Math.ceil(articulosConAdicionales.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentArticulos = articulosConAdicionales.slice(startIndex, endIndex);
+
+  // Ajustar página actual si queda fuera de rango
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [articulosConAdicionales.length, currentPage, totalPages]);
+
+  const handleCambiarPagina = (nuevaPagina) => {
+    setCurrentPage(nuevaPagina);
+    containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const cargarArticulosConAdicionales = async () => {
     setLoading(true);
@@ -99,8 +129,8 @@ export function ArticulosConAdicionales({
   }
 
   return (
-    <div className="space-y-3">
-      {articulosConAdicionales.map((articulo) => (
+    <div ref={containerRef} className="space-y-3">
+      {currentArticulos.map((articulo) => (
         <Card key={articulo.id} className="border border-slate-200">
           <CardContent className="p-4">
             <div className="flex items-start justify-between gap-4">
@@ -138,6 +168,51 @@ export function ArticulosConAdicionales({
           </CardContent>
         </Card>
       ))}
+
+      {/* Paginación: misma UI que Ingredientes / Adicionales */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination>
+            <PaginationContent className="gap-1">
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => handleCambiarPagina(Math.max(1, currentPage - 1))}
+                  className={`cursor-pointer text-xs md:text-sm ${
+                    currentPage === 1 ? 'pointer-events-none opacity-50' : ''
+                  }`}
+                />
+              </PaginationItem>
+
+              <div className="hidden sm:flex items-center gap-1">
+                {[...Array(totalPages)].map((_, index) => (
+                  <PaginationItem key={index + 1}>
+                    <PaginationLink
+                      onClick={() => handleCambiarPagina(index + 1)}
+                      isActive={currentPage === index + 1}
+                      className="cursor-pointer"
+                    >
+                      {index + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+              </div>
+
+              <div className="flex sm:hidden items-center px-3 text-sm text-muted-foreground">
+                {currentPage} / {totalPages}
+              </div>
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => handleCambiarPagina(Math.min(totalPages, currentPage + 1))}
+                  className={`cursor-pointer text-xs md:text-sm ${
+                    currentPage === totalPages ? 'pointer-events-none opacity-50' : ''
+                  }`}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   );
 }

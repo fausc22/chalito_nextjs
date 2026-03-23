@@ -1,5 +1,6 @@
 import { apiRequest } from './api';
 import { API_CONFIG } from '../config/api';
+import { buildPersonalizaciones } from '../lib/extrasUtils';
 
 /**
  * Servicio para gestión de pedidos
@@ -97,12 +98,22 @@ const transformarPedidoBackendAFrontend = (pedidoBackend, articulos = []) => {
     return map[m] || medio.toLowerCase();
   };
 
+  const formatearHorarioEntrega = (horarioEntrega) => {
+    if (!horarioEntrega) return null;
+    const fecha = new Date(horarioEntrega);
+    if (Number.isNaN(fecha.getTime())) return null;
+    const horas = String(fecha.getHours()).padStart(2, '0');
+    const minutos = String(fecha.getMinutes()).padStart(2, '0');
+    return `${horas}:${minutos}`;
+  };
+
   return {
     id: String(pedidoBackend.id),
     clienteNombre: pedidoBackend.cliente_nombre || 'Cliente sin nombre',
     telefono: pedidoBackend.cliente_telefono || '',
     email: pedidoBackend.cliente_email || null,
     direccion: pedidoBackend.cliente_direccion || '',
+    origen_pedido: (pedidoBackend.origen_pedido || '').toUpperCase(),
     origen: mapearOrigenBackendAFrontend(pedidoBackend.origen_pedido || 'mostrador'),
     tipo: pedidoBackend.horario_entrega ? 'programado' : 'ya',
     horaProgramada: pedidoBackend.horario_entrega 
@@ -113,34 +124,58 @@ const transformarPedidoBackendAFrontend = (pedidoBackend, articulos = []) => {
           return `${horas}:${minutos}`;
         })()
       : null,
+    horario_entrega: pedidoBackend.horario_entrega || null,
     timestamp: new Date(pedidoBackend.fecha).getTime(),
-    items: articulos.map(art => ({
-      id: art.articulo_id,
-      articulo_id: art.articulo_id,
-      articulo_nombre: art.articulo_nombre,
-      nombre: art.articulo_nombre,
-      cantidad: art.cantidad || 1,
-      precio: parseFloat(art.precio) || 0,
-      subtotal: parseFloat(art.subtotal) || (parseFloat(art.precio) * (art.cantidad || 1)) || 0,
-      extras: art.personalizaciones ? (typeof art.personalizaciones === 'string' ? JSON.parse(art.personalizaciones) : art.personalizaciones) : null,
-      personalizaciones: art.personalizaciones ? (typeof art.personalizaciones === 'string' ? JSON.parse(art.personalizaciones) : art.personalizaciones) : null,
-      observaciones: art.observaciones || null
-    })),
+    items: articulos.map(art => {
+      let personalizaciones = null;
+      try {
+        personalizaciones = art.personalizaciones
+          ? (typeof art.personalizaciones === 'string' ? JSON.parse(art.personalizaciones) : art.personalizaciones)
+          : null;
+      } catch (_) {
+        personalizaciones = null;
+      }
+      const extrasArray = Array.isArray(personalizaciones?.extras) ? personalizaciones.extras : [];
+      return {
+        id: art.articulo_id,
+        articulo_id: art.articulo_id,
+        articulo_nombre: art.articulo_nombre,
+        nombre: art.articulo_nombre,
+        cantidad: art.cantidad || 1,
+        precio: parseFloat(art.precio) || 0,
+        subtotal: parseFloat(art.subtotal) || (parseFloat(art.precio) * (art.cantidad || 1)) || 0,
+        extras: extrasArray.map(e => ({
+          id: e.id || e.adicional_id,
+          nombre: e.nombre || e.adicional_nombre || e.name,
+          precio: parseFloat(e.precio_extra ?? e.precio ?? 0) || 0
+        })),
+        personalizaciones,
+        observaciones: art.observaciones || null
+      };
+    }),
     total: parseFloat(pedidoBackend.total) || 0,
     // Mapear estado_pago del backend al frontend
     // Si estado_pago no existe (pedidos antiguos), usar medio_pago como fallback
     paymentStatus: pedidoBackend.estado_pago 
       ? (pedidoBackend.estado_pago === 'PAGADO' ? 'paid' : 'pending')
       : (pedidoBackend.medio_pago && pedidoBackend.medio_pago !== null && pedidoBackend.medio_pago !== '' ? 'paid' : 'pending'),
+    estado_pago: pedidoBackend.estado_pago || (pedidoBackend.medio_pago ? 'PAGADO' : 'DEBE'),
     estado: mapearEstadoBackendAFrontend(pedidoBackend.estado),
     tipoEntrega: mapearModalidadBackendAFrontend(pedidoBackend.modalidad),
+    medio_pago: pedidoBackend.medio_pago || null,
     medioPago: mapearMedioPagoBackendAFrontend(pedidoBackend.medio_pago),
+    monto_con_cuanto_abona: pedidoBackend.monto_con_cuanto_abona ?? null,
+    observaciones_envio: pedidoBackend.observaciones_envio || '',
+    observaciones_pedido: pedidoBackend.observaciones_pedido || pedidoBackend.observaciones || '',
+    horario_entrega_formateado: formatearHorarioEntrega(pedidoBackend.horario_entrega),
+    // Hora real de entrega (si el backend la envía)
+    horaEntrega: pedidoBackend.hora_entrega ? new Date(pedidoBackend.hora_entrega) : null,
     observaciones: pedidoBackend.observaciones || '',
     subtotal: parseFloat(pedidoBackend.subtotal) || 0,
     ivaTotal: parseFloat(pedidoBackend.iva_total) || 0,
     // Campos nuevos para automatización
     horaInicioPreparacion: pedidoBackend.hora_inicio_preparacion ? new Date(pedidoBackend.hora_inicio_preparacion).getTime() : null,
-    tiempoEstimadoPreparacion: pedidoBackend.tiempo_estimado_preparacion || 15,
+    tiempoEstimadoPreparacion: pedidoBackend.tiempo_estimado_preparacion ?? null,
     horaEsperadaFinalizacion: pedidoBackend.hora_esperada_finalizacion ? new Date(pedidoBackend.hora_esperada_finalizacion).getTime() : null,
     horaListo: pedidoBackend.hora_listo ? new Date(pedidoBackend.hora_listo).getTime() : null,
     prioridad: pedidoBackend.prioridad ? pedidoBackend.prioridad.toLowerCase() : 'normal',
@@ -153,9 +188,9 @@ const transformarPedidoBackendAFrontend = (pedidoBackend, articulos = []) => {
 const transformarPedidoFrontendABackend = (pedidoFrontend) => {
   // Calcular subtotal de los items (precio * cantidad + extras)
   const subtotalItems = pedidoFrontend.items?.reduce((sum, item) => {
-    const precioBase = parseFloat(item.precio) || 0;
-    const cantidad = parseInt(item.cantidad) || 1;
-    const precioExtras = (item.extras || []).reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
+    const precioBase = parseFloat(item.price ?? item.precio) || 0;
+    const cantidad = parseInt(item.quantity ?? item.cantidad, 10) || 1;
+    const precioExtras = (item.extras || item.extrasSeleccionados || []).reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
     const subtotalItem = (precioBase + precioExtras) * cantidad;
     return sum + subtotalItem;
   }, 0) || 0;
@@ -182,6 +217,41 @@ const transformarPedidoFrontendABackend = (pedidoFrontend) => {
     return resultado;
   };
 
+  const itemsNormalizados = pedidoFrontend.items?.map(item => {
+    const precioBase = parseFloat(item.price ?? item.precio) || 0;
+    const cantidad = parseInt(item.quantity ?? item.cantidad, 10) || 1;
+    const extras = item.extras || item.extrasSeleccionados || [];
+    const personalizacionesObj = buildPersonalizaciones(extras);
+    const precioExtras = personalizacionesObj ? personalizacionesObj.extrasTotal : 0;
+    const precioUnitario = precioBase + precioExtras;
+    const subtotalItem = precioUnitario * cantidad;
+
+    const productId = parseInt(item.product_id ?? item.id ?? item.articulo_id, 10);
+    if (isNaN(productId) || productId <= 0) {
+      console.error('❌ Error: product_id inválido:', item.product_id ?? item.id ?? item.articulo_id);
+      throw new Error(`ID de artículo inválido: ${item.product_id ?? item.id ?? item.articulo_id}`);
+    }
+
+    const extrasParaBackend = personalizacionesObj?.extras ?? extras.map(e => ({
+      id: e.id || e.adicional_id || null,
+      nombre: e.nombre || e.adicional_nombre || String(e),
+      precio: parseFloat(e.precio ?? e.precio_extra ?? 0) || 0
+    }));
+
+    return {
+      product_id: productId,
+      quantity: cantidad,
+      extras: extrasParaBackend,
+      observaciones: item.observaciones ?? item.observacion ?? null,
+      articulo_id: productId,
+      articulo_nombre: String(item.nombre || item.articulo_nombre || ''),
+      cantidad,
+      precio: precioUnitario,
+      subtotal: subtotalItem,
+      personalizaciones: personalizacionesObj || {}
+    };
+  }) || [];
+
   return {
     cliente_nombre: pedidoFrontend.clienteNombre || pedidoFrontend.cliente?.nombre || '',
     cliente_direccion: pedidoFrontend.cliente?.direccion || pedidoFrontend.direccion || '',
@@ -201,45 +271,21 @@ const transformarPedidoFrontendABackend = (pedidoFrontend) => {
       : null,
     estado: mapearEstadoFrontendABackend(pedidoFrontend.estado || 'recibido'),
     observaciones: pedidoFrontend.observaciones || '',
-    articulos: pedidoFrontend.items?.map(item => {
-      const precioBase = parseFloat(item.precio) || 0;
-      const cantidad = parseInt(item.cantidad) || 1;
-      const extras = item.extras || item.extrasSeleccionados || [];
-      const precioExtras = extras.reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
-      const precioUnitario = precioBase + precioExtras;
-      const subtotalItem = precioUnitario * cantidad;
-
-      // Preparar personalizaciones en formato JSON
-      // Formato: { extras: [{ id, nombre, precio }, ...] }
-      // El validador espera un objeto, no null, así que enviamos un objeto vacío si no hay extras
-      let personalizaciones = {};
-      if (extras && extras.length > 0) {
-        personalizaciones = {
-          extras: extras.map(e => ({
-            id: e.id || null,
-            nombre: e.nombre || String(e),
-            precio: parseFloat(e.precio) || 0
-          }))
-        };
-      }
-
-      // Asegurar que articulo_id sea un número entero
-      const articuloId = parseInt(item.id || item.articulo_id);
-      if (isNaN(articuloId) || articuloId <= 0) {
-        console.error('❌ Error: articulo_id inválido:', item.id || item.articulo_id);
-        throw new Error(`ID de artículo inválido: ${item.id || item.articulo_id}`);
-      }
-
-      return {
-        articulo_id: articuloId,
-        articulo_nombre: String(item.nombre || item.articulo_nombre || ''),
-        cantidad: cantidad,
-        precio: precioUnitario, // Precio unitario (incluye extras)
-        subtotal: subtotalItem,
-        personalizaciones: personalizaciones,
-        observaciones: item.observaciones || null
-      };
-    }) || []
+    items: itemsNormalizados.map(({ product_id, quantity, extras, observaciones }) => ({
+      product_id,
+      quantity,
+      extras,
+      observaciones
+    })),
+    articulos: itemsNormalizados.map((item) => ({
+      articulo_id: item.articulo_id,
+      articulo_nombre: item.articulo_nombre,
+      cantidad: item.cantidad,
+      precio: item.precio,
+      subtotal: item.subtotal,
+      personalizaciones: item.personalizaciones,
+      observaciones: item.observaciones
+    }))
   };
 };
 
@@ -515,14 +561,19 @@ export const pedidosService = {
   /**
    * Actualizar estado de un pedido
    */
-  actualizarEstadoPedido: async (id, nuevoEstado) => {
+  actualizarEstadoPedido: async (id, nuevoEstado, options = {}) => {
     try {
       const estadoBackend = mapearEstadoFrontendABackend(nuevoEstado);
       console.log(`🔄 Actualizando pedido ${id} a estado: ${estadoBackend} (desde ${nuevoEstado})`);
 
+      const payload = { estado: estadoBackend };
+      if (options.transicionAutomatica !== undefined) {
+        payload.transicion_automatica = Boolean(options.transicionAutomatica);
+      }
+
       const response = await apiRequest.put(
         `${API_CONFIG.ENDPOINTS.PEDIDOS.BY_ID(id)}/estado`,
-        { estado: estadoBackend }
+        payload
       );
 
       console.log('📦 Respuesta al actualizar estado:', JSON.stringify(response.data, null, 2));
@@ -658,13 +709,15 @@ export const pedidosService = {
    */
   agregarArticulo: async (pedidoId, articulo) => {
     try {
+      const extras = articulo.extras ?? articulo.extrasSeleccionados ?? [];
+      const personalizaciones = buildPersonalizaciones(extras);
       const articuloBackend = {
         articulo_id: articulo.id || articulo.articulo_id,
         articulo_nombre: articulo.nombre || articulo.articulo_nombre,
         cantidad: articulo.cantidad,
         precio: articulo.precio || 0,
         subtotal: articulo.subtotal || (articulo.precio * articulo.cantidad),
-        personalizaciones: articulo.extras ? { extras: articulo.extras } : null,
+        personalizaciones,
         observaciones: articulo.observaciones || null
       };
 

@@ -29,7 +29,11 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 
-export function NavBar() {
+export function NavBar({
+  showSidebarToggle = false,
+  sidebarOpen = false,
+  onSidebarToggle = null,
+}) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout, userRole } = useAuth();
   const router = useRouter();
@@ -67,25 +71,41 @@ export function NavBar() {
     <header className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 shadow-lg">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo */}
-          <Link
-            href={ROUTES.DASHBOARD}
-            className="flex items-center space-x-3 ml-2 sm:ml-6 transition-all duration-300 hover:scale-105 hover:brightness-110 hover:drop-shadow-lg"
-          >
-            <div className="relative w-32 h-12 sm:w-36 sm:h-14 md:w-44 md:h-16">
-              <Image
-                src="/logo-empresa.png"
-                alt="Logo El Chalito"
-                fill
-                sizes="(max-width: 640px) 128px, (max-width: 768px) 144px, 176px"
-                className="object-contain"
-                priority
-              />
-            </div>
-          </Link>
+          <div className="flex items-center">
+            {/* Toggle sidebar Pedidos (mobile/tablet) */}
+            {showSidebarToggle && (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => onSidebarToggle?.()}
+                className="xl:hidden mr-1 sm:mr-2 h-9 w-9 rounded-md border-slate-600 bg-slate-800 hover:bg-slate-700 hover:border-slate-500 transition-colors"
+                aria-label="Abrir o cerrar sidebar de pedidos"
+              >
+                <Menu className="h-5 w-5 text-white" />
+              </Button>
+            )}
+
+            {/* Logo */}
+            <Link
+              href={ROUTES.DASHBOARD}
+              className="flex items-center space-x-3 ml-1 sm:ml-4 transition-all duration-300 hover:scale-105 hover:brightness-110 hover:drop-shadow-lg"
+            >
+              <div className="relative w-32 h-12 sm:w-36 sm:h-14 md:w-44 md:h-16">
+                <Image
+                  src="/logo-empresa.png"
+                  alt="Logo El Chalito"
+                  fill
+                  sizes="(max-width: 640px) 128px, (max-width: 768px) 144px, 176px"
+                  className="object-contain"
+                  priority
+                />
+              </div>
+            </Link>
+          </div>
 
           {/* Menú desktop */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden lg:flex items-center gap-6">
             {/* Enlaces de navegación */}
             <nav className="flex items-center space-x-2">
               <Link href={ROUTES.DASHBOARD} className={navLinkClasses(ROUTES.DASHBOARD)}>
@@ -184,7 +204,7 @@ export function NavBar() {
           </div>
 
           {/* Menú móvil - Sheet */}
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
               <SheetTrigger asChild>
                 <Button
@@ -198,7 +218,9 @@ export function NavBar() {
               </SheetTrigger>
               <SheetContent
                 side="right"
-                className="w-72 h-auto max-h-screen top-0 bottom-auto bg-gradient-to-b from-blue-900 to-blue-800 border-l border-blue-700 text-white overflow-y-auto"
+                // Sidebar móvil: debajo del navbar y sin taparlo
+                overlayClassName="top-16"
+                className="w-72 h-[calc(100vh-4rem)] top-16 bg-gradient-to-b from-blue-900 to-blue-800 border-l border-blue-700 text-white overflow-y-auto"
               >
                 <SheetHeader className="border-b border-blue-700 pb-4">
                   <SheetTitle className="text-white text-left">

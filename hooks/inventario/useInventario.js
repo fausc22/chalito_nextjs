@@ -259,6 +259,21 @@ export const useInventario = () => {
     }
   };
 
+  const obtenerCostoArticulo = async (id) => {
+    try {
+      const response = await articulosService.obtenerCostoArticulo(id);
+
+      if (response.success) {
+        return { success: true, data: response.data };
+      } else {
+        return { success: false, error: response.error };
+      }
+    } catch (error) {
+      console.error(error);
+      return { success: false, error: 'Error al obtener costos del artículo' };
+    }
+  };
+
   // ==========================================
   // FUNCIONES - INGREDIENTES
   // ==========================================
@@ -482,6 +497,7 @@ export const useInventario = () => {
     editarArticulo,
     eliminarArticulo,
     obtenerArticuloPorId,
+    obtenerCostoArticulo,
 
     // Estados - CATEGORÍAS
     categorias,

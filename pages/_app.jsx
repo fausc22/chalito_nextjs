@@ -2,6 +2,7 @@ import '../styles/globals.css';
 import { AuthProvider } from '../contexts/AuthContext';
 import { NotificationProvider } from '../contexts/NotificationContext';
 import { ConnectionStatusProvider } from '../contexts/ConnectionStatusContext';
+import { WebOrderAlertsProvider } from '../contexts/WebOrderAlertsContext';
 import { Toaster } from '@/components/ui/toaster';
 import Head from 'next/head';
 
@@ -18,8 +19,10 @@ function MyApp({ Component, pageProps }) {
       <NotificationProvider>
         <AuthProvider>
           <ConnectionStatusProvider>
-            <Component {...pageProps} />
-            <Toaster />
+            <WebOrderAlertsProvider>
+              <Component {...pageProps} />
+              <Toaster />
+            </WebOrderAlertsProvider>
           </ConnectionStatusProvider>
         </AuthProvider>
       </NotificationProvider>

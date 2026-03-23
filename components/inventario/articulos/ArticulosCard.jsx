@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import Image from 'next/image';
-import { Edit, Trash2, Utensils } from 'lucide-react';
+import { Edit, Trash2, Utensils, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-export function ArticulosCard({ articulo, onEditar, onEliminar }) {
+export function ArticulosCard({ articulo, onEditar, onEliminar, onVerCostos }) {
   const [imageError, setImageError] = useState(false);
 
   return (
@@ -98,6 +98,18 @@ export function ArticulosCard({ articulo, onEditar, onEliminar }) {
 
       {/* ⚙️ BOTONES DE ACCIÓN - Touch-friendly */}
       <CardFooter className="gap-2 p-3 sm:p-4 pt-0">
+        {onVerCostos && articulo.tipo === 'ELABORADO' && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex h-10 sm:h-11 text-xs sm:text-sm font-medium rounded-lg border-2 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 transition-all active:scale-98 shrink-0"
+            onClick={() => onVerCostos(articulo)}
+            title="Ver costos"
+          >
+            <Calculator className="h-4 w-4 sm:mr-1.5" strokeWidth={2} />
+            <span className="hidden sm:inline truncate">Ver costos</span>
+          </Button>
+        )}
         <Button
           variant="outline"
           size="sm"

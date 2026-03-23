@@ -25,6 +25,7 @@ function InventarioContent() {
     editarArticulo,
     eliminarArticulo,
     obtenerArticuloPorId,
+    obtenerCostoArticulo,
     isMutatingArticulos,
     // Categorías
     categorias,
@@ -89,14 +90,14 @@ function InventarioContent() {
           <TabsList className="flex flex-wrap justify-center gap-2 sm:gap-4 md:gap-6 mb-8 bg-transparent h-auto p-0">
             <TabsTrigger
               value="articulos"
-              className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 bg-blue-500 !text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 hover:shadow-lg hover:scale-105 data-[state=active]:bg-blue-700 data-[state=active]:!text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 transition-all duration-200 max-[400px]:w-[calc(50%-0.25rem)]"
+              className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 bg-blue-600 !text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 hover:shadow-lg hover:scale-105 data-[state=active]:bg-blue-700 data-[state=active]:!text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 transition-all duration-200 max-[400px]:w-[calc(50%-0.25rem)]"
             >
               <Box className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="text-sm sm:text-base">Artículos</span>
             </TabsTrigger>
             <TabsTrigger
               value="ingredientes"
-              className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 bg-green-500 !text-white font-semibold rounded-lg shadow-md hover:bg-green-600 hover:shadow-lg hover:scale-105 data-[state=active]:bg-green-700 data-[state=active]:!text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 transition-all duration-200 max-[400px]:w-[calc(50%-0.25rem)]"
+              className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 bg-green-600 !text-white font-semibold rounded-lg shadow-md hover:bg-green-700 hover:shadow-lg hover:scale-105 data-[state=active]:bg-green-700 data-[state=active]:!text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 transition-all duration-200 max-[400px]:w-[calc(50%-0.25rem)]"
             >
               <Carrot className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="text-sm sm:text-base">Ingredientes</span>
@@ -132,6 +133,7 @@ function InventarioContent() {
               onEditarArticulo={editarArticulo}
               onEliminarArticulo={eliminarArticulo}
               onObtenerArticuloPorId={obtenerArticuloPorId}
+              onObtenerCostoArticulo={obtenerCostoArticulo}
             />
           </TabsContent>
 

@@ -241,12 +241,13 @@ export function AdicionalesTab({
     setFiltros(prev => ({ ...prev, [campo]: valor }));
   };
 
-  // Limpiar filtros
+  // Limpiar filtros (resetea página como en Ingredientes/Artículos)
   const limpiarFiltros = () => {
     setFiltros({
       nombre: '',
       disponible: 'all'
     });
+    setCurrentPage(1);
   };
 
   // Aplicar filtros localmente
@@ -277,6 +278,7 @@ export function AdicionalesTab({
   const endIndex = startIndex + itemsPerPage;
   const currentAdicionales = adicionalesFiltrados.slice(startIndex, endIndex);
 
+  // Misma lógica que Ingredientes/Artículos: scroll al inicio del listado al cambiar de página
   const handleCambiarPagina = (nuevaPagina) => {
     setCurrentPage(nuevaPagina);
     containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -318,13 +320,13 @@ export function AdicionalesTab({
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 items-center w-full sm:w-auto">
-          <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto bg-green-500 hover:bg-green-600">
+          <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto bg-green-600 hover:bg-green-700 text-white">
             <Plus className="h-4 w-4" />
             Nuevo Adicional
           </Button>
           <Button 
             onClick={abrirModalSeleccionarArticulo} 
-            className="gap-2 w-[200px] sm:w-auto"
+            className="gap-2 w-[200px] sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
           >
             <Link2 className="h-4 w-4" />
             Asignar a Artículo

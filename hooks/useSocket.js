@@ -17,6 +17,36 @@ export const useSocket = (
 ) => {
     const socketRef = useRef(null);
     const [isConnected, setIsConnected] = useState(false);
+    const handlersRef = useRef({
+        onPedidoCreado,
+        onPedidoEstadoCambiado,
+        onPedidoCobrado,
+        onCapacidadActualizada,
+        onPedidosAtrasados,
+        onPedidoActualizado,
+        onWorkerHeartbeat,
+    });
+
+    // Mantener referencias actualizadas sin recrear la conexión
+    useEffect(() => {
+        handlersRef.current = {
+            onPedidoCreado,
+            onPedidoEstadoCambiado,
+            onPedidoCobrado,
+            onCapacidadActualizada,
+            onPedidosAtrasados,
+            onPedidoActualizado,
+            onWorkerHeartbeat,
+        };
+    }, [
+        onPedidoCreado,
+        onPedidoEstadoCambiado,
+        onPedidoCobrado,
+        onCapacidadActualizada,
+        onPedidosAtrasados,
+        onPedidoActualizado,
+        onWorkerHeartbeat
+    ]);
 
     useEffect(() => {
         // Conectar a Socket.IO
@@ -33,8 +63,8 @@ export const useSocket = (
         socket.on('connect', () => {
             console.log('✅ [WebSocket] Conectado:', socket.id);
             setIsConnected(true);
-            if (onWorkerHeartbeat) {
-                onWorkerHeartbeat({ active: true, timestamp: Date.now(), source: 'socket_connect' });
+            if (handlersRef.current.onWorkerHeartbeat) {
+                handlersRef.current.onWorkerHeartbeat({ active: true, timestamp: Date.now(), source: 'socket_connect' });
             }
             
             // Suscribirse a eventos
@@ -58,83 +88,83 @@ export const useSocket = (
         // Eventos de negocio
         socket.on('pedido:creado', (data) => {
             console.log('📦 [WebSocket] Pedido creado:', data);
-            if (onWorkerHeartbeat) {
-                onWorkerHeartbeat({ active: true, timestamp: Date.now(), source: 'pedido:creado' });
+            if (handlersRef.current.onWorkerHeartbeat) {
+                handlersRef.current.onWorkerHeartbeat({ active: true, timestamp: Date.now(), source: 'pedido:creado' });
             }
-            if (onPedidoCreado) {
-                onPedidoCreado(data);
+            if (handlersRef.current.onPedidoCreado) {
+                handlersRef.current.onPedidoCreado(data);
             }
         });
 
         socket.on('pedido:estado-cambiado', (data) => {
             console.log('🔄 [WebSocket] Estado cambiado:', data);
-            if (onWorkerHeartbeat) {
-                onWorkerHeartbeat({ active: true, timestamp: Date.now(), source: 'pedido:estado-cambiado' });
+            if (handlersRef.current.onWorkerHeartbeat) {
+                handlersRef.current.onWorkerHeartbeat({ active: true, timestamp: Date.now(), source: 'pedido:estado-cambiado' });
             }
-            if (onPedidoEstadoCambiado) {
-                onPedidoEstadoCambiado(data);
+            if (handlersRef.current.onPedidoEstadoCambiado) {
+                handlersRef.current.onPedidoEstadoCambiado(data);
             }
         });
 
         socket.on('pedido:cobrado', (data) => {
             console.log('💰 [WebSocket] Pedido cobrado:', data);
-            if (onWorkerHeartbeat) {
-                onWorkerHeartbeat({ active: true, timestamp: Date.now(), source: 'pedido:cobrado' });
+            if (handlersRef.current.onWorkerHeartbeat) {
+                handlersRef.current.onWorkerHeartbeat({ active: true, timestamp: Date.now(), source: 'pedido:cobrado' });
             }
-            if (onPedidoCobrado) {
-                onPedidoCobrado(data);
+            if (handlersRef.current.onPedidoCobrado) {
+                handlersRef.current.onPedidoCobrado(data);
             }
         });
 
         socket.on('capacidad:actualizada', (data) => {
             console.log('📊 [WebSocket] Capacidad actualizada:', data);
-            if (onWorkerHeartbeat) {
-                onWorkerHeartbeat({ active: true, timestamp: Date.now(), source: 'capacidad:actualizada' });
+            if (handlersRef.current.onWorkerHeartbeat) {
+                handlersRef.current.onWorkerHeartbeat({ active: true, timestamp: Date.now(), source: 'capacidad:actualizada' });
             }
-            if (onCapacidadActualizada) {
-                onCapacidadActualizada(data);
+            if (handlersRef.current.onCapacidadActualizada) {
+                handlersRef.current.onCapacidadActualizada(data);
             }
         });
 
         socket.on('pedidos:atrasados', (data) => {
             console.log('⚠️ [WebSocket] Pedidos atrasados:', data);
-            if (onWorkerHeartbeat) {
-                onWorkerHeartbeat({ active: true, timestamp: Date.now(), source: 'pedidos:atrasados' });
+            if (handlersRef.current.onWorkerHeartbeat) {
+                handlersRef.current.onWorkerHeartbeat({ active: true, timestamp: Date.now(), source: 'pedidos:atrasados' });
             }
-            if (onPedidosAtrasados) {
-                onPedidosAtrasados(data);
+            if (handlersRef.current.onPedidosAtrasados) {
+                handlersRef.current.onPedidosAtrasados(data);
             }
         });
 
         socket.on('pedido:actualizado', (data) => {
             console.log('🔄 [WebSocket] Pedido actualizado:', data);
-            if (onWorkerHeartbeat) {
-                onWorkerHeartbeat({ active: true, timestamp: Date.now(), source: 'pedido:actualizado' });
+            if (handlersRef.current.onWorkerHeartbeat) {
+                handlersRef.current.onWorkerHeartbeat({ active: true, timestamp: Date.now(), source: 'pedido:actualizado' });
             }
-            if (onPedidoActualizado) {
-                onPedidoActualizado(data);
+            if (handlersRef.current.onPedidoActualizado) {
+                handlersRef.current.onPedidoActualizado(data);
             }
         });
 
         // Eventos de estado del worker (si existen en backend)
         socket.on('worker_status', (data) => {
             console.log('🫀 [WebSocket] worker_status:', data);
-            if (onWorkerHeartbeat) {
-                onWorkerHeartbeat(data);
+            if (handlersRef.current.onWorkerHeartbeat) {
+                handlersRef.current.onWorkerHeartbeat(data);
             }
         });
 
         socket.on('worker_heartbeat', (data) => {
             console.log('🫀 [WebSocket] worker_heartbeat:', data);
-            if (onWorkerHeartbeat) {
-                onWorkerHeartbeat(data);
+            if (handlersRef.current.onWorkerHeartbeat) {
+                handlersRef.current.onWorkerHeartbeat(data);
             }
         });
 
         socket.on('worker_connected', (data) => {
             console.log('🫀 [WebSocket] worker_connected:', data);
-            if (onWorkerHeartbeat) {
-                onWorkerHeartbeat({
+            if (handlersRef.current.onWorkerHeartbeat) {
+                handlersRef.current.onWorkerHeartbeat({
                     ...(data || {}),
                     active: typeof data?.active === 'boolean' ? data.active : true,
                     timestamp: data?.timestamp || Date.now()
@@ -145,8 +175,8 @@ export const useSocket = (
         socket.on('status_update', (data) => {
             if (data?.target === 'worker' || data?.type === 'worker' || data?.worker != null) {
                 console.log('🫀 [WebSocket] status_update(worker):', data);
-                if (onWorkerHeartbeat) {
-                    onWorkerHeartbeat(data?.worker || data);
+                if (handlersRef.current.onWorkerHeartbeat) {
+                    handlersRef.current.onWorkerHeartbeat(data?.worker || data);
                 }
             }
         });
@@ -158,7 +188,7 @@ export const useSocket = (
                 socketRef.current = null;
             }
         };
-    }, [onPedidoCreado, onPedidoEstadoCambiado, onPedidoCobrado, onCapacidadActualizada, onPedidosAtrasados, onPedidoActualizado, onWorkerHeartbeat]); // Incluir callbacks en dependencias
+    }, []); // Conectar solo una vez por mount del hook
 
     return { socket: socketRef.current, isConnected };
 };

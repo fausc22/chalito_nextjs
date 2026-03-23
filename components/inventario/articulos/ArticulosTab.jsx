@@ -27,6 +27,7 @@ import { ArticulosCard } from './ArticulosCard';
 import { ArticulosForm } from './ArticulosForm';
 import { ArticulosPageSkeleton } from '../../common/LoadingSkeleton';
 import { toast } from '@/hooks/use-toast';
+import { ArticuloCostosModal } from './ArticuloCostosModal';
 
 export function ArticulosTab({
   articulos,
@@ -40,7 +41,8 @@ export function ArticulosTab({
   onCrearArticulo,
   onEditarArticulo,
   onEliminarArticulo,
-  onObtenerArticuloPorId
+  onObtenerArticuloPorId,
+  onObtenerCostoArticulo
 }) {
 
   // Estados locales para UI
@@ -48,6 +50,13 @@ export function ArticulosTab({
   const [modalEditar, setModalEditar] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
   const [articuloSeleccionado, setArticuloSeleccionado] = useState(null);
+
+  // Estado para modal de costos
+  const [modalCostosAbierto, setModalCostosAbierto] = useState(false);
+  const [articuloCostosSeleccionado, setArticuloCostosSeleccionado] = useState(null);
+  const [costoArticulo, setCostoArticulo] = useState(null);
+  const [loadingCostoArticulo, setLoadingCostoArticulo] = useState(false);
+  const [errorCostoArticulo, setErrorCostoArticulo] = useState(null);
 
   // Estados locales para filtros
   const [filtros, setFiltros] = useState({
@@ -121,6 +130,7 @@ export function ArticulosTab({
     precio: '',
     categoria: '',
     tipo: 'OTRO',
+    peso: '1',
     tiempoPreparacion: '',
     stock_actual: '',
     stock_minimo: '',
@@ -157,6 +167,7 @@ export function ArticulosTab({
       precio: '',
       categoria: '',
       tipo: 'OTRO',
+      peso: '1',
       tiempoPreparacion: '',
       stock_actual: '',
       stock_minimo: '',
@@ -177,6 +188,11 @@ export function ArticulosTab({
 
     if (!formulario.categoria.trim()) {
       return 'La categoría es obligatoria';
+    }
+
+    const peso = Number(formulario.peso);
+    if (!Number.isInteger(peso) || peso < 1 || peso > 4) {
+      return 'El peso de preparación debe ser un número entre 1 y 4';
     }
 
     return null;
@@ -313,6 +329,9 @@ export function ArticulosTab({
           precio: articuloCompleto.precio ? articuloCompleto.precio.toString() : '',
           categoria: articuloCompleto.categoria,
           tipo: articuloCompleto.tipo || 'OTRO',
+          peso: articuloCompleto.peso !== undefined && articuloCompleto.peso !== null
+            ? articuloCompleto.peso.toString()
+            : '1',
           tiempoPreparacion: articuloCompleto.tiempoPreparacion ? articuloCompleto.tiempoPreparacion.toString() : '',
           stock_actual: articuloCompleto.stock_actual !== undefined && articuloCompleto.stock_actual !== null ? articuloCompleto.stock_actual.toString() : '',
           stock_minimo: articuloCompleto.stock_minimo !== undefined && articuloCompleto.stock_minimo !== null ? articuloCompleto.stock_minimo.toString() : '',
@@ -332,6 +351,26 @@ export function ArticulosTab({
   const handleEliminar = (articulo) => {
     setArticuloSeleccionado(articulo);
     setModalEliminar(true);
+  };
+
+  const handleVerCostos = async (articulo) => {
+    if (!onObtenerCostoArticulo || articulo.tipo !== 'ELABORADO') {
+      return;
+    }
+
+    setArticuloCostosSeleccionado(articulo);
+    setModalCostosAbierto(true);
+    setLoadingCostoArticulo(true);
+    setErrorCostoArticulo(null);
+    setCostoArticulo(null);
+
+    const resultado = await onObtenerCostoArticulo(articulo.id);
+    if (resultado.success) {
+      setCostoArticulo(resultado.data);
+    } else {
+      setErrorCostoArticulo(resultado.error || 'Error al obtener costos del artículo');
+    }
+    setLoadingCostoArticulo(false);
   };
 
   const handleFiltroChange = (campo, valor) => {
@@ -387,7 +426,7 @@ export function ArticulosTab({
           </p>
         </div>
 
-        <Button onClick={() => setModalAgregar(true)} className="gap-2 w-[200px] sm:w-auto bg-green-500 hover:bg-green-600">
+        <Button onClick={() => setModalAgregar(true)} className="gap-2 w-[200px] sm:w-auto bg-green-600 hover:bg-green-700 text-white">
           <Plus className="h-4 w-4" />
           Nuevo Artículo
         </Button>
@@ -407,6 +446,7 @@ export function ArticulosTab({
           articulos={articulosFiltrados}
           onEditar={handleEditar}
           onEliminar={handleEliminar}
+          onVerCostos={handleVerCostos}
           scrollRef={containerRef}
           currentPage={currentPageDesktop}
           setCurrentPage={setCurrentPageDesktop}
@@ -433,6 +473,7 @@ export function ArticulosTab({
                   articulo={articulo}
                   onEditar={handleEditar}
                   onEliminar={handleEliminar}
+                  onVerCostos={handleVerCostos}
                 />
               ))}
             </div>
@@ -528,6 +569,21 @@ export function ArticulosTab({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal de costos del artículo */}
+      <ArticuloCostosModal
+        isOpen={modalCostosAbierto}
+        onClose={() => {
+          setModalCostosAbierto(false);
+          setArticuloCostosSeleccionado(null);
+          setCostoArticulo(null);
+          setErrorCostoArticulo(null);
+        }}
+        articulo={articuloCostosSeleccionado}
+        data={costoArticulo}
+        loading={loadingCostoArticulo}
+        error={errorCostoArticulo}
+      />
     </div>
   );
 }

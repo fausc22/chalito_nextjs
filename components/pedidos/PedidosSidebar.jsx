@@ -1,4 +1,5 @@
-import { ChefHat, Clock, Plus, Search, Package, Menu, X, ChevronLeft, ChevronRight, ClipboardCheck, Bell, Store, LayoutGrid, List } from 'lucide-react';
+import Link from 'next/link';
+import { Clock, Plus, Search, Package, Menu, X, ChevronLeft, ChevronRight, ClipboardCheck, Store, LayoutGrid, List, ChefHat, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -9,16 +10,16 @@ export function PedidosSidebar({
   demoraCocina,
   setDemoraCocina,
   onNuevoPedido,
-  onModoCocina,
   onVerPedidosEntregados,
-  onNotificaciones,
-  notificacionesCount = 0,
   busquedaPedidos,
   setBusquedaPedidos,
+  soundEnabled = false,
+  onSoundToggle,
   isOpen,
   setIsOpen,
   isMobile = false,
   vistaTabla = false,
+  navbarHeightPx = 64,
   onCambiarVista
 }) {
   const { status, getStatusTooltip, getStatusText } = useConnectionStatus();
@@ -56,23 +57,11 @@ export function PedidosSidebar({
   const indicatorStyles = getIndicatorStyles();
   return (
     <>
-      {/* Botón toggle para móvil */}
-      {isMobile && (
-        <div className="absolute top-4 left-4 z-50">
-          <Button
-            onClick={() => setIsOpen(!isOpen)}
-            className="bg-slate-800 hover:bg-slate-700 text-white"
-            size="sm"
-          >
-            {isOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-          </Button>
-        </div>
-      )}
-
-      {/* Overlay para móvil */}
+      {/* Overlay móvil/tablet: igual al sidebar derecho (debajo del navbar) */}
       {isMobile && isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40"
+          className="fixed left-0 right-0 bottom-0 bg-black/50 z-40"
+          style={{ top: navbarHeightPx }}
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -80,15 +69,29 @@ export function PedidosSidebar({
       {/* Sidebar */}
       <aside
         className={`
-          ${isMobile ? 'fixed left-0 top-0 h-screen z-50' : 'h-full'}
+          ${
+            isMobile
+              ? `fixed left-0 w-56 z-50 transform transition-transform duration-300 ease-out ${
+                  isOpen ? 'translate-x-0' : '-translate-x-full'
+                }`
+              : 'h-full transition-all duration-500 ease-out'
+          }
           bg-slate-800 border-r border-slate-700
-          transition-all duration-300 ease-in-out
-          ${isOpen ? 'w-56' : isMobile ? 'w-0' : 'w-14'}
+          ${!isMobile && isOpen ? 'w-56' : ''}
+          ${!isMobile && !isOpen ? 'w-14' : ''}
           ${!isOpen && !isMobile ? 'overflow-visible' : 'overflow-hidden'}
           flex flex-col
           flex-shrink-0
           relative
         `}
+        style={
+          isMobile
+            ? {
+                top: navbarHeightPx,
+                height: `calc(100vh - ${navbarHeightPx}px)`,
+              }
+            : undefined
+        }
       >
         {/* Header del sidebar */}
         <div className="p-2 flex-shrink-0 relative h-16 flex flex-col justify-between">
@@ -151,6 +154,7 @@ export function PedidosSidebar({
             <div className="flex-1 overflow-y-auto p-2 space-y-2">
               {/* Botones de acción */}
               <div className="space-y-2.5">
+                {/* 1) Nuevo pedido */}
                 <Button
                   onClick={onNuevoPedido}
                   className="w-full bg-green-600 hover:bg-green-700 text-white font-bold shadow-sm text-xs py-2 h-9 px-3"
@@ -161,32 +165,51 @@ export function PedidosSidebar({
                   <span className="ml-1.5 text-[10px] opacity-80">(F1)</span>
                 </Button>
 
-                <Button
-                  onClick={onNotificaciones}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm text-xs py-2 h-9 px-3 relative"
-                  size="sm"
-                >
-                  <Bell className="h-4 w-4 mr-1.5" />
-                  NOTIFICACIONES
-                  {notificacionesCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                      {notificacionesCount > 9 ? '9+' : notificacionesCount}
-                    </span>
-                  )}
-                </Button>
+                {/* 2) Vista cocina */}
+                <Link href="/cocina" className="block w-full">
+                  <Button
+                    className="w-full bg-slate-700 hover:bg-slate-600 text-white border border-slate-600 text-xs py-2 h-9 px-3"
+                    size="sm"
+                  >
+                    <ChefHat className="h-4 w-4 mr-1.5" />
+                    VISTA COCINA
+                  </Button>
+                </Link>
 
+                {/* 3) Toggle Sonido */}
+                {onSoundToggle && (
+                  <Button
+                    onClick={() => onSoundToggle(!soundEnabled)}
+                    className="w-full bg-slate-700 hover:bg-slate-600 text-white border border-slate-600 text-xs py-2 h-9 px-3"
+                    size="sm"
+                    title={soundEnabled ? 'Sonido activado - click para desactivar' : 'Sonido desactivado - click para activar (requiere interacción previa)'}
+                  >
+                    {soundEnabled ? <Volume2 className="h-4 w-4 mr-1.5" /> : <VolumeX className="h-4 w-4 mr-1.5" />}
+                    Sonido {soundEnabled ? 'ON' : 'OFF'}
+                  </Button>
+                )}
+
+                {/* 4) Cambiar Vista (cards/tabla) */}
                 <Button
-                  onClick={onModoCocina}
+                  onClick={onCambiarVista}
                   className="w-full bg-slate-700 hover:bg-slate-600 text-white border border-slate-600 text-xs py-2 h-9 px-3"
                   size="sm"
                 >
-                  <ChefHat className="h-4 w-4 mr-1.5" />
-                  MODO COCINA
+                  {vistaTabla ? (
+                    <>
+                      <LayoutGrid className="h-4 w-4 mr-1.5" />
+                      VISTA CARDS
+                    </>
+                  ) : (
+                    <>
+                      <List className="h-4 w-4 mr-1.5" />
+                      VISTA TABLA
+                    </>
+                  )}
                 </Button>
-
               </div>
 
-              {/* Búsqueda de pedidos */}
+              {/* 5) Búsqueda de pedidos */}
               <Card className="bg-slate-700 border-slate-600 p-2">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-semibold text-slate-300 block">
@@ -199,13 +222,13 @@ export function PedidosSidebar({
                       placeholder="ID o nombre..."
                       value={busquedaPedidos}
                       onChange={(e) => setBusquedaPedidos(e.target.value)}
-                      className="pl-7 h-7 text-xs bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
+                      className="pl-7 h-7 text-xs bg-slate-800 border-slate-600 text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-500 focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
                     />
                   </div>
                 </div>
               </Card>
 
-              {/* Pedidos Entregados */}
+              {/* 6) Pedidos Entregados */}
               <Button
                 onClick={onVerPedidosEntregados}
                 className="w-full bg-slate-700 hover:bg-slate-600 text-white border border-slate-600 text-xs py-2 h-9 px-3"
@@ -213,25 +236,6 @@ export function PedidosSidebar({
               >
                 <ClipboardCheck className="h-4 w-4 mr-1.5" />
                 PEDIDOS ENTREGADOS
-              </Button>
-
-              {/* Cambiar Vista */}
-              <Button
-                onClick={onCambiarVista}
-                className="w-full bg-slate-700 hover:bg-slate-600 text-white border border-slate-600 text-xs py-2 h-9 px-3"
-                size="sm"
-              >
-                {vistaTabla ? (
-                  <>
-                    <LayoutGrid className="h-4 w-4 mr-1.5" />
-                    VISTA CARDS
-                  </>
-                ) : (
-                  <>
-                    <List className="h-4 w-4 mr-1.5" />
-                    VISTA TABLA
-                  </>
-                )}
               </Button>
             </div>
 
@@ -266,6 +270,7 @@ export function PedidosSidebar({
         {!isOpen && !isMobile && (
           <>
             <div className="flex-1 flex flex-col items-center justify-start pt-2 space-y-2.5 px-2 overflow-y-auto">
+              {/* 1) Nuevo pedido */}
               <Button
                 onClick={onNuevoPedido}
                 className="w-full bg-green-600 hover:bg-green-700 text-white h-9"
@@ -274,27 +279,41 @@ export function PedidosSidebar({
               >
                 <Plus className="h-4 w-4" />
               </Button>
+
+              {/* 2) Vista cocina */}
+              <Link href="/cocina" className="block w-full">
+                <Button
+                  className="w-full bg-slate-700 hover:bg-slate-600 text-white h-9"
+                  size="sm"
+                  title="Vista Cocina"
+                >
+                  <ChefHat className="h-4 w-4" />
+                </Button>
+              </Link>
+
+              {/* 3) Toggle Sonido */}
+              {onSoundToggle && (
+                <Button
+                  onClick={() => onSoundToggle(!soundEnabled)}
+                  className="w-full bg-slate-700 hover:bg-slate-600 text-white h-9"
+                  size="sm"
+                  title={`Sonido ${soundEnabled ? 'ON' : 'OFF'}`}
+                >
+                  {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                </Button>
+              )}
+
+              {/* 4) Cambiar Vista */}
               <Button
-                onClick={onNotificaciones}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white h-9 relative"
-                size="sm"
-                title="Notificaciones"
-              >
-                <Bell className="h-4 w-4" />
-                {notificacionesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    {notificacionesCount > 9 ? '9+' : notificacionesCount}
-                  </span>
-                )}
-              </Button>
-              <Button
-                onClick={onModoCocina}
+                onClick={onCambiarVista}
                 className="w-full bg-slate-700 hover:bg-slate-600 text-white h-9"
                 size="sm"
-                title="Modo Cocina"
+                title={vistaTabla ? 'Vista Cards' : 'Vista Tabla'}
               >
-                <ChefHat className="h-4 w-4" />
+                {vistaTabla ? <LayoutGrid className="h-4 w-4" /> : <List className="h-4 w-4" />}
               </Button>
+
+              {/* 5) Buscar pedidos */}
               <Button
                 onClick={() => {
                   // Abrir sidebar para mostrar búsqueda
@@ -313,6 +332,8 @@ export function PedidosSidebar({
               >
                 <Search className="h-4 w-4" />
               </Button>
+
+              {/* 6) Pedidos Entregados */}
               <Button
                 onClick={onVerPedidosEntregados}
                 className="w-full bg-slate-700 hover:bg-slate-600 text-white h-9"
@@ -320,14 +341,6 @@ export function PedidosSidebar({
                 title="Pedidos Entregados"
               >
                 <ClipboardCheck className="h-4 w-4" />
-              </Button>
-              <Button
-                onClick={onCambiarVista}
-                className="w-full bg-slate-700 hover:bg-slate-600 text-white h-9"
-                size="sm"
-                title={vistaTabla ? "Vista Cards" : "Vista Tabla"}
-              >
-                {vistaTabla ? <LayoutGrid className="h-4 w-4" /> : <List className="h-4 w-4" />}
               </Button>
             </div>
             

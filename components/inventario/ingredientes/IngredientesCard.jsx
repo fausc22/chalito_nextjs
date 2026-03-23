@@ -37,12 +37,19 @@ export function IngredientesCard({ ingrediente, onEditar, onEliminar }) {
           {/* Info */}
           <div className="space-y-2">
             <div className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-green-500" />
-                <span className="text-sm text-muted-foreground">Precio Extra</span>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm text-muted-foreground">Costo unitario base</span>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {ingrediente.unidad_base || 'UNIDADES'}
+                </span>
               </div>
-              <span className="font-semibold text-sm">
-                ${parseFloat(ingrediente.precio_extra || 0).toFixed(2)}
+              <span className="font-semibold text-sm text-slate-800">
+                {ingrediente.costo_unitario_base !== undefined && ingrediente.costo_unitario_base !== null
+                  ? `$${parseFloat(ingrediente.costo_unitario_base || 0).toFixed(2)}`
+                  : '-'}
               </span>
             </div>
 

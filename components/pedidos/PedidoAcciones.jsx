@@ -84,14 +84,14 @@ export function PedidoAcciones({
   const btnClassIcon = isCard ? 'h-3.5 w-3.5' : 'h-4 w-4';
   const btnClassBase = isCard
     ? 'h-8 flex-shrink-0 text-xs font-semibold'
-    : 'h-8 px-3 text-xs font-semibold whitespace-nowrap';
+    : 'h-8 px-2 sm:px-3 text-[11px] sm:text-xs font-semibold whitespace-normal sm:whitespace-nowrap';
   const btnIconOnlyClass = isCard
     ? 'h-8 flex-shrink-0'
     : 'h-8 w-8 p-0 flex-shrink-0';
   const btnIconOnlyStyle = isCard ? { minWidth: 32, padding: '0 8px' } : undefined;
 
   return (
-    <div className={`flex gap-1.5 flex-shrink-0 flex-wrap ${isCard ? 'w-full overflow-hidden' : ''}`}>
+    <div className={`flex gap-1.5 flex-shrink-0 flex-wrap ${isCard ? 'w-full overflow-hidden' : 'w-full sm:w-auto'}`}>
       {/* LISTO: solo en en_cocina */}
       {showListo && (
         <Button
@@ -125,7 +125,7 @@ export function PedidoAcciones({
         <Button
           disabled={isGhost || isCobrandoEste}
           onClick={isGhost || isCobrandoEste ? undefined : () => onCobrar?.(pedido)}
-          className={`flex-1 min-w-0 bg-emerald-600 hover:bg-emerald-700 text-white ${btnClassBase}`}
+          className={`flex-1 min-w-0 bg-green-600 hover:bg-green-700 text-white ${btnClassBase}`}
           size="sm"
           title={isCobrandoEste ? 'Cobrando...' : 'Cobrar pedido'}
         >

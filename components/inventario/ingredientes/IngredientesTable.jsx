@@ -10,9 +10,10 @@ export function IngredientesTable({ ingredientes, onEditar, onEliminar }) {
         <Table className="bg-white rounded-lg overflow-hidden shadow-sm">
           <TableHeader className="bg-slate-50">
             <TableRow>
-              <TableHead className="w-[180px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-l-2 border-r-2 border-b-2 border-gray-200 py-3 px-2">Nombre</TableHead>
-              <TableHead className="w-[250px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3 px-2">Descripción</TableHead>
-              <TableHead className="w-[130px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3 px-2">Precio Extra</TableHead>
+              <TableHead className="w-[160px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-l-2 border-r-2 border-b-2 border-gray-200 py-3 px-2">Nombre</TableHead>
+              <TableHead className="w-[220px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3 px-2">Descripción</TableHead>
+              <TableHead className="w-[120px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3 px-2">Unidad Base</TableHead>
+              <TableHead className="w-[140px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3 px-2">Costo Unit. Base</TableHead>
               <TableHead className="w-[100px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3 px-2">Estado</TableHead>
               <TableHead className="w-[120px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3 px-2">Acciones</TableHead>
             </TableRow>
@@ -33,9 +34,16 @@ export function IngredientesTable({ ingredientes, onEditar, onEliminar }) {
                     {ingrediente.descripcion || '-'}
                   </div>
                 </TableCell>
+                <TableCell className="text-center py-2 px-2">
+                  <span className="text-xs font-medium text-slate-700">
+                    {ingrediente.unidad_base || 'UNIDADES'}
+                  </span>
+                </TableCell>
                 <TableCell className="text-right py-2 px-2">
-                  <span className="font-semibold text-green-600">
-                    ${parseFloat(ingrediente.precio_extra || 0).toFixed(2)}
+                  <span className="font-semibold text-slate-700">
+                    {ingrediente.costo_unitario_base !== undefined && ingrediente.costo_unitario_base !== null
+                      ? `$${parseFloat(ingrediente.costo_unitario_base || 0).toFixed(2)}`
+                      : '-'}
                   </span>
                 </TableCell>
                 <TableCell className="text-center py-2 px-2">

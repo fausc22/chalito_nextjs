@@ -1,44 +1,25 @@
-import Image from 'next/image';
+import React from 'react';
 
 /**
- * Componente de imagen para tabla de artículos
- * Muestra imagen del artículo con bordes redondeados
- * La imagen usa object-contain para verse completa sin cortarse
+ * Componente de imagen para tabla de artículos.
+ * La imagen se ajusta al 100% del ancho de la celda (nunca sobresale a la columna NOMBRE).
  */
 export function ArticuloImagenTable({ imagen_url, nombre }) {
+  const [imgError, setImgError] = React.useState(false);
+
   return (
-    <div style={{ width: '100px', height: '100px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {imagen_url ? (
+    <div className="w-full max-w-full h-[72px] flex items-center justify-center overflow-hidden mx-auto">
+      {imagen_url && (
         <img
           src={imagen_url}
           alt={nombre}
-          style={{
-            borderRadius: '0px',
-            width: '100px',
-            height: '100px',
-            objectFit: 'contain',
-            display: 'block',
-            maxWidth: '100%',
-            maxHeight: '100%'
-          }}
-          onError={(e) => {
-            e.target.style.display = 'none';
-            e.target.parentElement.innerHTML = '<div style="width: 100px; height: 80px; display: flex; align-items: center; justify-content: center; border-radius: 0px; background: linear-gradient(to bottom right, rgb(241 245 249), rgb(226 232 240)); margin: 0 auto;"><span style="font-size: 10px; color: rgb(148 163 184); font-weight: 500; text-align: center;">SIN IMAGEN</span></div>';
-          }}
+          className={`max-w-full max-h-full w-auto h-auto object-contain block ${imgError ? 'hidden' : ''}`}
+          onError={() => setImgError(true)}
         />
-      ) : (
-        <div 
-          style={{ 
-            borderRadius: '0px', 
-            width: '100px', 
-            height: '80px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'linear-gradient(to bottom right, rgb(241 245 249), rgb(226 232 240))'
-          }}
-        >
-          <span style={{ fontSize: '10px', color: 'rgb(148 163 184)', fontWeight: '500', textAlign: 'center' }}>SIN IMAGEN</span>
+      )}
+      {(!imagen_url || imgError) && (
+        <div className="w-full h-full min-h-[56px] flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+          <span className="text-[10px] text-slate-400 font-medium text-center">SIN IMAGEN</span>
         </div>
       )}
     </div>

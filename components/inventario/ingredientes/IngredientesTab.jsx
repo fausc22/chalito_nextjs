@@ -45,7 +45,8 @@ export function IngredientesTab({
   const [formulario, setFormulario] = useState({
     nombre: '',
     descripcion: '',
-    precio_extra: 0,
+    unidad_base: 'UNIDADES',
+    costo_unitario_base: '',
     disponible: 1,
   });
 
@@ -115,7 +116,8 @@ export function IngredientesTab({
     setFormulario({
       nombre: '',
       descripcion: '',
-      precio_extra: 0,
+      unidad_base: 'UNIDADES',
+      costo_unitario_base: '',
       disponible: 1,
     });
     setModalAbierto(true);
@@ -127,7 +129,10 @@ export function IngredientesTab({
     setFormulario({
       nombre: ingrediente.nombre,
       descripcion: ingrediente.descripcion || '',
-      precio_extra: ingrediente.precio_extra || 0,
+      unidad_base: ingrediente.unidad_base || 'UNIDADES',
+      costo_unitario_base: ingrediente.costo_unitario_base !== undefined && ingrediente.costo_unitario_base !== null
+        ? ingrediente.costo_unitario_base
+        : '',
       disponible: ingrediente.disponible,
     });
     setModalAbierto(true);
@@ -140,7 +145,8 @@ export function IngredientesTab({
     setFormulario({
       nombre: '',
       descripcion: '',
-      precio_extra: 0,
+      unidad_base: 'UNIDADES',
+      costo_unitario_base: '',
       disponible: 1,
     });
   };
@@ -162,18 +168,26 @@ export function IngredientesTab({
       return;
     }
 
-    const precioExtra = parseFloat(formulario.precio_extra);
-    if (isNaN(precioExtra) || precioExtra < 0) {
-      toast.error('El precio extra debe ser un número válido mayor o igual a 0');
-      setLoadingSubmit(false);
-      return;
+    // Validación opcional de costo unitario base
+    let costoUnitarioBaseValue = null;
+    if (formulario.costo_unitario_base !== '' && formulario.costo_unitario_base !== null && formulario.costo_unitario_base !== undefined) {
+      const parsed = parseFloat(formulario.costo_unitario_base);
+      if (isNaN(parsed) || parsed < 0) {
+        toast.error('El costo unitario base debe ser un número válido mayor o igual a 0');
+        setLoadingSubmit(false);
+        return;
+      }
+      costoUnitarioBaseValue = parsed;
     }
+
+    const unidadBase = (formulario.unidad_base || '').trim() || 'UNIDADES';
 
     try {
       const datos = {
         nombre: formulario.nombre.trim(),
         descripcion: formulario.descripcion.trim() || null,
-        precio_extra: precioExtra,
+        unidad_base: unidadBase,
+        costo_unitario_base: costoUnitarioBaseValue,
         disponible: formulario.disponible
       };
 
@@ -311,7 +325,7 @@ export function IngredientesTab({
             Total: {ingredientes.length} ingredientes
           </p>
         </div>
-        <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto bg-green-500 hover:bg-green-600">
+        <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto bg-green-600 hover:bg-green-700 text-white">
           <Plus className="h-4 w-4" />
           Nuevo Ingrediente
         </Button>

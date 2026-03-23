@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { separarPresentacionYExtras } from '@/lib/extrasUtils';
 
 export function ModalExtras({
   isOpen,
@@ -24,10 +25,35 @@ export function ModalExtras({
 }) {
   if (!producto) return null;
 
+  const { presentacion: opcionesPresentacion, extras: extrasNormales } = separarPresentacionYExtras(producto.extrasDisponibles || []);
+
+  const isEditarProductoTitulo =
+    producto?._editarProductoTitulo === true &&
+    (!producto.extrasDisponibles || producto.extrasDisponibles.length === 0);
+  const dobleExtra = opcionesPresentacion.find((e) => /hacela\s*doble/i.test(e.nombre || e.adicional_nombre || e.name || ''));
+  const tripleExtra = opcionesPresentacion.find((e) => /hacela\s*triple/i.test(e.nombre || e.adicional_nombre || e.name || ''));
+
+  const presentacionSeleccionada = extrasSeleccionados.find((e) => e.id === dobleExtra?.id)
+    ? 'doble'
+    : extrasSeleccionados.find((e) => e.id === tripleExtra?.id)
+      ? 'triple'
+      : 'simple';
+
+  const setPresentacion = (val) => {
+    const sinPresentacion = extrasSeleccionados.filter((e) => e.id !== dobleExtra?.id && e.id !== tripleExtra?.id);
+    if (val === 'simple') {
+      setExtrasSeleccionados(sinPresentacion);
+    } else if (val === 'doble' && dobleExtra) {
+      setExtrasSeleccionados([...sinPresentacion, dobleExtra]);
+    } else if (val === 'triple' && tripleExtra) {
+      setExtrasSeleccionados([...sinPresentacion, tripleExtra]);
+    }
+  };
+
   const toggleExtra = (extra) => {
-    const existe = extrasSeleccionados.find(e => e.id === extra.id);
+    const existe = extrasSeleccionados.find((e) => e.id === extra.id);
     if (existe) {
-      setExtrasSeleccionados(extrasSeleccionados.filter(e => e.id !== extra.id));
+      setExtrasSeleccionados(extrasSeleccionados.filter((e) => e.id !== extra.id));
     } else {
       setExtrasSeleccionados([...extrasSeleccionados, extra]);
     }
@@ -41,28 +67,34 @@ export function ModalExtras({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl h-[85vh] flex flex-col">
+      <DialogContent className="w-[calc(100vw-0.75rem)] sm:w-full max-w-2xl h-[90dvh] sm:h-[85vh] flex flex-col p-3 sm:p-6">
         <DialogHeader className="flex-shrink-0 pb-2">
           <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
             <Package className="h-5 w-5" />
-            {editandoItemCarrito
-              ? producto.extrasDisponibles && producto.extrasDisponibles.length > 0 ? 'Editar Extras y Observación' : 'Editar Observación'
-              : totalUnidades > 1
-                ? `Agregar Extras - Unidad ${unidadActual} de ${totalUnidades}`
-                : producto.extrasDisponibles && producto.extrasDisponibles.length > 0 ? 'Agregar Extras' : 'Agregar Observación'
-            }
+            {isEditarProductoTitulo
+              ? 'Editar Producto'
+              : editandoItemCarrito
+                ? producto.extrasDisponibles && producto.extrasDisponibles.length > 0
+                  ? 'Editar Extras y Observación'
+                  : 'Editar Observación'
+                : totalUnidades > 1
+                  ? `Agregar Extras - Unidad ${unidadActual} de ${totalUnidades}`
+                  : producto.extrasDisponibles && producto.extrasDisponibles.length > 0
+                    ? 'Agregar Extras'
+                    : 'Agregar Observación'}
           </DialogTitle>
           <DialogDescription className="sr-only">
-            {editandoItemCarrito
-              ? 'Modifica los extras del artículo'
-              : totalUnidades > 1
-                ? `Configura los extras para la unidad ${unidadActual} de ${totalUnidades}`
-                : 'Selecciona los extras que deseas agregar al artículo'
-            }
+            {isEditarProductoTitulo
+              ? 'Edita el producto y su observación'
+              : editandoItemCarrito
+                ? 'Modifica los extras del artículo'
+                : totalUnidades > 1
+                  ? `Configura los extras para la unidad ${unidadActual} de ${totalUnidades}`
+                  : 'Selecciona los extras que deseas agregar al artículo'}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4 pt-4 pr-3">
+        <div className="flex-1 overflow-y-auto space-y-4 pt-3 sm:pt-4 pr-0 sm:pr-3">
           {/* Mensaje informativo para múltiples unidades */}
           {!editandoItemCarrito && totalUnidades > 1 && (
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
@@ -79,7 +111,7 @@ export function ModalExtras({
 
           {/* Info del producto */}
           <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-            <div className="flex items-center gap-4">
+            <div className="flex items-start sm:items-center gap-3 sm:gap-4">
               <div className="text-4xl">{producto.imagen}</div>
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-slate-800">{producto.nombre}</h3>
@@ -96,39 +128,85 @@ export function ModalExtras({
             </div>
           </div>
 
-          {/* Lista de extras disponibles - Solo si el producto tiene extras */}
+          {/* Presentación + Extras - Solo si el producto tiene extras */}
           {producto.extrasDisponibles && producto.extrasDisponibles.length > 0 ? (
-            <div className="space-y-2">
-              <h4 className="font-semibold text-slate-800 mb-2">Selecciona los extras:</h4>
-              <div className="space-y-2">
-                {producto.extrasDisponibles.map(extra => {
-                  const isSelected = extrasSeleccionados.find(e => e.id === extra.id);
-                  return (
-                    <div
-                      key={extra.id}
-                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                        isSelected
-                          ? 'bg-blue-50 border-blue-300'
-                          : 'bg-white border-slate-200 hover:border-slate-300'
-                      }`}
-                      onClick={() => toggleExtra(extra)}
-                    >
-                      <Checkbox
-                        checked={!!isSelected}
-                        onCheckedChange={() => toggleExtra(extra)}
-                        className="border-2"
+            <div className="space-y-4">
+              {/* Presentación (radio) - Hacela doble / Hacela triple */}
+              {(dobleExtra || tripleExtra) && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-slate-800 mb-2">Presentación:</h4>
+                  <div className="flex flex-wrap gap-4 pl-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="presentacion"
+                        checked={presentacionSeleccionada === 'simple'}
+                        onChange={() => setPresentacion('simple')}
+                        className="w-4 h-4 border-2 border-slate-300 text-blue-600"
                       />
-                      <div className="flex-1">
-                        <p className="font-semibold text-slate-800">{extra.nombre}</p>
-                        <p className="text-sm text-slate-600">+${extra.precio.toLocaleString('es-AR')}</p>
-                      </div>
-                      {isSelected && (
-                        <Badge className="bg-green-600 text-white">Seleccionado</Badge>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                      <span className="text-sm font-medium text-slate-800">Simple</span>
+                    </label>
+                    {dobleExtra && (
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="presentacion"
+                          checked={presentacionSeleccionada === 'doble'}
+                          onChange={() => setPresentacion('doble')}
+                          className="w-4 h-4 border-2 border-slate-300 text-blue-600"
+                        />
+                        <span className="text-sm font-medium text-slate-800">Doble</span>
+                        <span className="text-xs text-slate-600">+${dobleExtra.precio?.toLocaleString('es-AR')}</span>
+                      </label>
+                    )}
+                    {tripleExtra && (
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="presentacion"
+                          checked={presentacionSeleccionada === 'triple'}
+                          onChange={() => setPresentacion('triple')}
+                          className="w-4 h-4 border-2 border-slate-300 text-blue-600"
+                        />
+                        <span className="text-sm font-medium text-slate-800">Triple</span>
+                        <span className="text-xs text-slate-600">+${tripleExtra.precio?.toLocaleString('es-AR')}</span>
+                      </label>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Extras (checkboxes) - resto de adicionales */}
+              {extrasNormales.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-slate-800 mb-2">Extras:</h4>
+                  <div className="space-y-2">
+                    {extrasNormales.map((extra) => {
+                      const isSelected = extrasSeleccionados.find((e) => e.id === extra.id);
+                      return (
+                        <div
+                          key={extra.id}
+                          className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                            isSelected ? 'bg-blue-50 border-blue-300' : 'bg-white border-slate-200 hover:border-slate-300'
+                          }`}
+                          onClick={() => toggleExtra(extra)}
+                        >
+                          <Checkbox
+                            checked={!!isSelected}
+                            onCheckedChange={() => toggleExtra(extra)}
+                            className="border-2"
+                          />
+                          <div className="flex-1">
+                            <p className="font-semibold text-slate-800">{extra.nombre}</p>
+                            <p className="text-sm text-slate-600">+${(extra.precio || 0).toLocaleString('es-AR')}</p>
+                          </div>
+                          {isSelected && <Badge className="bg-green-600 text-white">Seleccionado</Badge>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -197,17 +275,17 @@ export function ModalExtras({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 flex-shrink-0 pt-4 border-t">
+        <DialogFooter className="gap-2 flex-shrink-0 pt-4 border-t flex flex-col-reverse sm:flex-row">
           <Button
             variant="outline"
             onClick={() => onClose(false)}
-            className="h-11 px-6"
+            className="h-11 px-6 w-full sm:w-auto"
           >
             Cancelar
           </Button>
           <Button
             onClick={onConfirmar}
-            className="bg-green-600 hover:bg-green-700 gap-2 h-11 px-6"
+            className="bg-green-600 hover:bg-green-700 gap-2 h-11 px-6 w-full sm:w-auto"
           >
             <Check className="h-4 w-4" />
             {editandoItemCarrito

@@ -258,7 +258,7 @@ export function CategoriasTab({
             Total: {categorias.length} categorías
           </p>
         </div>
-        <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto bg-green-500 hover:bg-green-600">
+        <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto bg-green-600 hover:bg-green-700 text-white">
           <Plus className="h-4 w-4" />
           Nueva Categoría
         </Button>

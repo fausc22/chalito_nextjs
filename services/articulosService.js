@@ -1,6 +1,13 @@
 import { apiRequest } from './api';
 import { API_CONFIG } from '../config/api';
 
+const normalizarArticulo = (articulo = {}) => ({
+  ...articulo,
+  categoria: articulo.categoria ?? articulo.categoria_nombre ?? '',
+  codigo: articulo.codigo ?? articulo.codigo_barra ?? '',
+  contenido: Array.isArray(articulo.contenido) ? articulo.contenido : (Array.isArray(articulo.ingredientes) ? articulo.ingredientes : [])
+});
+
 export const articulosService = {
   // ==================== SUBIR IMAGEN A CLOUDINARY ====================
   // Sube una imagen al backend que la procesa con Cloudinary
@@ -58,17 +65,17 @@ export const articulosService = {
     try {
       const params = new URLSearchParams();
 
-      // Mapear filtros del frontend a los que espera el backend
+      // Mapear filtros del frontend a los que espera articulosController
       if (filtros.categoria || filtros.categoria_id) {
-        params.append('categoria_id', filtros.categoria || filtros.categoria_id);
+        params.append('categoria', filtros.categoria || filtros.categoria_id);
       }
-      // El backend usa 'activo' en lugar de 'disponible'
+      // articulosController usa 'disponible' en query string
       if (filtros.disponible !== undefined) {
-        params.append('activo', filtros.disponible ? 'true' : 'false');
+        params.append('disponible', filtros.disponible ? 'true' : 'false');
       }
       // Si no se especifica, por defecto traer solo activos
       if (filtros.disponible === undefined) {
-        params.append('activo', 'true');
+        params.append('disponible', 'true');
       }
 
       const url = API_CONFIG.ENDPOINTS.ARTICULOS.LIST + (params.toString() ? `?${params.toString()}` : '');
@@ -86,7 +93,7 @@ export const articulosService = {
 
       // El backend devuelve { success: true, data: [...] } o { data: [...] }
       const articulos = response.data.data || response.data || [];
-      const articulosArray = Array.isArray(articulos) ? articulos : [];
+      const articulosArray = Array.isArray(articulos) ? articulos.map(normalizarArticulo) : [];
 
       return {
         success: true,
@@ -109,13 +116,41 @@ export const articulosService = {
 
       return {
         success: true,
-        data: response.data.data || response.data
+        data: normalizarArticulo(response.data.data || response.data)
       };
     } catch (error) {
       console.error('Error al obtener artículo:', error);
       return {
         success: false,
         error: error.response?.data?.mensaje || 'Error al obtener artículo'
+      };
+    }
+  },
+
+  // Obtener costos calculados de un artículo elaborado
+  obtenerCostoArticulo: async (id) => {
+    try {
+      const response = await apiRequest.get(API_CONFIG.ENDPOINTS.ARTICULOS.COSTO(id));
+
+      // Soportar tanto { success, data } como payload directo
+      if (response.data?.error === true || response.data?.success === false) {
+        return {
+          success: false,
+          error: response.data.mensaje || response.data.message || 'Error al obtener costos del artículo'
+        };
+      }
+
+      const data = response.data.data || response.data;
+
+      return {
+        success: true,
+        data
+      };
+    } catch (error) {
+      console.error('Error al obtener costos del artículo:', error);
+      return {
+        success: false,
+        error: error.response?.data?.mensaje || error.response?.data?.message || 'Error al obtener costos del artículo'
       };
     }
   },
@@ -183,6 +218,7 @@ export const articulosService = {
         nombre: articuloData.nombre,
         descripcion: articuloData.descripcion || null,
         precio: parseFloat(articuloData.precio),
+        peso: parseInt(articuloData.peso, 10),
         codigo_barra: articuloData.codigo || null,
         stock_actual: articuloData.stock_actual ? parseInt(articuloData.stock_actual) : 0,
         stock_minimo: articuloData.stock_minimo ? parseInt(articuloData.stock_minimo) : 0,
@@ -275,6 +311,7 @@ export const articulosService = {
         nombre: articuloData.nombre,
         descripcion: articuloData.descripcion || null,
         precio: parseFloat(articuloData.precio),
+        peso: parseInt(articuloData.peso, 10),
         codigo_barra: articuloData.codigo || null,
         stock_actual: articuloData.stock_actual !== undefined && articuloData.stock_actual !== '' ? parseInt(articuloData.stock_actual) : 0,
         stock_minimo: articuloData.stock_minimo !== undefined && articuloData.stock_minimo !== '' ? parseInt(articuloData.stock_minimo) : 0,

@@ -1,9 +1,12 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { z } from 'zod';
 import { articulosService } from '../../services/articulosService';
 import { pedidosService } from '../../services/pedidosService';
 import { adicionalesService } from '../../services/adicionalesService';
 import { toast } from '@/hooks/use-toast';
+import { crearItemCarrito, mergeItemEnCarrito, reagruparCarrito } from './cartUtils';
+import { formatDireccionEntrega, parseClienteDireccion } from '../../lib/formatters';
+import { getItemExtras } from '../../lib/extrasUtils';
 
 // Esquema de validación para el cliente (mismo que useNuevoPedido)
 const clienteSchema = z.object({
@@ -52,6 +55,15 @@ const pedidoSchema = z.object({
   descuento: z.number().min(0).max(100).optional(),
 });
 
+// Normalización para comparar nombres de categorías (ignora tildes y mayúsculas/minúsculas)
+const normalizarCategoria = (value) =>
+  (value ?? '')
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .trim();
+
 export const useEditarPedido = () => {
   // Estados del modal
   const [isOpen, setIsOpen] = useState(false);
@@ -69,6 +81,7 @@ export const useEditarPedido = () => {
   const [loadingCategorias, setLoadingCategorias] = useState(true);
   const [loadingProductos, setLoadingProductos] = useState(true);
   const [loadingPedido, setLoadingPedido] = useState(false);
+  const datosInicialesCargadosRef = useRef(false);
 
   // Modal de extras
   const [modalExtras, setModalExtras] = useState(false);
@@ -80,6 +93,38 @@ export const useEditarPedido = () => {
   const [unidadActual, setUnidadActual] = useState(1);
   const [totalUnidades, setTotalUnidades] = useState(1);
   const [unidadesConfiguradas, setUnidadesConfiguradas] = useState([]);
+
+  // Mapa de categorías: id -> nombre (necesario para decidir flujo por categoría)
+  const categoriaIdToNombre = useMemo(() => {
+    const map = new Map();
+    categorias.forEach((cat) => {
+      const id = cat?.id ?? cat?.categoria_id ?? cat?.categoriaId;
+      if (id === undefined || id === null) return;
+      const nombre = cat?.nombre ?? cat?.nombre_categoria ?? cat?.nombreCategoria ?? '';
+      map.set(String(id), nombre);
+    });
+    return map;
+  }, [categorias]);
+
+  const esCategoriaSandwiches = useCallback(
+    (producto) => {
+      const catId = producto?.categoria ?? producto?.categoria_id ?? producto?.categoriaId;
+      const nombre = categoriaIdToNombre.get(String(catId ?? ''));
+      const n = normalizarCategoria(nombre);
+      return n === 'SANDWICHES' || n.includes('SANDWICH');
+    },
+    [categoriaIdToNombre]
+  );
+
+  const esCategoriaPapas = useCallback(
+    (producto) => {
+      const catId = producto?.categoria ?? producto?.categoria_id ?? producto?.categoriaId;
+      const nombre = categoriaIdToNombre.get(String(catId ?? ''));
+      const n = normalizarCategoria(nombre);
+      return n === 'PAPAS' || n.includes('PAPA');
+    },
+    [categoriaIdToNombre]
+  );
 
   // Paso 2: Datos Cliente
   const [tipoEntrega, setTipoEntrega] = useState('retiro');
@@ -104,8 +149,10 @@ export const useEditarPedido = () => {
   const [estadoPago, setEstadoPago] = useState('pending');
   const [descuento, setDescuento] = useState(0);
 
-  // Cargar categorías y productos desde el backend
+  // Cargar categorías y productos solo al abrir modal (una vez)
   useEffect(() => {
+    if (!isOpen || datosInicialesCargadosRef.current) return;
+
     const cargarDatos = async () => {
       // Cargar categorías
       setLoadingCategorias(true);
@@ -176,8 +223,9 @@ export const useEditarPedido = () => {
     };
 
     cargarDatos();
+    datosInicialesCargadosRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isOpen]);
 
   // Cargar datos del pedido cuando se abre el modal
   const cargarPedido = useCallback(async (pedidoId) => {
@@ -195,17 +243,18 @@ export const useEditarPedido = () => {
           return;
         }
 
-        // Cargar datos del pedido en el formulario
+        // Cargar datos del pedido en el formulario (parsea formato nuevo y antiguo)
+        const dir = parseClienteDireccion(pedido.direccion || pedido.cliente_direccion || '');
         setCliente({
           nombre: pedido.clienteNombre || '',
           telefono: pedido.telefono || '',
           email: pedido.email || '',
           direccion: {
-            calle: pedido.direccion?.split(',')[0]?.trim() || '',
-            numero: pedido.direccion?.split(',')[1]?.trim() || '',
-            edificio: '',
-            piso: '',
-            observaciones: ''
+            calle: dir.calle,
+            numero: dir.altura,
+            edificio: dir.edificioCasa,
+            piso: dir.pisoDepto,
+            observaciones: pedido.tipoEntrega === 'delivery' ? (pedido.observaciones || '') : ''
           }
         });
         
@@ -219,21 +268,31 @@ export const useEditarPedido = () => {
 
         // Transformar items del pedido al formato del carrito
         const itemsCarrito = (pedido.items || []).map((item, index) => {
-          // Extraer extras/personalizaciones (asegurar que sea array)
-          const rawExtras = item.extras ?? item.personalizaciones?.extras;
-          const extras = Array.isArray(rawExtras) ? rawExtras : [];
-          const extrasSeleccionados = extras.map(extra => ({
-            id: extra.id || extra.adicional_id,
-            nombre: extra.nombre || extra.adicional_nombre || extra.nombre,
-            precio: parseFloat(extra.precio || extra.precio_extra || 0)
-          }));
+          // Fuente de verdad al abrir editar: snapshot persistido (precio/subtotal/personalizaciones)
+          // No usar precios actuales de articulos/adicionales para evitar desfasajes.
+          const cantidad = parseInt(item.cantidad, 10) || 1;
+          const { extras, extrasTotal } = getItemExtras(item);
+          const subtotalSnapshot = Number.parseFloat(item.subtotal);
+          const precioSnapshot = Number.parseFloat(item.precio);
+          const subtotalLinea = Number.isFinite(subtotalSnapshot)
+            ? subtotalSnapshot
+            : (Number.isFinite(precioSnapshot) ? precioSnapshot * cantidad : 0);
+          const precioUnitarioSnapshot = cantidad > 0 ? subtotalLinea / cantidad : 0;
+          const precioBaseUnitario = Math.max(0, precioUnitarioSnapshot - extrasTotal);
 
           return {
             id: item.id || item.articulo_id,
+            product_id: item.id || item.articulo_id,
             nombre: item.nombre || item.articulo_nombre,
-            precio: parseFloat(item.precio) || 0,
-            cantidad: parseInt(item.cantidad) || 1,
-            extrasSeleccionados: extrasSeleccionados,
+            // Guardamos precio base unitario derivado del snapshot para no duplicar extras.
+            price: precioBaseUnitario,
+            precio: precioBaseUnitario,
+            quantity: cantidad,
+            cantidad: cantidad,
+            extras: extras,
+            extrasSeleccionados: extras,
+            subtotalSnapshot: subtotalLinea,
+            observaciones: item.observaciones || '',
             observacion: item.observaciones || null,
             carritoId: `edit-${pedido.id}-${index}-${Date.now()}`
           };
@@ -252,7 +311,7 @@ export const useEditarPedido = () => {
     } finally {
       setLoadingPedido(false);
     }
-  }, []);
+  }, [productos, categoriaIdToNombre, esCategoriaSandwiches, esCategoriaPapas]);
 
   // Filtrar productos
   const productosFiltrados = useMemo(() => {
@@ -268,8 +327,11 @@ export const useEditarPedido = () => {
   // Calcular subtotal
   const calcularSubtotal = useCallback(() => {
     return carrito.reduce((sum, item) => {
-      const precioBase = item.precio * item.cantidad;
-      const precioExtras = item.extrasSeleccionados.reduce((s, e) => s + e.precio, 0) * item.cantidad;
+      const quantity = parseInt(item.quantity ?? item.cantidad, 10) || 1;
+      const price = parseFloat(item.price ?? item.precio) || 0;
+      const extras = item.extras ?? item.extrasSeleccionados ?? [];
+      const precioBase = price * quantity;
+      const precioExtras = extras.reduce((s, e) => s + (parseFloat(e.precio) || 0), 0) * quantity;
       return sum + precioBase + precioExtras;
     }, 0);
   }, [carrito]);
@@ -327,6 +389,7 @@ export const useEditarPedido = () => {
     setMedioPago('efectivo');
     setEstadoPago('pending');
     setDescuento(0);
+
   }, [categorias]);
 
   // Abrir modal con pedido
@@ -350,6 +413,31 @@ export const useEditarPedido = () => {
   const agregarProductoConExtras = useCallback((producto, cantidad) => {
     const tieneExtras = producto.extrasDisponibles && producto.extrasDisponibles.length > 0;
 
+    const esCategoriaHamburguesas = (() => {
+      const catId = producto?.categoria ?? producto?.categoria_id ?? producto?.categoriaId;
+      const nombre = categoriaIdToNombre.get(String(catId ?? ''));
+      const n = normalizarCategoria(nombre);
+      return n === 'HAMBURGUESAS' || n.includes('HAMBURGUES');
+    })();
+
+    const esCategoriaEspecialObservacion =
+      esCategoriaHamburguesas || esCategoriaSandwiches(producto) || esCategoriaPapas(producto);
+
+    // PAPAS / SANDWICHES / HAMBURGUESAS SIN EXTRAS:
+    // abrir el modal grande de observaciones (ModalExtras) para capturar observación.
+    if (!tieneExtras && esCategoriaEspecialObservacion) {
+      setProductoParaExtras({ ...producto, _editarProductoTitulo: true });
+      setCantidadProducto(cantidad);
+      setTotalUnidades(cantidad);
+      setUnidadActual(1);
+      setUnidadesConfiguradas([]);
+      setExtrasSeleccionados([]);
+      setObservacionItem('');
+      setEditandoItemCarrito(null);
+      setModalExtras(true);
+      return;
+    }
+
     if (tieneExtras) {
       setProductoParaExtras(producto);
       setCantidadProducto(cantidad);
@@ -360,23 +448,28 @@ export const useEditarPedido = () => {
       setObservacionItem('');
       setEditandoItemCarrito(null);
       setModalExtras(true);
-    } else {
-      const nuevoItem = {
-        ...producto,
-        cantidad: cantidad,
-        extrasSeleccionados: [],
-        observacion: undefined,
-        carritoId: Date.now() + Math.random()
-      };
-      setCarrito(prev => [...prev, nuevoItem]);
-      
-      toast({
-        title: "✅ Producto agregado",
-        description: `${cantidad} × ${producto.nombre}`,
-        duration: 2000,
-      });
+      return;
     }
-  }, []);
+
+    // Resto de categorías: si NO tiene extras, agregar directamente
+    const nuevoItem = crearItemCarrito({
+      product_id: producto.id,
+      nombre: producto.nombre,
+      price: producto.precio,
+      extras: [],
+      observaciones: '',
+      quantity: cantidad,
+      sourceProduct: producto,
+    });
+
+    setCarrito((prev) => mergeItemEnCarrito(prev, nuevoItem));
+
+    toast({
+      title: "✅ Producto agregado",
+      description: `${cantidad} × ${producto.nombre}`,
+      duration: 2000,
+    });
+  }, [esCategoriaPapas, esCategoriaSandwiches, categoriaIdToNombre]);
 
   // Modificar cantidad en carrito
   const modificarCantidad = useCallback((carritoId, nuevaCantidad) => {
@@ -385,7 +478,7 @@ export const useEditarPedido = () => {
     } else {
       setCarrito(prev => prev.map(item =>
         item.carritoId === carritoId
-          ? { ...item, cantidad: nuevaCantidad }
+          ? { ...item, quantity: nuevaCantidad, cantidad: nuevaCantidad }
           : item
       ));
     }
@@ -398,10 +491,37 @@ export const useEditarPedido = () => {
 
   // Editar extras de un item del carrito
   const editarExtrasItem = useCallback((item) => {
-    setProductoParaExtras(item);
-    setCantidadProducto(item.cantidad);
-    setExtrasSeleccionados([...item.extrasSeleccionados]);
-    setObservacionItem(item.observacion || '');
+    // Enriquecer con categoría si falta (items cargados desde backend pueden no traerla)
+    const itemProductId = item?.product_id ?? item?.id ?? item?.articulo_id;
+    const productoEncontrado = itemProductId
+      ? productos.find((p) => String(p.id) === String(itemProductId))
+      : null;
+
+    const itemEnriquecido = {
+      ...item,
+      ...(productoEncontrado ? { categoria: productoEncontrado.categoria } : {}),
+    };
+
+    const tieneExtras = itemEnriquecido?.extrasDisponibles && itemEnriquecido.extrasDisponibles.length > 0;
+    const esCategoriaHamburguesas = (() => {
+      const catId = itemEnriquecido?.categoria ?? itemEnriquecido?.categoria_id ?? itemEnriquecido?.categoriaId;
+      const nombre = categoriaIdToNombre.get(String(catId ?? ''));
+      const n = normalizarCategoria(nombre);
+      return n === 'HAMBURGUESAS' || n.includes('HAMBURGUES');
+    })();
+
+    const esCategoriaEspecialObservacion =
+      esCategoriaHamburguesas || esCategoriaSandwiches(itemEnriquecido) || esCategoriaPapas(itemEnriquecido);
+
+    const productoParaModal =
+      !tieneExtras && esCategoriaEspecialObservacion
+        ? { ...itemEnriquecido, _editarProductoTitulo: true }
+        : itemEnriquecido;
+
+    setProductoParaExtras(productoParaModal);
+    setCantidadProducto(item.quantity ?? item.cantidad ?? 1);
+    setExtrasSeleccionados([...(item.extras ?? item.extrasSeleccionados ?? [])]);
+    setObservacionItem(item.observaciones || item.observacion || '');
     setEditandoItemCarrito(item.carritoId);
     setTotalUnidades(1);
     setUnidadActual(1);
@@ -437,15 +557,20 @@ export const useEditarPedido = () => {
   // Confirmar extras y agregar/actualizar en carrito
   const confirmarExtras = useCallback(() => {
     if (editandoItemCarrito) {
-      setCarrito(prev => prev.map(item =>
-        item.carritoId === editandoItemCarrito
-          ? { 
-              ...item, 
-              extrasSeleccionados: [...extrasSeleccionados],
-              observacion: observacionItem.trim() || undefined
-            }
-          : item
-      ));
+      setCarrito(prev => {
+        const updated = prev.map(item =>
+          item.carritoId === editandoItemCarrito
+            ? { 
+                ...item,
+                extras: [...extrasSeleccionados],
+                extrasSeleccionados: [...extrasSeleccionados],
+                observaciones: observacionItem.trim(),
+                observacion: observacionItem.trim() || undefined
+              }
+            : item
+        );
+        return reagruparCarrito(updated);
+      });
       cerrarModalExtras();
     } else {
       const nuevaUnidad = {
@@ -461,14 +586,18 @@ export const useEditarPedido = () => {
         setExtrasSeleccionados([]);
         setObservacionItem('');
       } else {
-        const nuevosItems = unidadesActualizadas.map(unidad => ({
-          ...unidad.producto,
-          cantidad: 1,
-          extrasSeleccionados: unidad.extras,
-          observacion: unidad.observacion,
-          carritoId: Date.now() + Math.random()
-        }));
-        setCarrito(prev => [...prev, ...nuevosItems]);
+        const nuevosItems = unidadesActualizadas.map(unidad =>
+          crearItemCarrito({
+            product_id: unidad.producto.id,
+            nombre: unidad.producto.nombre,
+            price: unidad.producto.precio,
+            extras: unidad.extras,
+            observaciones: unidad.observacion || '',
+            quantity: 1,
+            sourceProduct: unidad.producto
+          })
+        );
+        setCarrito(prev => nuevosItems.reduce((acc, item) => mergeItemEnCarrito(acc, item), prev));
         cerrarModalExtras();
       }
     }
@@ -536,14 +665,13 @@ export const useEditarPedido = () => {
       return null;
     }
 
-    // Preparar datos del pedido para el backend (mantener estado original)
-    const direccionCompleta = [
-      cliente.direccion.calle,
-      cliente.direccion.numero,
-      cliente.direccion.edificio && `Ed. ${cliente.direccion.edificio}`,
-      cliente.direccion.piso && `Piso ${cliente.direccion.piso}`,
-      cliente.direccion.observaciones
-    ].filter(Boolean).join(', ');
+    // Preparar datos del pedido para el backend (formato chalito_carta)
+    const direccionCompleta = formatDireccionEntrega({
+      calle: cliente.direccion?.calle,
+      numero: cliente.direccion?.numero,
+      edificio: cliente.direccion?.edificio,
+      piso: cliente.direccion?.piso
+    });
 
     const pedidoData = {
       clienteNombre: cliente.nombre,
@@ -560,21 +688,24 @@ export const useEditarPedido = () => {
       tipo: tipoPedido,
       horaProgramada: tipoPedido === 'programado' ? horaProgramada : null,
       items: carrito.map(item => {
-        const precioBase = parseFloat(item.precio) || 0;
-        const cantidad = parseInt(item.cantidad) || 1;
-        const precioExtras = (item.extrasSeleccionados || []).reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
+        const precioBase = parseFloat(item.price ?? item.precio) || 0;
+        const cantidad = parseInt(item.quantity ?? item.cantidad, 10) || 1;
+        const extras = item.extras ?? item.extrasSeleccionados ?? [];
+        const precioExtras = extras.reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
         const subtotalItem = (precioBase + precioExtras) * cantidad;
 
         return {
-          id: item.id,
-          articulo_id: item.id,
+          id: item.product_id ?? item.id,
+          product_id: item.product_id ?? item.id,
+          quantity: cantidad,
+          articulo_id: item.product_id ?? item.id,
           nombre: item.nombre,
           articulo_nombre: item.nombre,
           cantidad: cantidad,
           precio: precioBase,
           subtotal: subtotalItem,
-          extras: item.extrasSeleccionados || [],
-          observaciones: item.observacion || null
+          extras,
+          observaciones: item.observaciones ?? item.observacion ?? null
         };
       }),
       subtotal: calcularSubtotal() - calcularDescuento(),
@@ -585,7 +716,7 @@ export const useEditarPedido = () => {
       estado: pedidoOriginal.estado,
       tipoEntrega: tipoEntrega,
       medioPago: medioPago ? medioPago : (estadoPago === 'paid' ? 'efectivo' : null),
-      observaciones: pedidoOriginal.observaciones || ''
+      observaciones: tipoEntrega === 'delivery' ? (cliente.direccion?.observaciones || pedidoOriginal.observaciones || '') : (pedidoOriginal.observaciones || '')
     };
 
     try {
