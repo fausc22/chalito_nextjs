@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-export function ModalPedidosEntregados({ pedidos, isOpen, onClose }) {
+export function ModalPedidosEntregados({ pedidos, isOpen, onClose, onImprimirPedido }) {
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null);
   const [paginaActual, setPaginaActual] = useState(1);
   const [itemsPorPagina, setItemsPorPagina] = useState(6);
@@ -281,33 +281,11 @@ export function ModalPedidosEntregados({ pedidos, isOpen, onClose }) {
 
               {/* Resumen financiero */}
               <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
-                <h3 className="text-base font-semibold text-slate-800 mb-3">💰 Resumen Financiero</h3>
+                <h3 className="text-base font-semibold text-slate-800 mb-3">💰 Total</h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-700 font-medium">Subtotal:</span>
-                    <span className="font-bold text-slate-900">
-                      ${(pedidoSeleccionado.subtotal || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  {pedidoSeleccionado.descuento > 0 && (
-                    <div className="flex justify-between text-sm text-slate-700">
-                      <span className="font-medium">Descuento:</span>
-                      <span className="font-bold">
-                        -${(pedidoSeleccionado.descuento || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-700 font-medium">IVA (21%):</span>
-                    <span className="font-bold text-slate-900">
-                      ${(pedidoSeleccionado.ivaTotal || pedidoSeleccionado.iva_total || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  <div className="border-t-2 border-slate-400 pt-2 mt-2">
-                    <div className="flex justify-between text-lg font-bold text-slate-900">
-                      <span>TOTAL:</span>
-                      <span>${(pedidoSeleccionado.total || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-                    </div>
+                  <div className="flex justify-between text-lg font-bold text-slate-900">
+                    <span>TOTAL:</span>
+                    <span>${(pedidoSeleccionado.total || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               </div>
@@ -364,17 +342,18 @@ export function ModalPedidosEntregados({ pedidos, isOpen, onClose }) {
             </div>
           )}
 
-          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 pt-3 border-t-2 border-slate-300">
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 pt-3 border-t-2 border-slate-300 sm:justify-end">
             <Button
               variant="outline"
               onClick={() => {
-                // TODO: Implementar impresión de factura/ticket para cliente
-                console.log('Imprimir factura/ticket:', pedidoSeleccionado?.id);
+                const p = pedidoSeleccionado;
+                if (p && onImprimirPedido) onImprimirPedido(p);
+                setPedidoSeleccionado(null);
               }}
               className="flex items-center gap-2 border-slate-300"
             >
               <Printer className="h-4 w-4" />
-              Imprimir Factura/Ticket
+              Imprimir
             </Button>
             <Button variant="outline" onClick={() => setPedidoSeleccionado(null)} className="border-slate-300">
               Cerrar

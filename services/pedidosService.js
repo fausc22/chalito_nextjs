@@ -1,6 +1,7 @@
 import { apiRequest } from './api';
 import { API_CONFIG } from '../config/api';
 import { buildPersonalizaciones } from '../lib/extrasUtils';
+import { calculateLineSubtotalFromSnapshot } from '../lib/pedidoTotals';
 
 /**
  * Servicio para gestión de pedidos
@@ -29,6 +30,23 @@ const mapearEstadoBackendAFrontend = (estadoBackend) => {
     'CANCELADO': 'cancelado'
   };
   return mapeo[estadoBackend] || 'recibido';
+};
+
+const parseVersionValue = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
+const resolveUpdatedAtValue = (pedidoBackend = {}) => {
+  return pedidoBackend.updated_at || pedidoBackend.updatedAt || pedidoBackend.fecha_modificacion || null;
+};
+
+const toIsoDateOrNull = (value) => {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(value);
+  const ms = d.getTime();
+  if (!Number.isFinite(ms)) return null;
+  return d.toISOString();
 };
 
 // Mapear modalidad del frontend al backend
@@ -107,6 +125,9 @@ const transformarPedidoBackendAFrontend = (pedidoBackend, articulos = []) => {
     return `${horas}:${minutos}`;
   };
 
+  const updatedAtIso = toIsoDateOrNull(resolveUpdatedAtValue(pedidoBackend));
+  const version = parseVersionValue(pedidoBackend.version) || (updatedAtIso ? new Date(updatedAtIso).getTime() : null);
+
   return {
     id: String(pedidoBackend.id),
     clienteNombre: pedidoBackend.cliente_nombre || 'Cliente sin nombre',
@@ -143,7 +164,7 @@ const transformarPedidoBackendAFrontend = (pedidoBackend, articulos = []) => {
         nombre: art.articulo_nombre,
         cantidad: art.cantidad || 1,
         precio: parseFloat(art.precio) || 0,
-        subtotal: parseFloat(art.subtotal) || (parseFloat(art.precio) * (art.cantidad || 1)) || 0,
+        subtotal: calculateLineSubtotalFromSnapshot(art),
         extras: extrasArray.map(e => ({
           id: e.id || e.adicional_id,
           nombre: e.nombre || e.adicional_nombre || e.name,
@@ -165,7 +186,6 @@ const transformarPedidoBackendAFrontend = (pedidoBackend, articulos = []) => {
     medio_pago: pedidoBackend.medio_pago || null,
     medioPago: mapearMedioPagoBackendAFrontend(pedidoBackend.medio_pago),
     monto_con_cuanto_abona: pedidoBackend.monto_con_cuanto_abona ?? null,
-    observaciones_envio: pedidoBackend.observaciones_envio || '',
     observaciones_pedido: pedidoBackend.observaciones_pedido || pedidoBackend.observaciones || '',
     horario_entrega_formateado: formatearHorarioEntrega(pedidoBackend.horario_entrega),
     // Hora real de entrega (si el backend la envía)
@@ -179,8 +199,32 @@ const transformarPedidoBackendAFrontend = (pedidoBackend, articulos = []) => {
     horaEsperadaFinalizacion: pedidoBackend.hora_esperada_finalizacion ? new Date(pedidoBackend.hora_esperada_finalizacion).getTime() : null,
     horaListo: pedidoBackend.hora_listo ? new Date(pedidoBackend.hora_listo).getTime() : null,
     prioridad: pedidoBackend.prioridad ? pedidoBackend.prioridad.toLowerCase() : 'normal',
-    transicionAutomatica: pedidoBackend.transicion_automatica !== undefined ? pedidoBackend.transicion_automatica : true
+    transicionAutomatica: pedidoBackend.transicion_automatica !== undefined ? pedidoBackend.transicion_automatica : true,
+    updated_at: updatedAtIso,
+    updatedAt: updatedAtIso,
+    version
   };
+};
+
+const normalizarPedidoRealtime = (pedidoRaw) => {
+  if (!pedidoRaw || typeof pedidoRaw !== 'object') return null;
+
+  // Ya viene normalizado para frontend.
+  if (pedidoRaw.clienteNombre !== undefined || Array.isArray(pedidoRaw.items)) {
+    if (pedidoRaw.id == null) return null;
+    const updatedAtIso = toIsoDateOrNull(resolveUpdatedAtValue(pedidoRaw));
+    const version = parseVersionValue(pedidoRaw.version) || (updatedAtIso ? new Date(updatedAtIso).getTime() : null);
+    return {
+      ...pedidoRaw,
+      id: String(pedidoRaw.id),
+      updated_at: updatedAtIso,
+      updatedAt: updatedAtIso,
+      version,
+    };
+  }
+
+  const articulos = Array.isArray(pedidoRaw.articulos) ? pedidoRaw.articulos : [];
+  return transformarPedidoBackendAFrontend(pedidoRaw, articulos);
 };
 
 // Transformar pedido del frontend al formato del backend
@@ -195,11 +239,7 @@ const transformarPedidoFrontendABackend = (pedidoFrontend) => {
     return sum + subtotalItem;
   }, 0) || 0;
 
-  // Calcular IVA (21% del subtotal)
-  const ivaTotal = subtotalItems * 0.21;
-  
-  // Total = subtotal + IVA
-  const total = subtotalItems + ivaTotal;
+  const total = pedidoFrontend.total ?? subtotalItems;
 
   // Mapear origen del frontend al backend
   // Frontend usa: mostrador, telefono, whatsapp, web (minúsculas)
@@ -258,8 +298,8 @@ const transformarPedidoFrontendABackend = (pedidoFrontend) => {
     cliente_telefono: pedidoFrontend.cliente?.telefono || pedidoFrontend.telefono || '',
     cliente_email: pedidoFrontend.cliente?.email || pedidoFrontend.email || null,
     origen_pedido: mapearOrigenFrontendABackend(pedidoFrontend.origen || 'mostrador'),
-    subtotal: pedidoFrontend.subtotal || subtotalItems,
-    iva_total: pedidoFrontend.ivaTotal || pedidoFrontend.iva_total || ivaTotal,
+    subtotal: pedidoFrontend.subtotal ?? subtotalItems,
+    iva_total: pedidoFrontend.ivaTotal ?? pedidoFrontend.iva_total ?? 0,
     total: pedidoFrontend.total || total,
     medio_pago: (pedidoFrontend.medioPago || pedidoFrontend.medio_pago)
       ? mapearMedioPagoFrontendABackend(pedidoFrontend.medioPago || pedidoFrontend.medio_pago)
@@ -302,6 +342,7 @@ const buildActualizarPedidoPayload = (pedidoFrontend) => {
 };
 
 export const pedidosService = {
+  normalizarPedidoRealtime,
   /**
    * Obtener todos los pedidos
    * Por defecto filtra solo los pedidos del día actual
@@ -750,7 +791,10 @@ export const pedidosService = {
    * Cobrar pedido existente (usa endpoint POST /pedidos/:id/cobrar).
    * Crea UNA venta, marca pedido como PAGADO, idempotente (no duplica si ya cobrado).
    */
-  cobrarPedido: async (pedidoId, { medioPago = 'efectivo', tipoFactura = null, cuentaId = null } = {}) => {
+  cobrarPedido: async (
+    pedidoId,
+    { medioPago = 'efectivo', tipoFactura = null, cuentaId = null, descuento = 0 } = {}
+  ) => {
     try {
       const medioPagoBackend = mapearMedioPagoFrontendABackend(medioPago) || 'EFECTIVO';
       const pedidoIdNum = parseInt(pedidoId, 10);
@@ -760,7 +804,8 @@ export const pedidosService = {
           pedido_id: Number.isFinite(pedidoIdNum) ? pedidoIdNum : null,
           medio_pago: medioPagoBackend,
           tipo_factura: tipoFactura || null,
-          cuenta_id: cuentaId || null
+          cuenta_id: cuentaId || null,
+          descuento: Number(descuento) || 0,
         }
       );
 
@@ -868,18 +913,54 @@ export const pedidosService = {
    */
   obtenerComandaParaImprimir: async (id) => {
     try {
-      const response = await apiRequest.get(API_CONFIG.ENDPOINTS.PEDIDOS.COMANDA_PRINT(id));
+      // Fuente de verdad: detalle completo del pedido
+      // Mantiene compatibilidad con el endpoint dedicado de impresión.
+      const [responseComandaResult, responsePedidoResult] = await Promise.allSettled([
+        apiRequest.get(API_CONFIG.ENDPOINTS.PEDIDOS.COMANDA_PRINT(id)),
+        apiRequest.get(API_CONFIG.ENDPOINTS.PEDIDOS.BY_ID(id))
+      ]);
 
-      if (response.data?.error === true) {
+      if (responseComandaResult.status !== 'fulfilled') {
+        throw responseComandaResult.reason;
+      }
+
+      const responseComanda = responseComandaResult.value;
+      if (responseComanda.data?.error === true) {
         return {
           success: false,
-          error: response.data.mensaje || 'Error al obtener comanda'
+          error: responseComanda.data.mensaje || 'Error al obtener comanda'
         };
       }
 
+      const comandaData = responseComanda.data?.data || responseComanda.data || {};
+      const responsePedido =
+        responsePedidoResult.status === 'fulfilled' ? responsePedidoResult.value : null;
+      const pedidoDataRaw = responsePedido?.data?.data || responsePedido?.data || {};
+      const pedidoCompleto = pedidoDataRaw.pedido || pedidoDataRaw || {};
+
+      const pedidoImpresion = {
+        ...(comandaData.pedido || {}),
+        id: pedidoCompleto.id ?? comandaData?.pedido?.id ?? null,
+        numero: comandaData?.pedido?.numero ?? pedidoCompleto.id ?? id,
+        fecha: comandaData?.pedido?.fecha || pedidoCompleto.fecha || comandaData?.fecha || null,
+        horario_entrega: pedidoCompleto.horario_entrega ?? comandaData?.pedido?.horario_entrega ?? null,
+        hora_entrega: pedidoCompleto.hora_entrega ?? comandaData?.pedido?.hora_entrega ?? null,
+        hora_programada: pedidoCompleto.hora_programada ?? comandaData?.pedido?.hora_programada ?? null,
+        hora_esperada_finalizacion: pedidoCompleto.hora_esperada_finalizacion ?? comandaData?.pedido?.hora_esperada_finalizacion ?? null,
+        subtotal: pedidoCompleto.subtotal ?? comandaData?.pedido?.subtotal ?? null,
+        total: pedidoCompleto.total ?? comandaData?.pedido?.total ?? comandaData?.total ?? null,
+        total_final: pedidoCompleto.total ?? pedidoCompleto.total_final ?? comandaData?.pedido?.total_final ?? comandaData?.total ?? null
+      };
+
+      const data = {
+        ...comandaData,
+        pedido: pedidoImpresion,
+        total: pedidoImpresion.total ?? comandaData.total
+      };
+
       return {
         success: true,
-        data: response.data.data || response.data
+        data
       };
     } catch (error) {
       console.error('Error al obtener comanda para imprimir:', error);

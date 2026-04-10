@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, memo } from 'react';
 import { Package } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useDroppable } from '@dnd-kit/core';
 import { OrderCard } from './OrderCard';
 import { OrderRow } from './OrderRow';
 import { pedidosService } from '../../services/pedidosService';
+import { isPedidoMercadoPagoPendiente } from '@/lib/pedidoPaymentUtils';
 import {
   Pagination,
   PaginationContent,
@@ -14,7 +15,7 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 
-export function PedidosColumn({
+function PedidosColumnComponent({
   titulo,
   pedidos,
   onMarcharACocina,
@@ -34,6 +35,7 @@ export function PedidosColumn({
 }) {
   const [paginaActual, setPaginaActual] = useState(1);
   const [infoCapacidad, setInfoCapacidad] = useState(null);
+  const [currentTime, setCurrentTime] = useState(Date.now());
   // Si es vista tabla: 6 filas por página. Si es vista cards: 6 items (3 filas x 2 columnas)
   const itemsPorPagina = 6;
   
@@ -85,6 +87,14 @@ export function PedidosColumn({
       }
     }
   }, [pedidos, estado, titulo, cargarCapacidad]);
+
+  // Un solo reloj por columna para evitar cientos de timers en cards/rows.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const { setNodeRef, isOver } = useDroppable({
     id: estado,
@@ -189,6 +199,7 @@ export function PedidosColumn({
               <OrderRow
                 key={pedido.id}
                 pedido={pedido}
+                currentTime={currentTime}
                 onMarcharACocina={onMarcharACocina}
                 onListo={onListo}
                 onEntregar={onEntregar}
@@ -200,7 +211,7 @@ export function PedidosColumn({
                 isHighlighted={highlightedPedidoIds.has(String(pedido.id))}
                 isNewWebOrder={newWebOrderIds.has(String(pedido.id))}
                 isNew={newAnimatedPedidoIds.has(String(pedido.id))}
-                isDraggable={estado === 'recibido'}
+                isDraggable={estado === 'recibido' && !isPedidoMercadoPagoPendiente(pedido)}
               />
             ))}
           </div>
@@ -211,6 +222,7 @@ export function PedidosColumn({
               <OrderCard
                 key={pedido.id}
                 pedido={pedido}
+                currentTime={currentTime}
                 onMarcharACocina={onMarcharACocina}
                 onListo={onListo}
                 onEntregar={onEntregar}
@@ -222,7 +234,7 @@ export function PedidosColumn({
                 isHighlighted={highlightedPedidoIds.has(String(pedido.id))}
                 isNewWebOrder={newWebOrderIds.has(String(pedido.id))}
                 isNew={newAnimatedPedidoIds.has(String(pedido.id))}
-                isDraggable={estado === 'recibido'}
+                isDraggable={estado === 'recibido' && !isPedidoMercadoPagoPendiente(pedido)}
               />
             ))}
           </div>
@@ -338,4 +350,6 @@ export function PedidosColumn({
     </div>
   );
 }
+
+export const PedidosColumn = memo(PedidosColumnComponent);
 

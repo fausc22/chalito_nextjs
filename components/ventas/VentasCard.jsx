@@ -87,7 +87,7 @@ export function VentasCard({ venta, onVerDetalle, onAnular }) {
                 </div>
 
                 {/* Desglose */}
-                {(venta.descuento > 0 || venta.iva_total > 0) && (
+                {venta.descuento > 0 && (
                     <div className="pt-2 border-t text-sm text-muted-foreground">
                         <div className="flex justify-between">
                             <span>Subtotal:</span>
@@ -97,12 +97,6 @@ export function VentasCard({ venta, onVerDetalle, onAnular }) {
                             <div className="flex justify-between text-red-600">
                                 <span>Descuento:</span>
                                 <span>-{formatMonto(venta.descuento)}</span>
-                            </div>
-                        )}
-                        {venta.iva_total > 0 && (
-                            <div className="flex justify-between">
-                                <span>IVA:</span>
-                                <span>{formatMonto(venta.iva_total)}</span>
                             </div>
                         )}
                     </div>

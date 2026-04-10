@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { GripVertical } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -6,9 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { calcularEstadoTemporalPedido } from '@/lib/pedidoTimeUtils';
+import { isPedidoMercadoPagoPendiente, isPedidoPaid } from '@/lib/pedidoPaymentUtils';
 import { PedidoAcciones } from './PedidoAcciones';
 
-export function OrderCard({
+function OrderCardComponent({
   pedido,
   onMarcharACocina,
   onListo,
@@ -22,9 +23,8 @@ export function OrderCard({
   isNewWebOrder = false,
   isNew = false,
   isDraggable = false,
+  currentTime = Date.now(),
 }) {
-  const [currentTime, setCurrentTime] = useState(Date.now());
-
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `pedido-${pedido.id}`,
     data: {
@@ -32,15 +32,6 @@ export function OrderCard({
       estado: pedido.estado,
     },
   });
-
-  // Actualizar el tiempo cada 30 segundos para verificar si falta poco
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(Date.now());
-    }, 30000); // Actualizar cada 30 segundos
-
-    return () => clearInterval(interval);
-  }, []);
 
   const style = {
     transform: isDraggable && pedido.estado === 'recibido' ? CSS.Translate.toString(transform) : undefined,
@@ -66,7 +57,6 @@ export function OrderCard({
   const isWebOrder = pedido?.origen_pedido === 'WEB' || pedido?.origen === 'web';
   const medioPagoRaw = (pedido?.medio_pago || pedido?.medioPago || '').toString().toUpperCase();
   const montoConCuantoAbona = Number(pedido?.monto_con_cuanto_abona);
-  const medioPagoLabel = medioPagoRaw === 'EFECTIVO' ? 'EFECTIVO' : null;
   const showWebDetailBadges =
     isWebOrder && medioPagoRaw === 'EFECTIVO' && Number.isFinite(montoConCuantoAbona) && montoConCuantoAbona > 0;
 
@@ -89,8 +79,10 @@ export function OrderCard({
   // Sin estilos por estado listo: misma apariencia siempre (solo acciones cambian)
   const isActualizadoRecientemente = pedido.actualizadoRecientemente === true;
   const showHighlight = isHighlighted || isActualizadoRecientemente;
+  const isPaid = isPedidoPaid(pedido);
+  const isMercadoPagoPendiente = isPedidoMercadoPagoPendiente(pedido);
   const cardStateClassName = showHighlight
-    ? 'bg-yellow-50 border-yellow-400 ring-1 ring-yellow-200 animate-breathe'
+    ? 'bg-amber-100 border-amber-500 ring-1 ring-amber-300 animate-breathe'
     : 'border-slate-300';
   const cardClassName = `group mb-2 shadow-sm hover:shadow-md transition-all border rounded-lg overflow-hidden flex flex-col h-full min-h-[210px] sm:min-h-[220px] ${
     isDragging ? 'select-none' : ''
@@ -231,14 +223,23 @@ export function OrderCard({
         <div className="flex-grow"></div>
 
         <div className="mb-2">
-          {pedido.paymentStatus === 'paid' ? (
+          {isPaid ? (
             <Badge className="bg-green-600 text-white font-semibold text-xs px-2 py-0.5 pointer-events-none">
               ✓ PAGADO
+            </Badge>
+          ) : isMercadoPagoPendiente ? (
+            <Badge className="bg-amber-500 text-white font-semibold text-xs px-2 py-0.5 pointer-events-none">
+              PENDIENTE MP
             </Badge>
           ) : (
             <Badge className="bg-red-600 text-white font-semibold text-xs px-2 py-0.5 pointer-events-none">
               DEBE: ${pedido.total.toLocaleString('es-AR')}
             </Badge>
+          )}
+          {isMercadoPagoPendiente && (
+            <p className="mt-1 text-[11px] font-semibold text-amber-700">
+              Esperando pago Mercado Pago
+            </p>
           )}
         </div>
 
@@ -263,12 +264,14 @@ export function OrderCard({
   );
 }
 
+export const OrderCard = memo(OrderCardComponent);
+
 /**
  * Componente OrderCardGhost - Versión estática para DragOverlay
  * Copia exacta de OrderCard pero sin interactividad y con estilos visuales diferenciados
  */
 export function OrderCardGhost({ pedido }) {
-  const [currentTime] = useState(Date.now());
+  const currentTime = Date.now();
 
   // Usar la función utilitaria compartida para calcular el estado temporal
   const estadoTemporal = calcularEstadoTemporalPedido(pedido, currentTime);

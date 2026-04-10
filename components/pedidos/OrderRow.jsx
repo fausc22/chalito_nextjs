@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { calcularEstadoTemporalPedido } from '@/lib/pedidoTimeUtils';
+import { isPedidoMercadoPagoPendiente, isPedidoPaid } from '@/lib/pedidoPaymentUtils';
 import { PedidoAcciones } from './PedidoAcciones';
 
-export function OrderRow({
+function OrderRowComponent({
   pedido,
   onMarcharACocina,
   onListo,
@@ -20,9 +21,8 @@ export function OrderRow({
   isNewWebOrder = false,
   isNew = false,
   isDraggable = false,
+  currentTime = Date.now(),
 }) {
-  const [currentTime, setCurrentTime] = useState(Date.now());
-
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `pedido-${pedido.id}`,
     data: {
@@ -30,14 +30,6 @@ export function OrderRow({
       estado: pedido.estado,
     },
   });
-
-  // Actualizar el tiempo cada 30 segundos
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(Date.now());
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   const style = {
     transform: isDraggable && pedido.estado === 'recibido' ? CSS.Translate.toString(transform) : undefined,
@@ -77,7 +69,6 @@ export function OrderRow({
   })();
   const isWebOrder = pedido?.origen_pedido === 'WEB' || pedido?.origen === 'web';
   const medioPagoRaw = (pedido?.medio_pago || pedido?.medioPago || '').toString().toUpperCase();
-  const estadoPagoRaw = (pedido?.estado_pago || (pedido?.paymentStatus === 'paid' ? 'PAGADO' : 'DEBE')).toString().toUpperCase();
   const montoConCuantoAbona = Number(pedido?.monto_con_cuanto_abona);
   const horarioProgramado = pedido?.horaProgramada || pedido?.horario_entrega_formateado || null;
   const prioridadRaw = (pedido?.prioridad || '').toString().toUpperCase();
@@ -87,6 +78,8 @@ export function OrderRow({
   // Feedback visual temporal para pedidos actualizados recientemente (2 segundos) o nuevos WEB
   const isActualizadoRecientemente = pedido.actualizadoRecientemente === true;
   const showHighlight = isHighlighted || isActualizadoRecientemente;
+  const isPaid = isPedidoPaid(pedido);
+  const isMercadoPagoPendiente = isPedidoMercadoPagoPendiente(pedido);
 
   const isNewEntry = isNewWebOrder || isNew;
   const RowWrapper = isNewEntry ? motion.div : 'div';
@@ -107,7 +100,7 @@ export function OrderRow({
       className={`
         group bg-white rounded-lg overflow-hidden
         hover:shadow-md transition-all mb-3 flex flex-col
-        ${showHighlight ? 'bg-yellow-50 border-yellow-400 ring-1 ring-yellow-200 animate-breathe' : 'border border-slate-300'}
+        ${showHighlight ? 'bg-amber-100 border-amber-500 ring-1 ring-amber-300 animate-breathe' : 'border border-slate-300'}
         ${isDragging ? 'select-none' : ''}
         w-full min-h-[100px]
       `}
@@ -185,9 +178,13 @@ export function OrderRow({
           {/* Lado derecho: Badge Debe/Pagado y Badge Creado/Para alineados a la derecha */}
           <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-between sm:justify-end">
             {/* Badge Estado de pago */}
-            {pedido.paymentStatus === 'paid' ? (
+            {isPaid ? (
               <Badge className="bg-green-600 text-white font-semibold text-xs px-2 py-0.5 pointer-events-none whitespace-nowrap">
                 ✓ PAGADO
+              </Badge>
+            ) : isMercadoPagoPendiente ? (
+              <Badge className="bg-amber-500 text-white font-semibold text-xs px-2 py-0.5 pointer-events-none whitespace-nowrap">
+                PENDIENTE MP
               </Badge>
             ) : (
               <Badge className="bg-red-600 text-white font-semibold text-xs px-2 py-0.5 pointer-events-none whitespace-nowrap" title={`Debe: $${pedido.total.toLocaleString('es-AR')}`}>
@@ -236,6 +233,11 @@ export function OrderRow({
             </Badge>
           </div>
         )}
+        {isMercadoPagoPendiente && (
+          <p className="mt-2 pl-6 text-[11px] font-semibold text-amber-700">
+            Esperando pago Mercado Pago
+          </p>
+        )}
       </div>
 
       {/* Cuerpo Inferior: Items y Acciones - Fondo blanco */}
@@ -281,12 +283,14 @@ export function OrderRow({
   );
 }
 
+export const OrderRow = memo(OrderRowComponent);
+
 /**
  * Componente OrderRowGhost - Versión estática para DragOverlay
  * Copia exacta de OrderRow pero sin interactividad y con estilos visuales diferenciados
  */
 export function OrderRowGhost({ pedido }) {
-  const [currentTime] = useState(Date.now());
+  const currentTime = Date.now();
 
   // Usar la función utilitaria compartida para calcular el estado temporal (igual que OrderRow)
   const estadoTemporal = calcularEstadoTemporalPedido(pedido, currentTime);

@@ -5,38 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ProductCard } from '../ProductCard';
 import { getItemExtras, getSufijoPresentacion, getExtrasSinPresentacion } from '@/lib/extrasUtils';
-
-// Helper para obtener icono según el valor
-const getOrigenIcon = (valor) => {
-  const iconos = {
-    'mostrador': Store,
-    'telefono': Phone,
-    'whatsapp': MessageSquare,
-    'web': Globe
-  };
-  return iconos[valor] || Store;
-};
-
-const getMedioPagoIcon = (valor) => {
-  const iconos = {
-    'efectivo': Banknote,
-    'debito': CreditCard,
-    'credito': CreditCard,
-    'transferencia': Building2,
-    'mercadopago': Smartphone
-  };
-  return iconos[valor] || Banknote;
-};
-
-const getEstadoPagoIcon = (valor) => {
-  return valor === 'paid' ? CheckCircle : XCircle;
-};
 
 // Mapear estado del pedido a texto legible
 const getEstadoTexto = (estado) => {
@@ -52,18 +25,14 @@ const getEstadoTexto = (estado) => {
 
 const CartSummaryMobile = ({
   carrito,
-  calcularSubtotal,
-  calcularDescuento,
-  descuento,
-  setDescuento,
+  calcularTotal,
   carritoExpandidoMobile,
   setCarritoExpandidoMobile,
   modificarCantidad,
   eliminarDelCarrito,
   editarExtrasItem
 }) => {
-  const totalSinDescuento = calcularSubtotal();
-  const totalConDescuento = totalSinDescuento - calcularDescuento();
+  const total = calcularTotal();
 
   if (!carrito || carrito.length === 0) {
     return null;
@@ -85,7 +54,7 @@ const CartSummaryMobile = ({
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-slate-900">
-              ${totalConDescuento.toLocaleString('es-AR')}
+              ${total.toLocaleString('es-AR')}
             </span>
             {carritoExpandidoMobile ? (
               <ChevronDown className="h-4 w-4 text-slate-500" />
@@ -171,32 +140,11 @@ const CartSummaryMobile = ({
               ))}
             </div>
 
-            <div className="mt-2 border-t border-slate-200 pt-1.5 space-y-1">
-              <div className="flex justify-between text-[11px]">
-                <span className="text-slate-600">Subtotal</span>
-                <span className="font-semibold text-slate-900">
-                  ${totalSinDescuento.toLocaleString('es-AR')}
-                </span>
+            <div className="mt-2 border-t border-slate-200 pt-1.5">
+              <div className="flex justify-between text-sm font-semibold text-slate-900">
+                <span>Total</span>
+                <span>${total.toLocaleString('es-AR')}</span>
               </div>
-
-              <div className="flex items-center gap-1.5">
-                <Input
-                  type="number"
-                  placeholder="Descuento %"
-                  value={descuento || ''}
-                  onChange={(e) => setDescuento(parseFloat(e.target.value) || 0)}
-                  className="h-7 text-[11px] bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
-                />
-              </div>
-
-              {calcularDescuento() > 0 && (
-                <div className="flex justify-between text-[11px] text-emerald-700">
-                  <span className="font-medium">Descuento</span>
-                  <span className="font-semibold">
-                    -${calcularDescuento().toLocaleString('es-AR')}
-                  </span>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -235,12 +183,6 @@ export function ModalEditarPedido({
   setMedioPago,
   estadoPago,
   setEstadoPago,
-  descuento,
-  setDescuento,
-  calcularSubtotal,
-  calcularEnvio,
-  calcularDescuento,
-  calcularIVA,
   calcularTotal,
   agregarProductoConExtras,
   modificarCantidad,
@@ -516,38 +458,10 @@ export function ModalEditarPedido({
 
                       {/* Resumen del carrito fijo en la parte inferior del detalle */}
                       <div className="border-t border-slate-200 pt-2 mt-1 flex-shrink-0">
-                        <div className="bg-white border border-slate-200 rounded-md p-2 space-y-1.5">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-700 font-medium">Subtotal:</span>
-                            <span className="font-bold text-slate-900">
-                              ${calcularSubtotal().toLocaleString('es-AR')}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="number"
-                              placeholder="Descuento"
-                              value={descuento || ''}
-                              onChange={(e) => setDescuento(parseFloat(e.target.value) || 0)}
-                              className="h-7 text-sm"
-                            />
-                            <span className="text-sm text-slate-600 font-medium">%</span>
-                          </div>
-                          
-                          {calcularDescuento() > 0 && (
-                            <div className="flex justify-between text-sm text-green-600">
-                              <span className="font-medium">Descuento:</span>
-                              <span className="font-bold">
-                                -${calcularDescuento().toLocaleString('es-AR')}
-                              </span>
-                            </div>
-                          )}
-
-                          <Separator className="my-1" />
+                        <div className="bg-white border border-slate-200 rounded-md p-2">
                           <div className="flex justify-between text-base font-bold text-slate-900">
                             <span>Total:</span>
-                            <span>${(calcularSubtotal() - calcularDescuento()).toLocaleString('es-AR')}</span>
+                            <span>${calcularTotal().toLocaleString('es-AR')}</span>
                           </div>
                         </div>
                       </div>
@@ -910,7 +824,7 @@ export function ModalEditarPedido({
                     )}
 
                     <div className="mt-2 pt-2 border-t border-slate-200 flex justify-between items-center">
-                      <span className="text-xs text-slate-600 font-medium">Subtotal:</span>
+                      <span className="text-xs text-slate-600 font-medium">Total item:</span>
                       <p className="font-bold text-sm text-slate-900">
                         ${(() => {
                           const quantity = item.quantity ?? item.cantidad ?? 1;
@@ -977,10 +891,6 @@ export function ModalEditarPedido({
                           : 'Sin horario'}
                     </div>
                     <div className="md:col-span-2">
-                      <span className="font-semibold">Observaciones de envio:</span>{' '}
-                      <span>{cliente?.direccion?.observaciones || pedidoOriginal?.observaciones_envio || 'Sin observaciones de envio'}</span>
-                    </div>
-                    <div className="md:col-span-2">
                       <span className="font-semibold">Observaciones del pedido:</span>{' '}
                       <span>{pedidoOriginal?.observaciones_pedido || pedidoOriginal?.observaciones || 'Sin observaciones del pedido'}</span>
                     </div>
@@ -990,40 +900,6 @@ export function ModalEditarPedido({
 
               {/* Resumen financiero */}
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Subtotal:</span>
-                  <span className="font-semibold text-slate-800">
-                    ${calcularSubtotal().toLocaleString('es-AR')}
-                  </span>
-                </div>
-
-                {calcularDescuento() > 0 && (
-                  <div className="flex justify-between text-sm text-green-600">
-                    <span>Descuento:</span>
-                    <span className="font-semibold">
-                      -${calcularDescuento().toLocaleString('es-AR')}
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">IVA (21%):</span>
-                  <span className="font-semibold text-slate-800">
-                    ${calcularIVA().toLocaleString('es-AR')}
-                  </span>
-                </div>
-
-                {calcularEnvio() > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Envío:</span>
-                    <span className="font-semibold text-slate-800">
-                      ${calcularEnvio().toLocaleString('es-AR')}
-                    </span>
-                  </div>
-                )}
-
-                <Separator className="bg-slate-400 my-2" />
-
                 <div className="flex justify-between text-lg font-bold text-slate-800">
                   <span>TOTAL:</span>
                   <span>${calcularTotal().toLocaleString('es-AR')}</span>
@@ -1037,10 +913,7 @@ export function ModalEditarPedido({
         {pasoModal === 1 && (
           <CartSummaryMobile
             carrito={carrito}
-            calcularSubtotal={calcularSubtotal}
-            calcularDescuento={calcularDescuento}
-            descuento={descuento}
-            setDescuento={setDescuento}
+            calcularTotal={calcularTotal}
             carritoExpandidoMobile={carritoExpandidoMobile}
             setCarritoExpandidoMobile={setCarritoExpandidoMobile}
             modificarCantidad={modificarCantidad}

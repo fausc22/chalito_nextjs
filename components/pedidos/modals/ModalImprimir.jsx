@@ -1,80 +1,162 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Printer, FileText, Receipt } from 'lucide-react';
+import { Printer, Receipt } from 'lucide-react';
 import { pedidosService } from '@/services/pedidosService';
 import { toast } from '@/hooks/use-toast';
-import { imprimirComanda } from '@/lib/printUtils';
-import { imprimirTicket } from '@/lib/printUtils';
+import { imprimirComanda, imprimirTicket } from '@/lib/printUtils';
 
-export function ModalImprimir({ pedido, isOpen, onClose }) {
+const PRINT_REQUEST_TIMEOUT_MS = 15000;
+const isPedidosDebugEnabled = () => {
+  if (typeof window === 'undefined') return false;
+  return window.__PEDIDOS_DEBUG__ === true || window.localStorage?.getItem('pedidos_debug') === '1';
+};
+
+const debugPrint = (event, payload = {}) => {
+  if (!isPedidosDebugEnabled()) return;
+  // eslint-disable-next-line no-console
+  console.debug(`[PedidosDebug][ModalImprimir] ${event}`, payload);
+};
+
+export function ModalImprimir({ pedido, open, onOpenChange }) {
   const [loading, setLoading] = useState(false);
+  const isMountedRef = useRef(false);
+  const activeRequestIdRef = useRef(0);
 
-  if (!pedido) return null;
+  useEffect(() => {
+    isMountedRef.current = true;
+    debugPrint('mount');
+    return () => {
+      isMountedRef.current = false;
+      debugPrint('unmount');
+    };
+  }, []);
 
-  const handleImprimirComanda = async () => {
-    setLoading(true);
-    try {
-      const response = await pedidosService.obtenerComandaParaImprimir(pedido.id);
-      
-      if (response.success) {
-        imprimirComanda(response.data);
-        onClose();
-      } else {
-        toast.error('Error al imprimir comanda', {
-          description: response.error || 'No se pudo obtener los datos de la comanda'
-        });
-      }
-    } catch (error) {
-      console.error('Error al imprimir comanda:', error);
-      toast.error('Error al imprimir comanda', {
-        description: error.message || 'Ocurrió un error inesperado'
-      });
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    debugPrint('open_state_change', {
+      open,
+      pedidoId: pedido?.id ?? null,
+      loading,
+    });
+  }, [open, pedido?.id, loading]);
+
+  const canPrintTicket = useMemo(() => pedido?.paymentStatus === 'paid', [pedido?.paymentStatus]);
+
+  const closeModal = () => {
+    if (loading) {
+      debugPrint('close_blocked_loading', { pedidoId: pedido?.id ?? null });
+      return;
     }
+    debugPrint('close_requested', { pedidoId: pedido?.id ?? null });
+    onOpenChange(false);
   };
 
-  const handleImprimirTicket = async () => {
-    // Validar que el pedido esté cobrado
-    if (pedido.paymentStatus !== 'paid') {
+  const runPrint = async ({ type, fetchData, executePrint, invalidMessage }) => {
+    if (!pedido) return;
+
+    if (invalidMessage) {
       toast.error('No se puede imprimir el ticket', {
-        description: 'El pedido debe estar cobrado para imprimir el ticket/factura'
+        description: invalidMessage,
       });
       return;
     }
 
+    const requestId = Date.now();
+    activeRequestIdRef.current = requestId;
     setLoading(true);
+    debugPrint('print_start', {
+      requestId,
+      type,
+      pedidoId: pedido.id,
+    });
+
     try {
-      const response = await pedidosService.obtenerTicketParaImprimir(pedido.id);
-      
-      if (response.success) {
-        imprimirTicket(response.data);
-        onClose();
-      } else {
-        toast.error('Error al imprimir ticket', {
-          description: response.error || 'No se pudo obtener los datos del ticket'
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(`Timeout al obtener datos para ${type}`));
+        }, PRINT_REQUEST_TIMEOUT_MS);
+      });
+      const response = await Promise.race([fetchData(pedido.id), timeoutPromise]);
+
+      if (!response.success) {
+        debugPrint('print_fetch_failed', {
+          requestId,
+          type,
+          pedidoId: pedido.id,
+          error: response.error || null,
         });
+        toast.error(`Error al imprimir ${type}`, {
+          description: response.error || `No se pudo obtener los datos de ${type}`,
+        });
+        return;
       }
+
+      debugPrint('print_execute', {
+        requestId,
+        type,
+        pedidoId: pedido.id,
+      });
+      executePrint(response.data);
+      onOpenChange(false);
     } catch (error) {
-      console.error('Error al imprimir ticket:', error);
-      toast.error('Error al imprimir ticket', {
-        description: error.message || 'Ocurrió un error inesperado'
+      debugPrint('print_exception', {
+        requestId,
+        type,
+        pedidoId: pedido.id,
+        error: error?.message || String(error),
+      });
+      console.error(`Error al imprimir ${type}:`, error);
+      toast.error(`Error al imprimir ${type}`, {
+        description: error?.message || 'Ocurrió un error inesperado',
       });
     } finally {
+      if (!isMountedRef.current || activeRequestIdRef.current !== requestId) {
+        return;
+      }
       setLoading(false);
+      debugPrint('print_end', {
+        requestId,
+        type,
+        pedidoId: pedido.id,
+      });
     }
   };
 
+  const handleImprimirComanda = async () => {
+    await runPrint({
+      type: 'comanda',
+      fetchData: pedidosService.obtenerComandaParaImprimir,
+      executePrint: imprimirComanda,
+    });
+  };
+
+  const handleImprimirTicket = async () => {
+    await runPrint({
+      type: 'ticket',
+      fetchData: pedidosService.obtenerTicketParaImprimir,
+      executePrint: imprimirTicket,
+      invalidMessage: canPrintTicket ? null : 'El pedido debe estar cobrado para imprimir el ticket/factura',
+    });
+  };
+
+  if (!pedido) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[calc(100vw-0.75rem)] sm:w-full sm:max-w-md">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="w-[calc(100vw-0.75rem)] sm:w-full sm:max-w-md"
+        onCloseAutoFocus={() => {
+          debugPrint('close_auto_focus');
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Imprimir Pedido #{pedido.id}</DialogTitle>
+          <DialogDescription>
+            Elegi el tipo de impresion para este pedido. Al cerrar, la pantalla de pedidos debe seguir disponible inmediatamente.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-3 py-4">
-          {/* Opción: Imprimir Comanda */}
           <Button
             onClick={handleImprimirComanda}
             disabled={loading}
@@ -87,10 +169,9 @@ export function ModalImprimir({ pedido, isOpen, onClose }) {
             </div>
           </Button>
 
-          {/* Opción: Imprimir Ticket/Factura */}
           <Button
             onClick={handleImprimirTicket}
-            disabled={loading || pedido.paymentStatus !== 'paid'}
+            disabled={loading || !canPrintTicket}
             className="w-full justify-start gap-3 h-auto py-4"
             variant="outline"
           >
@@ -98,7 +179,7 @@ export function ModalImprimir({ pedido, isOpen, onClose }) {
             <div className="flex flex-col items-start">
               <span className="font-semibold">Imprimir Ticket / Factura</span>
               <span className="text-xs text-slate-500">
-                {pedido.paymentStatus === 'paid' 
+                {canPrintTicket
                   ? 'Solo disponible si está cobrado' 
                   : 'El pedido debe estar cobrado'}
               </span>
@@ -107,7 +188,7 @@ export function ModalImprimir({ pedido, isOpen, onClose }) {
         </div>
 
         <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
-          <Button variant="outline" onClick={onClose} disabled={loading} className="w-full sm:w-auto">
+          <Button variant="outline" onClick={closeModal} disabled={loading} className="w-full sm:w-auto">
             Cancelar
           </Button>
         </DialogFooter>

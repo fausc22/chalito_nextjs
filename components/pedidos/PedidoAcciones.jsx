@@ -1,21 +1,18 @@
+import { memo } from 'react';
 import { Check, Package, Printer, Edit, Trash2, Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { isPedidoMercadoPagoPendiente, isPedidoPaid } from '@/lib/pedidoPaymentUtils';
 
 /**
  * Reglas de UI unificadas para botones (OrderCard, OrderRow, ghost).
  * LISTO: visible solo en EN PREPARACION (en_cocina).
  * COBRAR: visible si el pedido aun no esta pago (independiente del estado).
  * ENTREGAR: visible solo en LISTO y PAGADO.
+ * Si es MERCADOPAGO y no esta PAGADO, se bloquean acciones operativas.
  */
 export function shouldShowListo(pedido) {
   const e = pedido?.estado;
   return e === 'en_cocina';
-}
-
-export function isPedidoPaid(pedido) {
-  if (!pedido) return false;
-  const estadoPago = pedido.estado_pago ?? (pedido.paymentStatus === 'paid' ? 'PAGADO' : 'DEBE');
-  return estadoPago === 'PAGADO' || pedido.paymentStatus === 'paid';
 }
 
 export function shouldShowEntregar(pedido) {
@@ -32,7 +29,7 @@ export function shouldShowCobrar(pedido) {
  * Lógica unificada de botones para OrderCard y OrderRow.
  * Usa shouldShowListo / shouldShowCobrar para consistencia en card, row y ghost.
  */
-export function PedidoAcciones({
+function PedidoAccionesComponent({
   pedido,
   onMarcharACocina,
   onListo,
@@ -47,37 +44,25 @@ export function PedidoAcciones({
 }) {
   const estado = pedido.estado;
   const isPaid = isPedidoPaid(pedido);
+  const isOperativamenteBloqueado = isPedidoMercadoPagoPendiente(pedido);
+  const isUpdatingState = Boolean(pedido?.uiPendingStateUpdate);
 
-  const showListo = shouldShowListo(pedido);
-  const showEntregar = shouldShowEntregar(pedido);
-  const showCobrar = shouldShowCobrar(pedido);
+  const showListo = !isOperativamenteBloqueado && shouldShowListo(pedido);
+  const showEntregar = !isOperativamenteBloqueado && shouldShowEntregar(pedido);
+  const showCobrar = !isOperativamenteBloqueado && shouldShowCobrar(pedido);
   const isCobrandoEste = cobrandoPedidoId != null && String(pedido.id) === String(cobrandoPedidoId);
 
-  const handleListo = (e) => {
+  const handleListo = () => {
     if (isGhost) return;
-    const button = e?.currentTarget;
-    if (button) {
-      button.disabled = true;
-      onListo(pedido.id);
-      setTimeout(() => { button.disabled = false; }, 2000);
-    } else {
-      onListo(pedido.id);
-    }
+    onListo(pedido.id);
   };
 
-  const handleEntregar = (e) => {
+  const handleEntregar = () => {
     if (isGhost) return;
     if (!isPaid) {
       return;
     }
-    const button = e?.currentTarget;
-    if (button) {
-      button.disabled = true;
-      onEntregar?.(pedido.id);
-      setTimeout(() => { button.disabled = false; }, 2000);
-    } else {
-      onEntregar?.(pedido.id);
-    }
+    onEntregar?.(pedido.id);
   };
 
   const isCard = variant === 'card';
@@ -95,7 +80,7 @@ export function PedidoAcciones({
       {/* LISTO: solo en en_cocina */}
       {showListo && (
         <Button
-          disabled={isGhost}
+          disabled={isGhost || isUpdatingState}
           onClick={handleListo}
           className={`flex-1 min-w-0 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed ${btnClassBase}`}
           size="sm"
@@ -109,7 +94,7 @@ export function PedidoAcciones({
       {/* ENTREGAR: solo cuando listo y pagado */}
       {showEntregar && (
         <Button
-          disabled={isGhost}
+          disabled={isGhost || isUpdatingState}
           onClick={handleEntregar}
           className={`flex-1 min-w-0 bg-green-600 hover:bg-green-700 text-white ${btnClassBase}`}
           size="sm"
@@ -123,7 +108,7 @@ export function PedidoAcciones({
       {/* COBRAR: solo cuando DEBE (no pagado); deshabilitado si el modal de cobro está abierto para este pedido */}
       {showCobrar && (
         <Button
-          disabled={isGhost || isCobrandoEste}
+          disabled={isGhost || isCobrandoEste || isUpdatingState}
           onClick={isGhost || isCobrandoEste ? undefined : () => onCobrar?.(pedido)}
           className={`flex-1 min-w-0 bg-green-600 hover:bg-green-700 text-white ${btnClassBase}`}
           size="sm"
@@ -136,7 +121,7 @@ export function PedidoAcciones({
 
       {/* Imprimir */}
       <Button
-        disabled={isGhost}
+          disabled={isGhost || isUpdatingState}
         onClick={isGhost ? undefined : () => onImprimir?.(pedido)}
         variant="outline"
         className={`border border-slate-300 hover:bg-slate-100 ${btnIconOnlyClass}`}
@@ -149,7 +134,7 @@ export function PedidoAcciones({
 
       {/* Editar */}
       <Button
-        disabled={isGhost || estado === 'entregado' || estado === 'cancelado'}
+          disabled={isGhost || isUpdatingState || estado === 'entregado' || estado === 'cancelado'}
         onClick={isGhost ? undefined : () => onEditar(pedido)}
         variant="outline"
         className={`border border-slate-300 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed ${btnIconOnlyClass}`}
@@ -162,7 +147,7 @@ export function PedidoAcciones({
 
       {/* Eliminar */}
       <Button
-        disabled={isGhost}
+          disabled={isGhost || isUpdatingState}
         onClick={isGhost ? undefined : () => onCancelar(pedido)}
         variant="outline"
         className={`border border-red-300 hover:bg-red-50 text-red-600 ${btnIconOnlyClass}`}
@@ -175,3 +160,5 @@ export function PedidoAcciones({
     </div>
   );
 }
+
+export const PedidoAcciones = memo(PedidoAccionesComponent);

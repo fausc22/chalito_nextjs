@@ -6,6 +6,7 @@ import { adicionalesService } from '../../services/adicionalesService';
 import { toast } from '@/hooks/use-toast';
 import { crearItemCarrito, mergeItemEnCarrito, reagruparCarrito } from './cartUtils';
 import { formatDireccionEntrega } from '../../lib/formatters';
+import { calculateCartSubtotal } from '../../lib/pedidoTotals';
 
 // Patrones para validación: sin símbolos raros (email se valida aparte)
 const SOLO_LETRAS_ESPACIOS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-']*$/; // nombre: letras, espacios, guión, apóstrofe
@@ -77,7 +78,6 @@ const pedidoSchema = z.object({
   horaProgramada: z.string().optional().nullable(),
   medioPago: z.string().optional(),
   estadoPago: z.string(),
-  descuento: z.number().min(0).max(100).optional(),
 });
 
 export const useNuevoPedido = () => {
@@ -166,7 +166,6 @@ export const useNuevoPedido = () => {
   const [horaProgramada, setHoraProgramada] = useState('');
   const [medioPago, setMedioPago] = useState('efectivo');
   const [estadoPago, setEstadoPago] = useState('pending');
-  const [descuento, setDescuento] = useState(0); // Porcentaje de descuento
 
   // Cargar categorías y productos solo al abrir modal (una vez)
   useEffect(() => {
@@ -295,40 +294,11 @@ export const useNuevoPedido = () => {
 
   // Calcular subtotal
   const calcularSubtotal = useCallback(() => {
-    return carrito.reduce((sum, item) => {
-      const quantity = parseInt(item.quantity ?? item.cantidad, 10) || 1;
-      const price = parseFloat(item.price ?? item.precio) || 0;
-      const extras = item.extras ?? item.extrasSeleccionados ?? [];
-      const precioBase = price * quantity;
-      const precioExtras = extras.reduce((s, e) => s + (parseFloat(e.precio) || 0), 0) * quantity;
-      return sum + precioBase + precioExtras;
-    }, 0);
+    return calculateCartSubtotal(carrito);
   }, [carrito]);
 
-  // Calcular envío
-  const calcularEnvio = useCallback(() => {
-    return tipoEntrega === 'delivery' && cliente.direccion.calle.trim() !== '' ? 300 : 0;
-  }, [tipoEntrega, cliente.direccion.calle]);
-
-  // Calcular descuento
-  const calcularDescuento = useCallback(() => {
-    if (!descuento || descuento <= 0) return 0;
-    return (calcularSubtotal() * descuento) / 100;
-  }, [calcularSubtotal, descuento]);
-
-  // Calcular IVA (21%)
-  const calcularIVA = useCallback(() => {
-    const subtotalConDescuento = calcularSubtotal() - calcularDescuento();
-    return subtotalConDescuento * 0.21;
-  }, [calcularSubtotal, calcularDescuento]);
-
-  // Calcular total
-  const calcularTotal = useCallback(() => {
-    const subtotalConDescuento = calcularSubtotal() - calcularDescuento();
-    const iva = calcularIVA();
-    const envio = calcularEnvio();
-    return subtotalConDescuento + iva + envio;
-  }, [calcularSubtotal, calcularDescuento, calcularIVA, calcularEnvio]);
+  // Total visible en frontend: solo total final
+  const calcularTotal = useCallback(() => calcularSubtotal(), [calcularSubtotal]);
 
   // Resetear modal
   const resetearModal = useCallback(() => {
@@ -356,7 +326,6 @@ export const useNuevoPedido = () => {
     setHoraProgramada('');
     setMedioPago('efectivo');
     setEstadoPago('pending');
-    setDescuento(0);
   }, [categorias]);
 
   // Agregar producto al carrito
@@ -595,7 +564,6 @@ export const useNuevoPedido = () => {
         horaProgramada: horaProgramada || null,
         medioPago: medioPago,
         estadoPago: estadoPago,
-        descuento: descuento,
       };
 
       pedidoSchema.parse(datosValidar);
@@ -617,7 +585,6 @@ export const useNuevoPedido = () => {
           tipoPedido: 'Tipo de pedido',
           medioPago: 'Medio de pago',
           estadoPago: 'Estado de pago',
-          descuento: 'Descuento',
         };
         let mensaje = primerError?.message || 'Revisá los datos del formulario.';
         if (primerError?.path?.length) {
@@ -677,8 +644,7 @@ export const useNuevoPedido = () => {
           observaciones: item.observaciones ?? item.observacion ?? null
         };
       }),
-      subtotal: calcularSubtotal() - calcularDescuento(),
-      ivaTotal: calcularIVA(),
+      subtotal: calcularTotal(),
       total: calcularTotal(),
       paymentStatus: estadoPago,
       estado: 'recibido',
@@ -725,9 +691,7 @@ export const useNuevoPedido = () => {
               subtotal: subtotalItem
             };
           }),
-          subtotal: calcularSubtotal() - calcularDescuento(),
-          ivaTotal: calcularIVA(),
-          descuento: calcularDescuento(),
+          subtotal: calcularTotal(),
           total: calcularTotal(),
           paymentStatus: estadoPago,
           estado: 'recibido',
@@ -763,7 +727,7 @@ export const useNuevoPedido = () => {
       toast.error(`Error al crear pedido: ${mensaje}`);
       return null;
     }
-  }, [cliente, carrito, origen, tipoPedido, horaProgramada, estadoPago, tipoEntrega, medioPago, descuento, calcularSubtotal, calcularDescuento, calcularIVA, calcularTotal, resetearModal]);
+  }, [cliente, carrito, origen, tipoPedido, horaProgramada, estadoPago, tipoEntrega, medioPago, calcularTotal, resetearModal]);
 
   return {
     // Estados
@@ -814,13 +778,8 @@ export const useNuevoPedido = () => {
     setMedioPago,
     estadoPago,
     setEstadoPago,
-    descuento,
-    setDescuento,
     // Funciones
     calcularSubtotal,
-    calcularEnvio,
-    calcularDescuento,
-    calcularIVA,
     calcularTotal,
     resetearModal,
     agregarProductoConExtras,

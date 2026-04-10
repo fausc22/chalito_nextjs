@@ -213,12 +213,6 @@ export function VentaDetalleDrawer({
                                         <span>-{formatMonto(venta.descuento)}</span>
                                     </div>
                                 )}
-                                {venta.iva_total > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">IVA</span>
-                                        <span>{formatMonto(venta.iva_total)}</span>
-                                    </div>
-                                )}
                                 <Separator />
                                 <div className="flex justify-between text-lg font-bold">
                                     <span>Total</span>

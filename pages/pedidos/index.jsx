@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import { ProtectedRoute } from '../../components/auth/ProtectedRoute';
 import { NavBar } from '../../components/layout/NavBar';
@@ -21,9 +21,22 @@ import { useNuevoPedido } from '../../hooks/pedidos/useNuevoPedido';
 import { useEditarPedido } from '../../hooks/pedidos/useEditarPedido';
 import { useWebOrderAlerts } from '../../contexts/WebOrderAlertsContext';
 import { ventasService } from '../../services/ventasService';
+import { isPedidoMercadoPagoPendiente } from '../../lib/pedidoPaymentUtils';
+import { calculateLineSubtotalFromSnapshot } from '../../lib/pedidoTotals';
 import { toast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import Head from 'next/head';
+
+const isPedidosDebugEnabled = () => {
+  if (typeof window === 'undefined') return false;
+  return window.__PEDIDOS_DEBUG__ === true || window.localStorage?.getItem('pedidos_debug') === '1';
+};
+
+const debugPedidos = (event, payload = {}) => {
+  if (!isPedidosDebugEnabled()) return;
+  // eslint-disable-next-line no-console
+  console.debug(`[PedidosDebug] ${event}`, payload);
+};
 
 function VentasContent() {
   const [demoraCocina, setDemoraCocina] = useState(20);
@@ -35,8 +48,7 @@ function VentasContent() {
   const [modalPedidosEntregados, setModalPedidosEntregados] = useState(false);
   const [modalCobro, setModalCobro] = useState(false);
   const [pedidoACobrar, setPedidoACobrar] = useState(null);
-  const [modalImprimir, setModalImprimir] = useState(false);
-  const [pedidoAImprimir, setPedidoAImprimir] = useState(null);
+  const [printDialogState, setPrintDialogState] = useState({ open: false, pedido: null });
   const [pedidoPendienteCrear, setPedidoPendienteCrear] = useState(null);
   const [mostrarConfirmacionFacturacion, setMostrarConfirmacionFacturacion] = useState(false);
   const [medioPagoParaCrear, setMedioPagoParaCrear] = useState(null);
@@ -45,6 +57,7 @@ function VentasContent() {
   const [modoCocinaOpen, setModoCocinaOpen] = useState(false);
   const [activeId, setActiveId] = useState(null);
   const [activePedido, setActivePedido] = useState(null);
+  const dragStartedAtRef = useRef(null);
   const [pedidoDragConfirm, setPedidoDragConfirm] = useState(null);
   const [dragConfirmLoading, setDragConfirmLoading] = useState(false);
   const [vistaTabla, setVistaTabla] = useState(false); // Estado para alternar entre vista de cards y tabla
@@ -62,6 +75,7 @@ function VentasContent() {
     agregarPedido,
     actualizarPedido,
     recargarPedidos,
+    highlightedWebOrderIds,
   } = usePedidos();
 
   const nuevoPedido = useNuevoPedido();
@@ -133,7 +147,7 @@ function VentasContent() {
     return () => mediaQuery.removeListener(syncViewport);
   }, []);
 
-  const handleEditar = (pedido) => {
+  const handleEditar = useCallback((pedido) => {
     // Verificar que no esté ENTREGADO o CANCELADO
     if (pedido.estado === 'entregado' || pedido.estado === 'cancelado') {
       toast.error('No se puede editar un pedido entregado o cancelado');
@@ -142,16 +156,33 @@ function VentasContent() {
     
     // Abrir modal de edición
     editarPedido.abrirModal(pedido);
-  };
+  }, [editarPedido]);
 
-  const handleImprimir = (pedido) => {
-    setPedidoAImprimir(pedido);
-    setModalImprimir(true);
-  };
+  const handleImprimir = useCallback((pedido) => {
+    setPrintDialogState({ open: true, pedido });
+    debugPedidos('print_modal_open_requested', {
+      pedidoId: pedido?.id ?? null,
+      estado: pedido?.estado ?? null,
+    });
+  }, []);
 
-  const handleCancelar = (pedido) => {
+  const handleModalImprimirOpenChange = useCallback((nextOpen) => {
+    setPrintDialogState((prev) => {
+      const nextState = nextOpen
+        ? { ...prev, open: true }
+        : { open: false, pedido: null };
+      debugPedidos('print_modal_open_change', {
+        nextOpen,
+        prevPedidoId: prev?.pedido?.id ?? null,
+        nextPedidoId: nextState?.pedido?.id ?? null,
+      });
+      return nextState;
+    });
+  }, []);
+
+  const handleCancelar = useCallback((pedido) => {
     setPedidoCancelar(pedido);
-  };
+  }, []);
 
   const confirmarCancelacion = () => {
     if (pedidoCancelar) {
@@ -160,9 +191,9 @@ function VentasContent() {
     }
   };
 
-  const handleNuevoPedido = () => {
+  const handleNuevoPedido = useCallback(() => {
     nuevoPedido.setIsOpen(true);
-  };
+  }, [nuevoPedido]);
 
   const handlePedidoCreado = async (data) => {
     // Si viene con flag de mostrar cobro, mostrar modal de cobro primero
@@ -216,7 +247,6 @@ function VentasContent() {
       nuevoPedido.setOrigen(datos.origen);
       nuevoPedido.setTipoPedido(datos.tipoPedido);
       nuevoPedido.setHoraProgramada(datos.horaProgramada);
-      nuevoPedido.setDescuento(datos.descuento);
       nuevoPedido.setMedioPago(medioPagoParaCrear);
       nuevoPedido.setEstadoPago('paid');
       
@@ -240,7 +270,7 @@ function VentasContent() {
           articulo_nombre: item.articulo_nombre || item.nombre || 'Artículo sin nombre',
           cantidad: item.cantidad || 1,
           precio: parseFloat(item.precio) || 0,
-          subtotal: parseFloat(item.subtotal) || ((parseFloat(item.precio) || 0) * (item.cantidad || 1))
+          subtotal: calculateLineSubtotalFromSnapshot(item),
         };
       }).filter(item => item.articulo_id && !isNaN(item.articulo_id));
 
@@ -251,10 +281,9 @@ function VentasContent() {
         direccion: pedido.direccion || '',
         telefono: pedido.telefono || '',
         email: pedido.email || null,
-        subtotal: pedido.subtotal || datosCobroPendiente?.ventaData?.subtotal || 0,
-        ivaTotal: pedido.ivaTotal || datosCobroPendiente?.ventaData?.ivaTotal || 0,
-        descuento: pedido.descuento || datosCobroPendiente?.ventaData?.descuento || 0,
-        total: pedido.total || datosCobroPendiente?.ventaData?.total || 0,
+        subtotal: datosCobroPendiente?.ventaData?.subtotal || pedido.total || 0,
+        descuento: datosCobroPendiente?.ventaData?.descuento || 0,
+        total: datosCobroPendiente?.ventaData?.total || pedido.total || 0,
         medioPago: medioPagoParaCrear,
         tipo_factura: datosCobroPendiente?.tipoFactura || null,
         items: itemsVenta
@@ -297,31 +326,38 @@ function VentasContent() {
     }
   };
 
-  const handleModoCocina = () => {
+  const handleModoCocina = useCallback(() => {
     setModoCocinaOpen(true);
-  };
+  }, []);
 
-  const handleNotificaciones = () => {
+  const handleNotificaciones = useCallback(() => {
     // TODO: Abrir modal de notificaciones o mostrar lista de pedidos nuevos desde carrito online
     toast.info('Notificaciones', {
       description: 'Modal por implementar',
     });
     // Por ahora, resetear el contador cuando se hace clic
     setNotificacionesCount(0);
-  };
+  }, []);
 
-  const abrirModalCobro = (pedido) => {
+  const abrirModalCobro = useCallback((pedido) => {
     setPedidoACobrar(pedido);
     setModalCobro(true);
-  };
+  }, []);
 
-  const handleCambiarVista = () => {
+  const handleCambiarVista = useCallback(() => {
     setVistaTabla(!vistaTabla);
-  };
+  }, [vistaTabla]);
 
-  const handleManualDragEnd = (event) => {
+  const handleManualDragEnd = useCallback((event) => {
+    debugPedidos('drag_end', {
+      activeId: event?.active?.id ?? null,
+      overId: event?.over?.id ?? null,
+      activeEstado: event?.active?.data?.current?.estado ?? null,
+      overEstado: event?.over?.data?.current?.estado ?? null,
+    });
     setActiveId(null);
     setActivePedido(null);
+    dragStartedAtRef.current = null;
 
     const { active, over } = event;
     if (!over || !active?.data?.current) return;
@@ -333,9 +369,43 @@ function VentasContent() {
 
     // Solo permitir flujo manual: RECIBIDO -> EN PREPARACION
     if (estadoActual === 'recibido' && isEnPreparacionTarget) {
+      if (isPedidoMercadoPagoPendiente(pedido)) {
+        toast.warning('Pedido bloqueado', {
+          description: 'Esperando pago Mercado Pago. No se puede mover a preparación todavía.',
+        });
+        return;
+      }
       setPedidoDragConfirm(pedido);
     }
-  };
+  }, []);
+
+  const pedidosByDndId = useMemo(() => {
+    const map = new Map();
+    pedidosRecibidos.forEach((pedido) => map.set(`pedido-${pedido.id}`, pedido));
+    pedidosEnCocina.forEach((pedido) => map.set(`pedido-${pedido.id}`, pedido));
+    pedidosEntregados.forEach((pedido) => map.set(`pedido-${pedido.id}`, pedido));
+    return map;
+  }, [pedidosEnCocina, pedidosEntregados, pedidosRecibidos]);
+
+  const handleDragStart = useCallback((event) => {
+    debugPedidos('drag_start', {
+      activeId: event?.active?.id ?? null,
+      estado: event?.active?.data?.current?.estado ?? null,
+      pedidoId: event?.active?.data?.current?.pedido?.id ?? null,
+    });
+    setActiveId(event.active.id);
+    setActivePedido(pedidosByDndId.get(event.active.id) || null);
+    dragStartedAtRef.current = Date.now();
+  }, [pedidosByDndId]);
+
+  const handleDragCancel = useCallback((event) => {
+    debugPedidos('drag_cancel', {
+      activeId: event?.active?.id ?? null,
+    });
+    setActiveId(null);
+    setActivePedido(null);
+    dragStartedAtRef.current = null;
+  }, []);
 
   const confirmarDragManual = async () => {
     if (!pedidoDragConfirm) return;
@@ -347,6 +417,79 @@ function VentasContent() {
       setPedidoDragConfirm(null);
     }
   };
+
+  useEffect(() => {
+    debugPedidos('ventas_render', {
+      pedidosRecibidos: pedidosRecibidos.length,
+      pedidosEnCocina: pedidosEnCocina.length,
+      pedidosEntregados: pedidosEntregados.length,
+      printOpen: printDialogState.open,
+      printPedidoId: printDialogState.pedido?.id ?? null,
+      modalCobroOpen: modalCobro,
+      dragActiveId: activeId,
+      hasActivePedido: Boolean(activePedido),
+    });
+  }, [
+    pedidosRecibidos.length,
+    pedidosEnCocina.length,
+    pedidosEntregados.length,
+    printDialogState.open,
+    printDialogState.pedido?.id,
+    modalCobro,
+    activeId,
+    activePedido,
+  ]);
+
+  useEffect(() => {
+    if (!printDialogState.open && !printDialogState.pedido) return;
+    if (!printDialogState.open && printDialogState.pedido) {
+      debugPedidos('potential_inconsistent_print_state', {
+        reason: 'dialog_closed_but_pedido_present',
+        pedidoId: printDialogState.pedido?.id ?? null,
+      });
+    }
+    if (printDialogState.open && !printDialogState.pedido) {
+      debugPedidos('potential_inconsistent_print_state', {
+        reason: 'dialog_open_without_pedido',
+      });
+    }
+  }, [printDialogState.open, printDialogState.pedido]);
+
+  useEffect(() => {
+    if (!activeId || !dragStartedAtRef.current) return;
+    const timeout = setTimeout(() => {
+      debugPedidos('drag_stuck_warning', {
+        activeId,
+        elapsedMs: Date.now() - dragStartedAtRef.current,
+      });
+    }, 7000);
+    return () => clearTimeout(timeout);
+  }, [activeId]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined' || !isPedidosDebugEnabled()) return undefined;
+
+    const onClickCapture = (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const button = target.closest('button');
+      const pedidoCard = target.closest('[data-pedido-id]');
+      debugPedidos('dom_click_capture', {
+        targetTag: target.tagName,
+        buttonText: button?.textContent?.trim() || null,
+        pedidoId: pedidoCard?.getAttribute('data-pedido-id') || null,
+        printOpen: printDialogState.open,
+        printPedidoId: printDialogState.pedido?.id ?? null,
+        dragActiveId: activeId,
+      });
+    };
+
+    document.addEventListener('click', onClickCapture, true);
+    return () => {
+      document.removeEventListener('click', onClickCapture, true);
+    };
+  }, [activeId, printDialogState.open, printDialogState.pedido]);
 
   return (
     <>
@@ -416,15 +559,8 @@ function VentasContent() {
             <DndContext
               sensors={sensors}
               collisionDetection={closestCorners}
-              onDragStart={(event) => {
-                setActiveId(event.active.id);
-                // Buscar el pedido activo en todas las listas
-                const pedidoEncontrado = 
-                  pedidosRecibidos.find(p => `pedido-${p.id}` === event.active.id) ||
-                  pedidosEnCocina.find(p => `pedido-${p.id}` === event.active.id) ||
-                  pedidosEntregados.find(p => `pedido-${p.id}` === event.active.id);
-                setActivePedido(pedidoEncontrado || null);
-              }}
+              onDragStart={handleDragStart}
+              onDragCancel={handleDragCancel}
               onDragEnd={(event) => {
                 handleManualDragEnd(event);
               }}
@@ -446,6 +582,8 @@ function VentasContent() {
                       compacto={true}
                       vistaTabla={vistaTabla}
                       cobrandoPedidoId={pedidoACobrar && pedidoACobrar.id !== 'nuevo' ? pedidoACobrar.id : null}
+                      highlightedPedidoIds={highlightedWebOrderIds}
+                      newWebOrderIds={highlightedWebOrderIds}
                     />
                   </div>
 
@@ -464,6 +602,8 @@ function VentasContent() {
                       compacto={true}
                       vistaTabla={vistaTabla}
                       cobrandoPedidoId={pedidoACobrar && pedidoACobrar.id !== 'nuevo' ? pedidoACobrar.id : null}
+                      highlightedPedidoIds={highlightedWebOrderIds}
+                      newWebOrderIds={highlightedWebOrderIds}
                     />
                   </div>
                 </div>
@@ -501,6 +641,7 @@ function VentasContent() {
         pedidos={pedidosEntregados}
         isOpen={modalPedidosEntregados}
         onClose={() => setModalPedidosEntregados(false)}
+        onImprimirPedido={handleImprimir}
       />
 
       <ModalNuevoPedido
@@ -532,12 +673,6 @@ function VentasContent() {
         setMedioPago={nuevoPedido.setMedioPago}
         estadoPago={nuevoPedido.estadoPago}
         setEstadoPago={nuevoPedido.setEstadoPago}
-        descuento={nuevoPedido.descuento}
-        setDescuento={nuevoPedido.setDescuento}
-        calcularSubtotal={nuevoPedido.calcularSubtotal}
-        calcularEnvio={nuevoPedido.calcularEnvio}
-        calcularDescuento={nuevoPedido.calcularDescuento}
-        calcularIVA={nuevoPedido.calcularIVA}
         calcularTotal={nuevoPedido.calcularTotal}
         agregarProductoConExtras={nuevoPedido.agregarProductoConExtras}
         modificarCantidad={nuevoPedido.modificarCantidad}
@@ -579,12 +714,6 @@ function VentasContent() {
         setMedioPago={editarPedido.setMedioPago}
         estadoPago={editarPedido.estadoPago}
         setEstadoPago={editarPedido.setEstadoPago}
-        descuento={editarPedido.descuento}
-        setDescuento={editarPedido.setDescuento}
-        calcularSubtotal={editarPedido.calcularSubtotal}
-        calcularEnvio={editarPedido.calcularEnvio}
-        calcularDescuento={editarPedido.calcularDescuento}
-        calcularIVA={editarPedido.calcularIVA}
         calcularTotal={editarPedido.calcularTotal}
         agregarProductoConExtras={editarPedido.agregarProductoConExtras}
         modificarCantidad={editarPedido.modificarCantidad}
@@ -651,14 +780,13 @@ function VentasContent() {
         }}
       />
 
-      <ModalImprimir
-        pedido={pedidoAImprimir}
-        isOpen={modalImprimir}
-        onClose={() => {
-          setModalImprimir(false);
-          setPedidoAImprimir(null);
-        }}
-      />
+      {printDialogState.open && (
+        <ModalImprimir
+          pedido={printDialogState.pedido}
+          open={printDialogState.open}
+          onOpenChange={handleModalImprimirOpenChange}
+        />
+      )}
 
       <ModalCobro
         pedido={pedidoACobrar}

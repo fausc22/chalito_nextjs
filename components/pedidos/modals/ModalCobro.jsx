@@ -2,18 +2,21 @@ import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Banknote, CreditCard, Building2, Smartphone, Wallet, FileText } from 'lucide-react';
+import { CreditCard, Building2, Smartphone, Wallet, FileText } from 'lucide-react';
 import { pedidosService } from '@/services/pedidosService';
 import { toast } from '@/hooks/use-toast';
 import { getItemExtras } from '@/lib/extrasUtils';
+import { calculateLineSubtotalFromSnapshot } from '@/lib/pedidoTotals';
 
 export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
   const [medioPago, setMedioPago] = useState('efectivo');
   const [tipoFactura, setTipoFactura] = useState('');
   const [loading, setLoading] = useState(false);
   const [pedidoCompleto, setPedidoCompleto] = useState(null);
+  const [descuentoMonto, setDescuentoMonto] = useState(0);
   const submittedRef = useRef(false);
 
   // Obtener pedido completo cuando se abre el modal
@@ -49,6 +52,7 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
     if (isOpen && pedidoCompleto) {
       setMedioPago(pedidoCompleto.medioPago || 'efectivo');
       setTipoFactura(''); // Resetear tipo de factura cada vez que se abre el modal
+      setDescuentoMonto(0);
     }
   }, [isOpen, pedidoCompleto]);
 
@@ -60,15 +64,18 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
   const pedidoParaMostrar = pedidoCompleto || pedido;
   if (!pedidoParaMostrar) return null;
 
-  // Calcular totales del pedido
-  const subtotal = pedidoParaMostrar.subtotal || 0;
-  const descuento = pedidoParaMostrar.descuento || 0;
-  const ivaTotal = pedidoParaMostrar.ivaTotal || pedidoParaMostrar.iva_total || 0;
-  const total = pedidoParaMostrar.total || 0;
+  const totalOriginal = Number(pedidoParaMostrar.total) || 0;
+  const descuentoAplicado = Math.min(Math.max(Number(descuentoMonto) || 0, 0), totalOriginal);
+  const totalFinal = Math.max(totalOriginal - descuentoAplicado, 0);
 
   const handleCobrar = async () => {
     if (!pedidoParaMostrar) return;
     if (submittedRef.current) return;
+    if (descuentoAplicado > totalOriginal) {
+      toast.error('El descuento no puede ser mayor al total original');
+      return;
+    }
+
     submittedRef.current = true;
     setLoading(true);
     try {
@@ -76,7 +83,8 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
       if (pedidoParaMostrar.id !== 'nuevo') {
         const response = await pedidosService.cobrarPedido(pedidoParaMostrar.id, {
           medioPago,
-          tipoFactura: tipoFactura || null
+          tipoFactura: tipoFactura || null,
+          descuento: descuentoAplicado,
         });
 
         if (response.success) {
@@ -114,7 +122,7 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
             articulo_nombre: item.articulo_nombre || item.nombre || 'Artículo sin nombre',
             cantidad: item.cantidad || 1,
             precio: parseFloat(item.precio) || 0,
-            subtotal: parseFloat(item.subtotal) || (parseFloat(item.precio) * (item.cantidad || 1)) || 0
+            subtotal: calculateLineSubtotalFromSnapshot(item),
           };
         }).filter(item => item !== null);
       }
@@ -133,7 +141,9 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
         direccion: pedidoParaMostrar.direccion || '',
         telefono: pedidoParaMostrar.telefono || '',
         email: pedidoParaMostrar.email || null,
-        subtotal, ivaTotal, descuento, total,
+        subtotal: totalOriginal,
+        descuento: descuentoAplicado,
+        total: totalFinal,
         medioPago, tipo_factura: tipoFactura || null, items
       };
 
@@ -188,7 +198,7 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
                 {pedidoParaMostrar.items.map((item, index) => {
                   const precioUnitario = parseFloat(item.precio) || 0;
                   const cantidad = item.cantidad || 1;
-                  const subtotalItem = parseFloat(item.subtotal) || (precioUnitario * cantidad);
+                  const subtotalItem = calculateLineSubtotalFromSnapshot(item);
                   
                   const { extras } = getItemExtras(item);
                   const tieneExtras = extras && extras.length > 0;
@@ -261,38 +271,49 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
             </div>
           </div>
 
-          {/* Resumen Financiero */}
+          {/* Resumen de cobro */}
           <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
-            <h3 className="text-base font-semibold text-slate-800 mb-3">💰 Resumen Financiero</h3>
+            <h3 className="text-base font-semibold text-slate-800 mb-3">💰 Resumen de Cobro</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-700 font-medium">Subtotal:</span>
+                <span className="text-slate-700 font-medium">Total original:</span>
                 <span className="font-bold text-slate-900">
-                  ${subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${totalOriginal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
-              
-              {descuento > 0 && (
-                <div className="flex justify-between text-sm text-green-600">
-                  <span className="font-medium">Descuento:</span>
-                  <span className="font-bold">
-                    -${descuento.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
-              )}
-
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-700 font-medium">IVA (21%):</span>
-                <span className="font-bold text-slate-900">
-                  ${ivaTotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <div className="space-y-1">
+                <Label htmlFor="descuentoCobro" className="text-sm font-medium text-slate-700">
+                  Descuento
+                </Label>
+                <Input
+                  id="descuentoCobro"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  max={totalOriginal}
+                  value={descuentoMonto}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    if (!Number.isFinite(value) || value < 0) {
+                      setDescuentoMonto(0);
+                      return;
+                    }
+                    setDescuentoMonto(Math.min(value, totalOriginal));
+                  }}
+                />
+              </div>
+              <div className="flex justify-between text-sm text-green-700">
+                <span className="font-medium">Descuento:</span>
+                <span className="font-bold">
+                  -${descuentoAplicado.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
 
               <Separator className="my-2" />
 
               <div className="flex justify-between text-lg font-bold text-slate-900">
-                <span>TOTAL:</span>
-                <span>${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span>Total final:</span>
+                <span>${totalFinal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>
