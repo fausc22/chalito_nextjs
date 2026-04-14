@@ -49,6 +49,11 @@ const transformarVentaFrontendABackend = (ventaFrontend = {}) => {
         })
         .filter(Boolean);
 
+    const descuentoPorcentaje = toNumber(
+        ventaFrontend.descuento_porcentaje ?? ventaFrontend.descuentoPorcentaje,
+        0
+    );
+
     return {
         pedido_id: ventaFrontend.pedido_id ?? ventaFrontend.pedidoId ?? null,
         cliente_nombre: ventaFrontend.cliente_nombre || ventaFrontend.clienteNombre || ventaFrontend.cliente?.nombre || null,
@@ -57,7 +62,7 @@ const transformarVentaFrontendABackend = (ventaFrontend = {}) => {
         cliente_email: ventaFrontend.cliente_email || ventaFrontend.email || ventaFrontend.cliente?.email || null,
         subtotal: toNumber(ventaFrontend.subtotal, 0),
         iva_total: toNumber(ventaFrontend.iva_total ?? ventaFrontend.ivaTotal, 0),
-        descuento: toNumber(ventaFrontend.descuento, 0),
+        descuento_porcentaje: descuentoPorcentaje,
         total: toNumber(ventaFrontend.total, 0),
         medio_pago: mapearMedioPagoFrontendABackend(ventaFrontend.medio_pago ?? ventaFrontend.medioPago),
         cuenta_id: ventaFrontend.cuenta_id ?? ventaFrontend.cuentaId ?? null,

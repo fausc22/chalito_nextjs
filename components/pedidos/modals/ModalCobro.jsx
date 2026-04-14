@@ -16,8 +16,9 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
   const [tipoFactura, setTipoFactura] = useState('');
   const [loading, setLoading] = useState(false);
   const [pedidoCompleto, setPedidoCompleto] = useState(null);
-  const [descuentoMonto, setDescuentoMonto] = useState(0);
+  const [descuentoPorcentaje, setDescuentoPorcentaje] = useState(0);
   const submittedRef = useRef(false);
+  const roundTo2 = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 
   // Obtener pedido completo cuando se abre el modal
   useEffect(() => {
@@ -52,7 +53,7 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
     if (isOpen && pedidoCompleto) {
       setMedioPago(pedidoCompleto.medioPago || 'efectivo');
       setTipoFactura(''); // Resetear tipo de factura cada vez que se abre el modal
-      setDescuentoMonto(0);
+      setDescuentoPorcentaje(0);
     }
   }, [isOpen, pedidoCompleto]);
 
@@ -65,14 +66,15 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
   if (!pedidoParaMostrar) return null;
 
   const totalOriginal = Number(pedidoParaMostrar.total) || 0;
-  const descuentoAplicado = Math.min(Math.max(Number(descuentoMonto) || 0, 0), totalOriginal);
-  const totalFinal = Math.max(totalOriginal - descuentoAplicado, 0);
+  const porcentajeNormalizado = Math.min(Math.max(Number(descuentoPorcentaje) || 0, 0), 100);
+  const descuentoCalculadoPreview = roundTo2(totalOriginal * (porcentajeNormalizado / 100));
+  const totalFinalPreview = roundTo2(Math.max(totalOriginal - descuentoCalculadoPreview, 0));
 
   const handleCobrar = async () => {
     if (!pedidoParaMostrar) return;
     if (submittedRef.current) return;
-    if (descuentoAplicado > totalOriginal) {
-      toast.error('El descuento no puede ser mayor al total original');
+    if (porcentajeNormalizado < 0 || porcentajeNormalizado > 100) {
+      toast.error('El descuento (%) debe estar entre 0 y 100');
       return;
     }
 
@@ -84,7 +86,7 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
         const response = await pedidosService.cobrarPedido(pedidoParaMostrar.id, {
           medioPago,
           tipoFactura: tipoFactura || null,
-          descuento: descuentoAplicado,
+          descuentoPorcentaje: porcentajeNormalizado,
         });
 
         if (response.success) {
@@ -142,8 +144,8 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
         telefono: pedidoParaMostrar.telefono || '',
         email: pedidoParaMostrar.email || null,
         subtotal: totalOriginal,
-        descuento: descuentoAplicado,
-        total: totalFinal,
+        descuento_porcentaje: porcentajeNormalizado,
+        total: totalFinalPreview,
         medioPago, tipo_factura: tipoFactura || null, items
       };
 
@@ -283,37 +285,43 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="descuentoCobro" className="text-sm font-medium text-slate-700">
-                  Descuento
+                  Descuento (%)
                 </Label>
                 <Input
                   id="descuentoCobro"
                   type="number"
                   min="0"
                   step="0.01"
-                  max={totalOriginal}
-                  value={descuentoMonto}
+                  max="100"
+                  value={descuentoPorcentaje}
                   onChange={(e) => {
                     const value = Number(e.target.value);
                     if (!Number.isFinite(value) || value < 0) {
-                      setDescuentoMonto(0);
+                      setDescuentoPorcentaje(0);
                       return;
                     }
-                    setDescuentoMonto(Math.min(value, totalOriginal));
+                    setDescuentoPorcentaje(Math.min(value, 100));
                   }}
                 />
               </div>
+              <div className="flex justify-between text-sm">
+                <span className="font-medium text-slate-700">Descuento (%):</span>
+                <span className="font-bold text-slate-900">
+                  {porcentajeNormalizado.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%
+                </span>
+              </div>
               <div className="flex justify-between text-sm text-green-700">
-                <span className="font-medium">Descuento:</span>
+                <span className="font-medium">Descuento calculado:</span>
                 <span className="font-bold">
-                  -${descuentoAplicado.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  -${descuentoCalculadoPreview.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
 
               <Separator className="my-2" />
 
               <div className="flex justify-between text-lg font-bold text-slate-900">
-                <span>Total final:</span>
-                <span>${totalFinal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span>Total final a cobrar:</span>
+                <span>${totalFinalPreview.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>

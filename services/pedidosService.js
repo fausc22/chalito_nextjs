@@ -793,7 +793,7 @@ export const pedidosService = {
    */
   cobrarPedido: async (
     pedidoId,
-    { medioPago = 'efectivo', tipoFactura = null, cuentaId = null, descuento = 0 } = {}
+    { medioPago = 'efectivo', tipoFactura = null, cuentaId = null, descuentoPorcentaje = 0 } = {}
   ) => {
     try {
       const medioPagoBackend = mapearMedioPagoFrontendABackend(medioPago) || 'EFECTIVO';
@@ -805,7 +805,7 @@ export const pedidosService = {
           medio_pago: medioPagoBackend,
           tipo_factura: tipoFactura || null,
           cuenta_id: cuentaId || null,
-          descuento: Number(descuento) || 0,
+          descuento_porcentaje: Number(descuentoPorcentaje) || 0,
         }
       );
 

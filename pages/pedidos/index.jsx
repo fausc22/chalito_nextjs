@@ -282,7 +282,7 @@ function VentasContent() {
         telefono: pedido.telefono || '',
         email: pedido.email || null,
         subtotal: datosCobroPendiente?.ventaData?.subtotal || pedido.total || 0,
-        descuento: datosCobroPendiente?.ventaData?.descuento || 0,
+        descuento_porcentaje: datosCobroPendiente?.ventaData?.descuento_porcentaje || 0,
         total: datosCobroPendiente?.ventaData?.total || pedido.total || 0,
         medioPago: medioPagoParaCrear,
         tipo_factura: datosCobroPendiente?.tipoFactura || null,
