@@ -79,9 +79,9 @@ function DashboardContent() {
       title: 'Empleados',
       description: 'Gestión de personal y recursos humanos',
       icon: '👥',
-      href: null,
+      href: '/empleados',
       color: 'purple',
-      disabled: true,
+      disabled: false,
     },
     {
       title: 'Proveedores',

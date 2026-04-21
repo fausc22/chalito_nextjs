@@ -1,38 +1,44 @@
-import { useToast } from "@/hooks/use-toast"
-import { useAuth } from "@/contexts/AuthContext"
-import {
-  Toast,
-  ToastClose,
-  ToastDescription,
-  ToastProvider,
-  ToastTitle,
-  ToastViewport,
-} from "@/components/ui/toast"
+import { Toaster as SonnerToaster } from "sonner";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Toaster() {
-  const { toasts } = useToast()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuth();
+  const [mounted, setMounted] = useState(false);
 
-  return (
-    <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, icon, ...props }) {
-        return (
-          <Toast key={id} {...props}>
-            <div className="flex w-full items-start gap-3">
-              {icon && <span className="text-2xl leading-none">{icon}</span>}
-              <div className="grid gap-1 flex-1">
-                {title && <ToastTitle>{title}</ToastTitle>}
-                {description && (
-                  <ToastDescription>{description}</ToastDescription>
-                )}
-              </div>
-            </div>
-            {action}
-            <ToastClose />
-          </Toast>
-        );
-      })}
-      <ToastViewport className={isAuthenticated ? "sm:top-20" : "sm:top-0"} />
-    </ToastProvider>
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <SonnerToaster
+      theme="light"
+      expand={false}
+      visibleToasts={4}
+      closeButton
+      richColors={false}
+      position="top-right"
+      swipeDirections={[]}
+      className="chalito-sonner pointer-events-none z-[2147483647]"
+      style={{ zIndex: 2147483647 }}
+      offset={isAuthenticated ? "5.5rem" : "1rem"}
+      mobileOffset="1rem"
+      toastOptions={{
+        unstyled: true,
+        duration: 3000,
+        classNames: {
+          toast:
+            "chalito-toast-shell pointer-events-auto w-full rounded-2xl border p-0 shadow-[0_20px_45px_-24px_rgba(15,23,42,0.35)] !opacity-100 !backdrop-blur-none sm:max-w-[420px]",
+          success: "chalito-toast-shell--success",
+          info: "chalito-toast-shell--info",
+          error: "chalito-toast-shell--error",
+          warning: "chalito-toast-shell--warning",
+        },
+      }}
+    />,
+    document.body
   );
 }

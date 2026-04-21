@@ -17,6 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { FieldError } from '@/components/ui/field-error';
 
 export function MovimientoForm({
     isOpen,
@@ -33,6 +34,7 @@ export function MovimientoForm({
         monto: '',
         observaciones: ''
     });
+    const [errors, setErrors] = useState({});
 
     useEffect(() => {
         if (cuenta) {
@@ -41,16 +43,32 @@ export function MovimientoForm({
                 cuenta_id: cuenta.id
             }));
         }
+        setErrors({});
     }, [cuenta, isOpen]);
 
     const handleChange = (field, value) => {
         setFormulario(prev => ({ ...prev, [field]: value }));
+        setErrors(prev => ({ ...prev, [field]: undefined }));
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         
-        if (!formulario.cuenta_id || !formulario.monto || parseFloat(formulario.monto) <= 0) {
+        const nextErrors = {};
+
+        if (!formulario.cuenta_id) {
+            nextErrors.cuenta_id = 'Debes seleccionar una cuenta';
+        }
+
+        if (!formulario.monto || parseFloat(formulario.monto) <= 0) {
+            nextErrors.monto = 'El monto debe ser mayor a 0';
+        } else if (tipo === 'EGRESO' && parseFloat(formulario.monto) > saldoActual) {
+            nextErrors.monto = 'El monto excede el saldo disponible';
+        }
+
+        setErrors(nextErrors);
+
+        if (Object.keys(nextErrors).some((key) => nextErrors[key])) {
             return;
         }
 
@@ -86,7 +104,7 @@ export function MovimientoForm({
                             value={formulario.cuenta_id?.toString() || ''}
                             onValueChange={(value) => handleChange('cuenta_id', value)}
                         >
-                            <SelectTrigger className="mt-1">
+                            <SelectTrigger className="mt-1" error={Boolean(errors.cuenta_id)} aria-invalid={Boolean(errors.cuenta_id)}>
                                 <SelectValue placeholder="Seleccionar cuenta" />
                             </SelectTrigger>
                             <SelectContent>
@@ -106,6 +124,7 @@ export function MovimientoForm({
                                 </span>
                             </p>
                         )}
+                        <FieldError error={errors.cuenta_id} />
                     </div>
 
                     {/* Monto */}
@@ -122,13 +141,10 @@ export function MovimientoForm({
                             onChange={(e) => handleChange('monto', e.target.value)}
                             placeholder="0.00"
                             className="mt-1"
-                            required
+                            error={Boolean(errors.monto)}
+                            aria-invalid={Boolean(errors.monto)}
                         />
-                        {tipo === 'EGRESO' && cuentaSeleccionada && parseFloat(formulario.monto) > saldoActual && (
-                            <p className="text-xs text-red-600 mt-1">
-                                ⚠️ El monto excede el saldo disponible
-                            </p>
-                        )}
+                        <FieldError error={errors.monto} />
                     </div>
 
                     {/* Observaciones */}

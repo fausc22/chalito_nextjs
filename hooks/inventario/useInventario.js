@@ -1,8 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { articulosService } from '../../services/articulosService';
 import { categoriasService } from '../../services/categoriasService';
 import { ingredientesService } from '../../services/ingredientesService';
 import { adicionalesService } from '../../services/adicionalesService';
+import { insumosSemanalesService } from '../../services/insumosSemanalesService';
+import { stockSemanalSemanasService } from '../../services/stockSemanalSemanasService';
 
 export const useInventario = () => {
 
@@ -63,6 +65,24 @@ export const useInventario = () => {
   });
   const [adicionalesDisponibles, setAdicionalesDisponibles] = useState([]);
   const [loadingAdicionalesDisponibles, setLoadingAdicionalesDisponibles] = useState(false);
+
+  // ==========================================
+  // ESTADOS - INSUMOS SEMANALES (stock semanal)
+  // ==========================================
+  const [insumosSemanales, setInsumosSemanales] = useState([]);
+  const [loadingInsumosSemanales, setLoadingInsumosSemanales] = useState(false);
+  const [errorInsumosSemanales, setErrorInsumosSemanales] = useState(null);
+
+  // Semana abierta (null = cargado y no hay; undefined = aún no se consultó)
+  const [semanaAbierta, setSemanaAbierta] = useState(undefined);
+  const [loadingSemanaAbierta, setLoadingSemanaAbierta] = useState(false);
+  const [errorSemanaAbierta, setErrorSemanaAbierta] = useState(null);
+
+  const [semanasHistorico, setSemanasHistorico] = useState(undefined);
+  const [loadingSemanasHistorico, setLoadingSemanasHistorico] = useState(false);
+  const [errorSemanasHistorico, setErrorSemanasHistorico] = useState(null);
+  /** Conserva última query del listado (filtro + página) para refrescos como cierre de semana */
+  const historicoQueryRef = useRef({ limit: 5, page: 1 });
 
   // ==========================================
   // FUNCIONES - CATEGORÍAS
@@ -483,6 +503,230 @@ export const useInventario = () => {
     }
   };
 
+  // ==========================================
+  // FUNCIONES - INSUMOS SEMANALES
+  // ==========================================
+
+  const cargarInsumosSemanales = useCallback(async (filtros = {}) => {
+    setLoadingInsumosSemanales(true);
+    setErrorInsumosSemanales(null);
+
+    try {
+      const merged = { incluir_inactivos: true, ...filtros };
+      const response = await insumosSemanalesService.obtenerInsumos(merged);
+
+      if (response.success) {
+        setInsumosSemanales(response.data);
+      } else {
+        setErrorInsumosSemanales(response.error);
+      }
+    } catch (error) {
+      setErrorInsumosSemanales('Error al cargar insumos semanales');
+      console.error(error);
+    } finally {
+      setLoadingInsumosSemanales(false);
+    }
+  }, []);
+
+  const crearInsumoSemanal = async (datos) => {
+    try {
+      const response = await insumosSemanalesService.crearInsumo(datos);
+      if (response.success) {
+        await cargarInsumosSemanales();
+        return { success: true, data: response.data };
+      }
+      return { success: false, error: response.error };
+    } catch (error) {
+      console.error(error);
+      return { success: false, error: 'Error al crear insumo semanal' };
+    }
+  };
+
+  const editarInsumoSemanal = async (id, datos) => {
+    try {
+      const response = await insumosSemanalesService.actualizarInsumo(id, datos);
+      if (response.success) {
+        await cargarInsumosSemanales();
+        return { success: true, data: response.data };
+      }
+      return { success: false, error: response.error };
+    } catch (error) {
+      console.error(error);
+      return { success: false, error: 'Error al actualizar insumo semanal' };
+    }
+  };
+
+  const setActivoInsumoSemanal = async (id, activo) => {
+    try {
+      const response = await insumosSemanalesService.actualizarActivo(id, activo);
+      if (response.success) {
+        await cargarInsumosSemanales();
+        return { success: true, data: response.data };
+      }
+      return { success: false, error: response.error };
+    } catch (error) {
+      console.error(error);
+      return { success: false, error: 'Error al cambiar el estado del insumo' };
+    }
+  };
+
+  const eliminarInsumoSemanal = async (id) => {
+    try {
+      const response = await insumosSemanalesService.eliminarInsumo(id);
+      if (response.success) {
+        await cargarInsumosSemanales();
+        return { success: true, data: response.data, mensaje: response.mensaje };
+      }
+      return { success: false, error: response.error };
+    } catch (error) {
+      console.error(error);
+      return { success: false, error: 'Error al eliminar el insumo' };
+    }
+  };
+
+  // ==========================================
+  // FUNCIONES - SEMANA ABIERTA (stock semanal)
+  // ==========================================
+
+  const cargarSemanaAbierta = useCallback(async () => {
+    setLoadingSemanaAbierta(true);
+    setErrorSemanaAbierta(null);
+
+    try {
+      const response = await stockSemanalSemanasService.obtenerSemanaAbierta();
+
+      if (response.success) {
+        setSemanaAbierta(response.data);
+      } else {
+        setErrorSemanaAbierta(response.error);
+      }
+    } catch (error) {
+      setErrorSemanaAbierta(
+        error.response?.data?.message ||
+          error.response?.data?.mensaje ||
+          'Error al cargar la semana abierta'
+      );
+      console.error(error);
+    } finally {
+      setLoadingSemanaAbierta(false);
+    }
+  }, []);
+
+  const crearSemanaStock = async (payload) => {
+    try {
+      const response = await stockSemanalSemanasService.crearSemana(payload);
+      if (response.success) {
+        await cargarSemanaAbierta();
+        await cargarSemanasHistorico({ page: 1 });
+        return { success: true, data: response.data, mensaje: response.mensaje };
+      }
+      return { success: false, error: response.error };
+    } catch (error) {
+      console.error(error);
+      return { success: false, error: 'Error al crear la semana' };
+    }
+  };
+
+  const cargarSemanasHistorico = useCallback(async (params = {}) => {
+    setLoadingSemanasHistorico(true);
+    setErrorSemanasHistorico(null);
+    try {
+      const merged = { ...historicoQueryRef.current, ...params };
+      if ('estado' in params) {
+        if (params.estado === undefined || params.estado === null || params.estado === '') {
+          delete merged.estado;
+        } else {
+          merged.estado = params.estado;
+        }
+      }
+      historicoQueryRef.current = {
+        limit: merged.limit ?? merged.limite ?? 5,
+        page: merged.page ?? merged.pagina ?? 1,
+        ...(merged.estado ? { estado: merged.estado } : {}),
+      };
+
+      const query = {
+        limit: historicoQueryRef.current.limit,
+        page: historicoQueryRef.current.page,
+      };
+      if (historicoQueryRef.current.estado) {
+        query.estado = historicoQueryRef.current.estado;
+      }
+
+      const response = await stockSemanalSemanasService.listarHistoricoSemanas(query);
+      if (response.success) {
+        setSemanasHistorico(response.data);
+      } else {
+        setErrorSemanasHistorico(response.error);
+        setSemanasHistorico(null);
+      }
+    } catch (error) {
+      setErrorSemanasHistorico('Error al cargar el histórico de semanas');
+      setSemanasHistorico(null);
+      console.error(error);
+    } finally {
+      setLoadingSemanasHistorico(false);
+    }
+  }, []);
+
+  const obtenerSemanaStockPorId = async (id) => {
+    try {
+      return await stockSemanalSemanasService.obtenerSemanaPorId(id);
+    } catch (error) {
+      console.error(error);
+      return { success: false, error: 'Error al obtener la semana' };
+    }
+  };
+
+  const actualizarStockInicialDetalle = async (_semanaId, detalleId, stock_inicial, observaciones) => {
+    try {
+      const body = {};
+      if (stock_inicial !== undefined) body.stock_inicial = stock_inicial;
+      if (observaciones !== undefined) body.observaciones = observaciones;
+      const response = await stockSemanalSemanasService.actualizarStockInicial(detalleId, body);
+      if (response.success) {
+        await cargarSemanaAbierta();
+        return { success: true, data: response.data };
+      }
+      return { success: false, error: response.error };
+    } catch (error) {
+      console.error(error);
+      return { success: false, error: 'Error al actualizar stock inicial' };
+    }
+  };
+
+  const actualizarStockFinalDetalle = async (_semanaId, detalleId, stock_final, observaciones) => {
+    try {
+      const body = {};
+      if (stock_final !== undefined) body.stock_final = stock_final;
+      if (observaciones !== undefined) body.observaciones = observaciones;
+      const response = await stockSemanalSemanasService.actualizarStockFinal(detalleId, body);
+      if (response.success) {
+        await cargarSemanaAbierta();
+        return { success: true, data: response.data };
+      }
+      return { success: false, error: response.error };
+    } catch (error) {
+      console.error(error);
+      return { success: false, error: 'Error al actualizar stock final' };
+    }
+  };
+
+  const cerrarSemanaStock = async (semanaId) => {
+    try {
+      const response = await stockSemanalSemanasService.cerrarSemana(semanaId);
+      if (response.success) {
+        await cargarSemanaAbierta();
+        await cargarSemanasHistorico({ page: 1 });
+        return { success: true, data: response.data, mensaje: response.mensaje };
+      }
+      return { success: false, error: response.error };
+    } catch (error) {
+      console.error(error);
+      return { success: false, error: 'Error al cerrar la semana' };
+    }
+  };
+
   return {
     // Estados - ARTÍCULOS
     articulos,
@@ -545,6 +789,37 @@ export const useInventario = () => {
     eliminarAdicional,
     obtenerAdicionalesPorArticulo,
     asignarAdicionalesAArticulo,
-    eliminarAdicionalDeArticulo
+    eliminarAdicionalDeArticulo,
+
+    // Estados - INSUMOS SEMANALES
+    insumosSemanales,
+    loadingInsumosSemanales,
+    errorInsumosSemanales,
+
+    // Acciones - INSUMOS SEMANALES
+    cargarInsumosSemanales,
+    crearInsumoSemanal,
+    editarInsumoSemanal,
+    setActivoInsumoSemanal,
+    eliminarInsumoSemanal,
+
+    // Estados - SEMANA ABIERTA
+    semanaAbierta,
+    loadingSemanaAbierta,
+    errorSemanaAbierta,
+
+    // Histórico de semanas (stock semanal)
+    semanasHistorico,
+    loadingSemanasHistorico,
+    errorSemanasHistorico,
+
+    // Acciones - SEMANA ABIERTA
+    cargarSemanaAbierta,
+    crearSemanaStock,
+    actualizarStockInicialDetalle,
+    actualizarStockFinalDetalle,
+    cerrarSemanaStock,
+    cargarSemanasHistorico,
+    obtenerSemanaStockPorId,
   };
 };

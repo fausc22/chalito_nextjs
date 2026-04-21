@@ -8,6 +8,7 @@ import { crearItemCarrito, mergeItemEnCarrito, reagruparCarrito } from './cartUt
 import { formatDireccionEntrega, parseClienteDireccion } from '../../lib/formatters';
 import { getItemExtras } from '../../lib/extrasUtils';
 import { calculateCartSubtotal } from '../../lib/pedidoTotals';
+import { setFieldError, zodIssuesToErrors } from '@/lib/form-errors';
 
 // Esquema de validación para el cliente (mismo que useNuevoPedido)
 const clienteSchema = z.object({
@@ -147,6 +148,7 @@ export const useEditarPedido = () => {
   const [horaProgramada, setHoraProgramada] = useState('');
   const [medioPago, setMedioPago] = useState('efectivo');
   const [estadoPago, setEstadoPago] = useState('pending');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   // Cargar categorías y productos solo al abrir modal (una vez)
   useEffect(() => {
@@ -356,8 +358,34 @@ export const useEditarPedido = () => {
     setHoraProgramada('');
     setMedioPago('efectivo');
     setEstadoPago('pending');
+    setFieldErrors({});
 
   }, [categorias]);
+
+  const clearFieldError = useCallback((fieldPath) => {
+    setFieldErrors((prev) => {
+      if (!prev || typeof prev !== 'object') {
+        return prev;
+      }
+
+      const next = JSON.parse(JSON.stringify(prev));
+      const parts = String(fieldPath).split('.').filter(Boolean);
+      let current = next;
+
+      for (let index = 0; index < parts.length - 1; index += 1) {
+        current = current?.[parts[index]];
+        if (!current) {
+          return prev;
+        }
+      }
+
+      if (current && Object.prototype.hasOwnProperty.call(current, parts[parts.length - 1])) {
+        delete current[parts[parts.length - 1]];
+      }
+
+      return next;
+    });
+  }, []);
 
   // Abrir modal con pedido
   const abrirModal = useCallback((pedido) => {
@@ -570,6 +598,43 @@ export const useEditarPedido = () => {
     }
   }, [editandoItemCarrito, extrasSeleccionados, observacionItem, productoParaExtras, unidadesConfiguradas, unidadActual, totalUnidades, cerrarModalExtras]);
 
+  const validarPasoCliente = useCallback((clienteActual, tipoEntregaActual) => {
+    const datosCliente = {
+      nombre: clienteActual.nombre,
+      telefono: clienteActual.telefono,
+      email: clienteActual.email && clienteActual.email.trim() !== '' ? clienteActual.email : undefined,
+      direccion: clienteActual.direccion,
+    };
+
+    const result = clienteSchema.safeParse(datosCliente);
+    let nextErrors = result.success ? {} : zodIssuesToErrors(result.error.issues ?? result.error.errors ?? []);
+
+    if (tipoEntregaActual === 'delivery' && !(clienteActual.direccion?.calle?.trim())) {
+      nextErrors = setFieldError(nextErrors, 'direccion.calle', 'La calle es obligatoria para delivery');
+    }
+
+    if (tipoPedido === 'programado' && !horaProgramada) {
+      nextErrors = setFieldError(nextErrors, 'horaProgramada', 'Debes indicar una hora programada');
+    }
+
+    setFieldErrors(nextErrors);
+
+    if (!result.success) {
+      const primerError = (result.error.issues ?? [])[0];
+      return { valid: false, mensaje: primerError?.message || 'Revisá los datos del cliente.' };
+    }
+
+    if (tipoEntregaActual === 'delivery' && !(clienteActual.direccion?.calle?.trim())) {
+      return { valid: false, mensaje: 'Calle: La calle es requerida para delivery.' };
+    }
+
+    if (tipoPedido === 'programado' && !horaProgramada) {
+      return { valid: false, mensaje: 'Hora programada: Debes indicar una hora programada.' };
+    }
+
+    return { valid: true };
+  }, [horaProgramada, tipoPedido]);
+
   // Actualizar pedido
   const actualizarPedido = useCallback(async (onSuccess) => {
     if (!pedidoOriginal || !pedidoOriginal.id) {
@@ -599,6 +664,17 @@ export const useEditarPedido = () => {
     } catch (error) {
       if (error instanceof z.ZodError) {
         const issues = error.issues ?? error.errors ?? [];
+        let nextErrors = zodIssuesToErrors(issues);
+
+        if (tipoEntrega === 'delivery' && !(cliente.direccion?.calle?.trim())) {
+          nextErrors = setFieldError(nextErrors, 'direccion.calle', 'La calle es obligatoria para delivery');
+        }
+
+        if (tipoPedido === 'programado' && !horaProgramada) {
+          nextErrors = setFieldError(nextErrors, 'horaProgramada', 'Debes indicar una hora programada');
+        }
+
+        setFieldErrors(nextErrors);
         const primerError = issues.length > 0 ? issues[0] : null;
         if (primerError) {
           let mensaje = primerError.message;
@@ -627,6 +703,7 @@ export const useEditarPedido = () => {
         }
         return null;
       }
+      setFieldErrors({});
       toast.error('Error de validación');
       return null;
     }
@@ -688,6 +765,7 @@ export const useEditarPedido = () => {
       const response = await pedidosService.actualizarPedido(pedidoOriginal.id, pedidoData);
       
       if (response.success) {
+        setFieldErrors({});
         toast.success('Pedido actualizado correctamente');
         const pedidoDesdeBackend = response.data;
         if (pedidoDesdeBackend && onSuccess) {
@@ -758,6 +836,9 @@ export const useEditarPedido = () => {
     setMedioPago,
     estadoPago,
     setEstadoPago,
+    fieldErrors,
+    setFieldErrors,
+    clearFieldError,
     // Funciones
     calcularSubtotal,
     calcularTotal,
@@ -771,6 +852,7 @@ export const useEditarPedido = () => {
     cerrarModalExtras,
     toggleExtra,
     confirmarExtras,
+    validarPasoCliente,
     actualizarPedido,
   };
 };

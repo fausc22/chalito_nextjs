@@ -12,6 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { FieldError } from '@/components/ui/field-error';
+import { getInputErrorProps } from '@/lib/form-errors';
 
 /**
  * Componente de formulario para crear/editar categorías con shadcn/ui
@@ -20,15 +22,12 @@ export const CategoriasForm = ({
   isOpen,
   onClose,
   formulario,
-  setFormulario,
+  onFieldChange,
+  errors = {},
   onSubmit,
   isEditing = false,
   loading = false,
 }) => {
-  const handleChange = (field, value) => {
-    setFormulario(prev => ({ ...prev, [field]: value }));
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit();
@@ -58,11 +57,12 @@ export const CategoriasForm = ({
             <Input
               id="nombre"
               value={formulario.nombre || ''}
-              onChange={(e) => handleChange('nombre', e.target.value)}
+              onChange={(e) => onFieldChange('nombre', e.target.value)}
               placeholder="Ej: Entradas, Platos Principales, Bebidas..."
               className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-              required
+              {...getInputErrorProps(errors, 'nombre').inputProps}
             />
+            <FieldError error={errors?.nombre} id="nombre-error" />
           </div>
 
           {/* Descripción */}
@@ -73,7 +73,7 @@ export const CategoriasForm = ({
             <Textarea
               id="descripcion"
               value={formulario.descripcion || ''}
-              onChange={(e) => handleChange('descripcion', e.target.value)}
+              onChange={(e) => onFieldChange('descripcion', e.target.value)}
               placeholder="Descripción opcional de la categoría"
               rows={3}
               className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 resize-none"
@@ -86,7 +86,7 @@ export const CategoriasForm = ({
               <Checkbox
                 id="activo"
                 checked={formulario.activo !== 0 && formulario.activo !== false}
-                onCheckedChange={(checked) => handleChange('activo', checked ? 1 : 0)}
+                onCheckedChange={(checked) => onFieldChange('activo', checked ? 1 : 0)}
                 className="w-5 h-5 border-2"
               />
               <Label htmlFor="activo" className="cursor-pointer text-amber-900 font-semibold">
@@ -98,7 +98,7 @@ export const CategoriasForm = ({
               <Checkbox
                 id="activo"
                 checked={formulario.activo !== 0 && formulario.activo !== false}
-                onCheckedChange={(checked) => handleChange('activo', checked ? 1 : 0)}
+                onCheckedChange={(checked) => onFieldChange('activo', checked ? 1 : 0)}
                 className="w-5 h-5 border-2"
               />
               <Label htmlFor="activo" className="cursor-pointer font-medium text-slate-700">

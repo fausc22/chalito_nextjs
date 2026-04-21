@@ -7,9 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { FieldError } from '@/components/ui/field-error';
 import { ProductCard } from '../ProductCard';
 import { toast } from '@/hooks/use-toast';
 import { getSufijoPresentacion, getExtrasSinPresentacion } from '@/lib/extrasUtils';
+import { clearFieldError as clearErrorByPath, getInputErrorProps } from '@/lib/form-errors';
 
 const CartSummaryMobile = ({
   carrito,
@@ -190,6 +192,9 @@ export function ModalNuevoPedido({
   setMedioPago,
   estadoPago,
   setEstadoPago,
+  fieldErrors = {},
+  setFieldErrors,
+  clearFieldError,
   calcularTotal,
   agregarProductoConExtras,
   modificarCantidad,
@@ -201,6 +206,39 @@ export function ModalNuevoPedido({
   onSuccess
 }) {
   const [carritoExpandidoMobile, setCarritoExpandidoMobile] = useState(true);
+
+  const clearInlineError = (fieldPath) => {
+    if (typeof clearFieldError === 'function') {
+      clearFieldError(fieldPath);
+      return;
+    }
+
+    if (typeof setFieldErrors === 'function') {
+      setFieldErrors((prev) => clearErrorByPath(prev, fieldPath));
+    }
+  };
+
+  const updateClienteField = (fieldPath, value) => {
+    setCliente((prev) => {
+      if (fieldPath.startsWith('direccion.')) {
+        const nestedField = fieldPath.replace('direccion.', '');
+        return {
+          ...prev,
+          direccion: {
+            ...prev.direccion,
+            [nestedField]: value,
+          },
+        };
+      }
+
+      return {
+        ...prev,
+        [fieldPath]: value,
+      };
+    });
+
+    clearInlineError(fieldPath);
+  };
 
   const handleClose = (open) => {
     if (!open) {
@@ -524,11 +562,13 @@ export function ModalNuevoPedido({
                   <Label className="text-xs font-medium">Nombre del Cliente *</Label>
                   <Input
                     value={cliente.nombre}
-                    onChange={(e) => setCliente({ ...cliente, nombre: sanitizeNombre(e.target.value) })}
+                    onChange={(e) => updateClienteField('nombre', sanitizeNombre(e.target.value))}
                     placeholder="Ej: Juan Pérez"
                     className="mt-1 h-8 text-sm"
                     maxLength={100}
+                    {...getInputErrorProps(fieldErrors, 'nombre').inputProps}
                   />
+                  <FieldError error={fieldErrors?.nombre} id="nombre-error" />
                 </div>
 
                 <div>
@@ -536,11 +576,13 @@ export function ModalNuevoPedido({
                   <Input
                     type="tel"
                     value={cliente.telefono}
-                    onChange={(e) => setCliente({ ...cliente, telefono: sanitizeTelefono(e.target.value) })}
+                    onChange={(e) => updateClienteField('telefono', sanitizeTelefono(e.target.value))}
                     placeholder="Ej: 3815-123456"
                     className="mt-1 h-8 text-sm"
                     maxLength={20}
+                    {...getInputErrorProps(fieldErrors, 'telefono').inputProps}
                   />
+                  <FieldError error={fieldErrors?.telefono} id="telefono-error" />
                 </div>
 
                 <div className="col-span-2">
@@ -548,10 +590,12 @@ export function ModalNuevoPedido({
                   <Input
                     type="email"
                     value={cliente.email}
-                    onChange={(e) => setCliente({ ...cliente, email: e.target.value.trim() })}
+                    onChange={(e) => updateClienteField('email', e.target.value.trim())}
                     placeholder="Ej: cliente@email.com"
                     className="mt-1 h-8 text-sm"
+                    {...getInputErrorProps(fieldErrors, 'email').inputProps}
                   />
+                  <FieldError error={fieldErrors?.email} id="email-error" />
                 </div>
               </div>
             </div>
@@ -594,38 +638,33 @@ export function ModalNuevoPedido({
                     <Label className="text-xs font-medium">Calle *</Label>
                     <Input
                       value={cliente.direccion.calle}
-                      onChange={(e) => setCliente({
-                        ...cliente,
-                        direccion: { ...cliente.direccion, calle: sanitizeDireccion(e.target.value).slice(0, 200) }
-                      })}
+                      onChange={(e) => updateClienteField('direccion.calle', sanitizeDireccion(e.target.value).slice(0, 200))}
                       placeholder="Ej: Av. Belgrano"
                       className="mt-1 h-8 text-sm"
                       maxLength={200}
+                      {...getInputErrorProps(fieldErrors, 'direccion.calle').inputProps}
                     />
+                    <FieldError error={fieldErrors?.direccion?.calle} id="direccion-calle-error" />
                   </div>
 
                   <div>
                     <Label className="text-xs font-medium">Número/Altura *</Label>
                     <Input
                       value={cliente.direccion.numero}
-                      onChange={(e) => setCliente({
-                        ...cliente,
-                        direccion: { ...cliente.direccion, numero: sanitizeNumeroAltura(e.target.value).slice(0, 30) }
-                      })}
+                      onChange={(e) => updateClienteField('direccion.numero', sanitizeNumeroAltura(e.target.value).slice(0, 30))}
                       placeholder="Ej: 1234"
                       className="mt-1 h-8 text-sm"
                       maxLength={30}
+                      {...getInputErrorProps(fieldErrors, 'direccion.numero').inputProps}
                     />
+                    <FieldError error={fieldErrors?.direccion?.numero} id="direccion-numero-error" />
                   </div>
 
                   <div>
                     <Label className="text-xs font-medium">Edificio/Casa</Label>
                     <Input
                       value={cliente.direccion.edificio}
-                      onChange={(e) => setCliente({
-                        ...cliente,
-                        direccion: { ...cliente.direccion, edificio: sanitizeDireccion(e.target.value).slice(0, 100) }
-                      })}
+                      onChange={(e) => updateClienteField('direccion.edificio', sanitizeDireccion(e.target.value).slice(0, 100))}
                       placeholder="Ej: Torre A"
                       className="mt-1 h-8 text-sm"
                       maxLength={100}
@@ -636,10 +675,7 @@ export function ModalNuevoPedido({
                     <Label className="text-xs font-medium">Piso/Depto</Label>
                     <Input
                       value={cliente.direccion.piso}
-                      onChange={(e) => setCliente({
-                        ...cliente,
-                        direccion: { ...cliente.direccion, piso: sanitizeDireccion(e.target.value).slice(0, 50) }
-                      })}
+                      onChange={(e) => updateClienteField('direccion.piso', sanitizeDireccion(e.target.value).slice(0, 50))}
                       placeholder="Ej: 3° A"
                       className="mt-1 h-8 text-sm"
                       maxLength={50}
@@ -650,10 +686,7 @@ export function ModalNuevoPedido({
                     <Label className="text-xs font-medium">Observaciones</Label>
                     <Textarea
                       value={cliente.direccion.observaciones}
-                      onChange={(e) => setCliente({
-                        ...cliente,
-                        direccion: { ...cliente.direccion, observaciones: sanitizeDireccion(e.target.value).slice(0, 300) }
-                      })}
+                      onChange={(e) => updateClienteField('direccion.observaciones', sanitizeDireccion(e.target.value).slice(0, 300))}
                       placeholder="Ej: Timbre B, portón verde"
                       rows={2}
                       className="mt-1 text-sm"
@@ -735,9 +768,14 @@ export function ModalNuevoPedido({
                     <Input
                       type="time"
                       value={horaProgramada}
-                      onChange={(e) => setHoraProgramada(e.target.value)}
+                      onChange={(e) => {
+                        setHoraProgramada(e.target.value);
+                        clearInlineError('horaProgramada');
+                      }}
                       className="mt-1 h-8 font-mono text-sm"
+                      {...getInputErrorProps(fieldErrors, 'horaProgramada').inputProps}
                     />
+                    <FieldError error={fieldErrors?.horaProgramada} id="horaProgramada-error" />
                   </div>
                 )}
 

@@ -69,6 +69,27 @@ export const API_CONFIG = {
       ASIGNAR_A_ARTICULO: (articuloId) => `/articulos/${articuloId}/adicionales`,
       ELIMINAR_DE_ARTICULO: (articuloId, adicionalId) => `/articulos/${articuloId}/adicionales/${adicionalId}`,
     },
+    STOCK_SEMANAL: {
+      INSUMOS: {
+        LIST: '/inventario/stock-semanal/insumos',
+        CREATE: '/inventario/stock-semanal/insumos',
+        BY_ID: (id) => `/inventario/stock-semanal/insumos/${id}`,
+        DELETE: (id) => `/inventario/stock-semanal/insumos/${id}`,
+        ACTIVO: (id) => `/inventario/stock-semanal/insumos/${id}/activo`,
+      },
+      SEMANAS: {
+        ABIERTA: '/inventario/stock-semanal/semanas/abierta',
+        LIST: '/inventario/stock-semanal/semanas',
+        CREATE: '/inventario/stock-semanal/semanas',
+        BY_ID: (id) => `/inventario/stock-semanal/semanas/${id}`,
+        CERRAR: (id) => `/inventario/stock-semanal/semanas/${id}/cerrar`,
+        /** Stock por línea de detalle (id = semanas_stock_detalle.id) */
+        DETALLE_STOCK_INICIAL: (detalleId) =>
+          `/inventario/stock-semanal/detalles/${detalleId}/stock-inicial`,
+        DETALLE_STOCK_FINAL: (detalleId) =>
+          `/inventario/stock-semanal/detalles/${detalleId}/stock-final`,
+      },
+    },
     COMANDAS: {
       LIST: '/comandas',
       CREATE: '/comandas',
@@ -107,6 +128,32 @@ export const API_CONFIG = {
       },
       MOVIMIENTOS: {
         CREATE: '/fondos/movimientos',
+      },
+    },
+    EMPLEADOS: {
+      LIST: '/empleados',
+      CREATE: '/empleados',
+      BY_ID: (id) => `/empleados/${id}`,
+      UPDATE: (id) => `/empleados/${id}`,
+      STATUS: (id) => `/empleados/${id}/activo`,
+      ASISTENCIAS: {
+        LIST: '/empleados/asistencias',
+        INGRESO: '/empleados/asistencias/ingreso',
+        EGRESO: '/empleados/asistencias/egreso',
+      },
+      MOVIMIENTOS: {
+        LIST: '/empleados/movimientos',
+        CREATE: '/empleados/movimientos',
+        BY_ID: (movimientoId) => `/empleados/movimientos/${movimientoId}`,
+        UPDATE: (movimientoId) => `/empleados/movimientos/${movimientoId}`,
+        DELETE: (movimientoId) => `/empleados/movimientos/${movimientoId}`,
+      },
+      LIQUIDACIONES: {
+        LIST: '/empleados/liquidaciones',
+        CREATE: '/empleados/liquidaciones',
+        SUMMARY: '/empleados/liquidaciones/resumen',
+        CALCULATE: '/empleados/liquidaciones/calcular',
+        BY_ID: (liquidacionId) => `/empleados/liquidaciones/${liquidacionId}`,
       },
     },
   },

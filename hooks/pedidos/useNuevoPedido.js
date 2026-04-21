@@ -7,6 +7,7 @@ import { toast } from '@/hooks/use-toast';
 import { crearItemCarrito, mergeItemEnCarrito, reagruparCarrito } from './cartUtils';
 import { formatDireccionEntrega } from '../../lib/formatters';
 import { calculateCartSubtotal } from '../../lib/pedidoTotals';
+import { setFieldError, zodIssuesToErrors } from '@/lib/form-errors';
 
 // Patrones para validación: sin símbolos raros (email se valida aparte)
 const SOLO_LETRAS_ESPACIOS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-']*$/; // nombre: letras, espacios, guión, apóstrofe
@@ -166,6 +167,7 @@ export const useNuevoPedido = () => {
   const [horaProgramada, setHoraProgramada] = useState('');
   const [medioPago, setMedioPago] = useState('efectivo');
   const [estadoPago, setEstadoPago] = useState('pending');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   // Cargar categorías y productos solo al abrir modal (una vez)
   useEffect(() => {
@@ -326,7 +328,33 @@ export const useNuevoPedido = () => {
     setHoraProgramada('');
     setMedioPago('efectivo');
     setEstadoPago('pending');
+    setFieldErrors({});
   }, [categorias]);
+
+  const clearFieldError = useCallback((fieldPath) => {
+    setFieldErrors((prev) => {
+      if (!prev || typeof prev !== 'object') {
+        return prev;
+      }
+
+      const next = JSON.parse(JSON.stringify(prev));
+      const parts = String(fieldPath).split('.').filter(Boolean);
+      let current = next;
+
+      for (let index = 0; index < parts.length - 1; index += 1) {
+        current = current?.[parts[index]];
+        if (!current) {
+          return prev;
+        }
+      }
+
+      if (current && Object.prototype.hasOwnProperty.call(current, parts[parts.length - 1])) {
+        delete current[parts[parts.length - 1]];
+      }
+
+      return next;
+    });
+  }, []);
 
   // Agregar producto al carrito
   const agregarProductoConExtras = useCallback((producto, cantidad) => {
@@ -522,6 +550,18 @@ export const useNuevoPedido = () => {
       direccion: clienteActual.direccion,
     };
     const result = clienteSchema.safeParse(datosCliente);
+    let nextErrors = result.success ? {} : zodIssuesToErrors(result.error.issues ?? result.error.errors ?? []);
+
+    if (tipoEntregaActual === 'delivery' && !(clienteActual.direccion?.calle?.trim())) {
+      nextErrors = setFieldError(nextErrors, 'direccion.calle', 'La calle es obligatoria para delivery');
+    }
+
+    if (tipoPedido === 'programado' && !horaProgramada) {
+      nextErrors = setFieldError(nextErrors, 'horaProgramada', 'Debes indicar una hora programada');
+    }
+
+    setFieldErrors(nextErrors);
+
     if (!result.success) {
       const issues = result.error.issues ?? result.error.errors ?? [];
       const primerError = issues[0];
@@ -543,8 +583,11 @@ export const useNuevoPedido = () => {
     if (tipoEntregaActual === 'delivery' && !(clienteActual.direccion?.calle?.trim())) {
       return { valid: false, mensaje: 'Calle: La calle es requerida para delivery.' };
     }
+    if (tipoPedido === 'programado' && !horaProgramada) {
+      return { valid: false, mensaje: 'Hora programada: Debes indicar una hora programada.' };
+    }
     return { valid: true };
-  }, []);
+  }, [horaProgramada, tipoPedido]);
 
   // Crear pedido
   const crearPedido = useCallback(async (onSuccess) => {
@@ -571,6 +614,17 @@ export const useNuevoPedido = () => {
       if (error instanceof z.ZodError) {
         // Zod 3/4 usa .issues (no .errors)
         const issues = error.issues ?? error.errors ?? [];
+        let nextErrors = zodIssuesToErrors(issues);
+
+        if (tipoEntrega === 'delivery' && !(cliente.direccion?.calle?.trim())) {
+          nextErrors = setFieldError(nextErrors, 'direccion.calle', 'La calle es obligatoria para delivery');
+        }
+
+        if (tipoPedido === 'programado' && !horaProgramada) {
+          nextErrors = setFieldError(nextErrors, 'horaProgramada', 'Debes indicar una hora programada');
+        }
+
+        setFieldErrors(nextErrors);
         const primerError = issues.length > 0 ? issues[0] : null;
         const camposTraducidos = {
           nombre: 'Nombre',
@@ -596,6 +650,7 @@ export const useNuevoPedido = () => {
         return null;
       }
       console.error('Error al validar pedido:', error);
+      setFieldErrors({});
       toast.error('Error de validación');
       return null;
     }
@@ -668,6 +723,7 @@ export const useNuevoPedido = () => {
       const response = await pedidosService.crearPedido(pedidoData);
       
       if (response.success) {
+        setFieldErrors({});
         const nuevoPedido = {
           id: response.data.id,
           clienteNombre: cliente.nombre,
@@ -778,6 +834,9 @@ export const useNuevoPedido = () => {
     setMedioPago,
     estadoPago,
     setEstadoPago,
+    fieldErrors,
+    setFieldErrors,
+    clearFieldError,
     // Funciones
     calcularSubtotal,
     calcularTotal,

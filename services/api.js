@@ -217,4 +217,53 @@ export const apiRequest = {
   delete: (url, config = {}) => apiClient.delete(url, config),
 };
 
+/**
+ * Mensaje legible desde respuestas de error (p. ej. 4xx devueltas como respuesta "exitosa" por el interceptor).
+ * Cubre cuerpo anidado (`data.data`), validación Zod (`errors[]`) y mensajes `message` / `mensaje` del backend.
+ */
+export function getApiErrorMessage(response, fallback = 'Error') {
+  if (!response?.data) return fallback;
+  const d = response.data;
+  const inner =
+    d.data != null && typeof d.data === 'object' && !Array.isArray(d.data) ? d.data : null;
+
+  const primary =
+    inner?.message ||
+    inner?.mensaje ||
+    d.mensaje ||
+    d.message ||
+    inner?.detalle ||
+    d.detalle;
+
+  const errorsList = inner?.errors ?? d.errors;
+  if (Array.isArray(errorsList) && errorsList.length > 0) {
+    const parts = errorsList
+      .map((e) => {
+        if (typeof e === 'string') return e;
+        const p = e.path != null ? String(e.path) : '';
+        const m = e.message || e.msg || '';
+        if (p && m) return `${p}: ${m}`;
+        return m || p;
+      })
+      .filter(Boolean);
+    if (parts.length) {
+      const combined = parts.join('. ');
+      if (primary && combined && !combined.includes(String(primary))) {
+        return `${primary}. ${combined}`;
+      }
+      return combined;
+    }
+  }
+
+  return primary || fallback;
+}
+
+/** Para bloques `catch` de axios cuando no se usa el interceptor transformado. */
+export function getApiErrorFromCatch(error, fallback = 'Error') {
+  if (error?.response?.data) {
+    return getApiErrorMessage(error.response, fallback);
+  }
+  return error?.message || fallback;
+}
+
 export default apiClient;

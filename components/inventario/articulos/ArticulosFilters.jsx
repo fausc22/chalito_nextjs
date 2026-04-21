@@ -74,12 +74,29 @@ export const ArticulosFilters = ({
             </Select>
           </div>
 
+          {/* Select de control de stock */}
+          <div className="w-full lg:w-[190px]">
+            <Select
+              value={filtros.controlaStock || 'todos'}
+              onValueChange={(value) => onFiltroChange('controlaStock', value === 'todos' ? '' : value)}
+            >
+              <SelectTrigger className="h-9 sm:h-10 text-sm">
+                <SelectValue placeholder="Control de stock" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="con">Con control de stock</SelectItem>
+                <SelectItem value="sin">Sin control de stock</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Checkbox Mostrar Inactivos */}
           <div className="flex items-center space-x-1.5 sm:space-x-2 h-9 sm:h-10 px-2 sm:px-3 self-end">
             <Checkbox
               id="mostrarInactivos"
               checked={filtros.mostrarInactivos || false}
-              onCheckedChange={(checked) => onFiltroChange('mostrarInactivos', checked)}
+              onCheckedChange={(checked) => onFiltroChange('mostrarInactivos', Boolean(checked))}
               className="h-4 w-4"
             />
             <label

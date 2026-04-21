@@ -10,6 +10,7 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/ui/dialog';
+import { FieldError } from '@/components/ui/field-error';
 
 export function CuentaForm({
     isOpen,
@@ -23,6 +24,7 @@ export function CuentaForm({
         descripcion: '',
         saldo_inicial: 0
     });
+    const [errors, setErrors] = useState({});
 
     useEffect(() => {
         if (cuenta) {
@@ -38,16 +40,32 @@ export function CuentaForm({
                 saldo_inicial: 0
             });
         }
+        setErrors({});
     }, [cuenta, isOpen]);
 
     const handleChange = (field, value) => {
         setFormulario(prev => ({ ...prev, [field]: value }));
+        setErrors(prev => ({ ...prev, [field]: undefined }));
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         
+        const nextErrors = {};
         if (!formulario.nombre.trim()) {
+            nextErrors.nombre = 'El nombre es obligatorio';
+        }
+
+        if (!cuenta) {
+            const saldo = parseFloat(formulario.saldo_inicial);
+            if (formulario.saldo_inicial !== '' && (Number.isNaN(saldo) || saldo < 0)) {
+                nextErrors.saldo_inicial = 'El saldo inicial debe ser un número válido mayor o igual a 0';
+            }
+        }
+
+        setErrors(nextErrors);
+
+        if (Object.keys(nextErrors).some((key) => nextErrors[key])) {
             return;
         }
 
@@ -84,8 +102,10 @@ export function CuentaForm({
                             placeholder="Ej: Caja Principal, Banco Nación, etc."
                             className="mt-1"
                             maxLength={100}
-                            required
+                            error={Boolean(errors.nombre)}
+                            aria-invalid={Boolean(errors.nombre)}
                         />
+                        <FieldError error={errors.nombre} />
                     </div>
 
                     {/* Descripción */}
@@ -119,7 +139,10 @@ export function CuentaForm({
                                 onChange={(e) => handleChange('saldo_inicial', e.target.value)}
                                 placeholder="0.00"
                                 className="mt-1"
+                                error={Boolean(errors.saldo_inicial)}
+                                aria-invalid={Boolean(errors.saldo_inicial)}
                             />
+                            <FieldError error={errors.saldo_inicial} />
                         </div>
                     )}
 

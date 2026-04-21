@@ -1,5 +1,12 @@
 import { createContext, useContext } from 'react';
-import { toast } from '@/hooks/use-toast';
+import {
+  showErrorToast,
+  showInfoToast,
+  showLoadingToast,
+  showSuccessToast,
+  showWarningToast,
+  toast,
+} from '@/hooks/use-toast';
 
 const NotificationContext = createContext();
 
@@ -13,19 +20,19 @@ export const useNotification = () => {
 
 export const NotificationProvider = ({ children }) => {
   const showSuccess = (message, options = {}) =>
-    toast.success(message, { icon: options.icon ?? '✅', ...options });
+    showSuccessToast(message, options);
 
   const showError = (message, options = {}) =>
-    toast.error(message, { icon: options.icon ?? '⚠️', ...options });
+    showErrorToast(message, options);
 
   const showInfo = (message, options = {}) =>
-    toast.info(message, { icon: options.icon ?? 'ℹ️', ...options });
+    showInfoToast(message, options);
 
   const showWarning = (message, options = {}) =>
-    toast.warning(message, { icon: options.icon ?? '⚠️', ...options });
+    showWarningToast(message, options);
 
   const showLoading = (message, options = {}) =>
-    toast.loading(message, options);
+    showLoadingToast(message, options);
 
   const dismiss = (toastId) => {
     toast.dismiss(toastId);

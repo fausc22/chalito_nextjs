@@ -28,6 +28,8 @@ import { ArticulosForm } from './ArticulosForm';
 import { ArticulosPageSkeleton } from '../../common/LoadingSkeleton';
 import { toast } from '@/hooks/use-toast';
 import { ArticuloCostosModal } from './ArticuloCostosModal';
+import { clearFieldError, hasErrors } from '@/lib/form-errors';
+import { getDefaultControlaStockByTipo, resolveControlaStock } from '@/lib/articulosStock';
 
 export function ArticulosTab({
   articulos,
@@ -63,6 +65,7 @@ export function ArticulosTab({
     busqueda: '',
     categoria: '',
     tipo: '',
+    controlaStock: '',
     mostrarInactivos: false
   });
 
@@ -84,6 +87,14 @@ export function ArticulosTab({
         return false;
       }
 
+      if (filtros.controlaStock === 'con' && !resolveControlaStock(articulo)) {
+        return false;
+      }
+
+      if (filtros.controlaStock === 'sin' && resolveControlaStock(articulo)) {
+        return false;
+      }
+
       // Filtro por activos/inactivos
       if (!filtros.mostrarInactivos && !articulo.activo) {
         return false;
@@ -91,7 +102,7 @@ export function ArticulosTab({
 
       return true;
     });
-  }, [articulos, filtros.busqueda, filtros.categoria, filtros.tipo, filtros.mostrarInactivos]);
+  }, [articulos, filtros.busqueda, filtros.categoria, filtros.tipo, filtros.controlaStock, filtros.mostrarInactivos]);
 
   // Estados para paginación móvil
   const [currentPageMobile, setCurrentPageMobile] = useState(1);
@@ -106,7 +117,12 @@ export function ArticulosTab({
   useEffect(() => {
     setCurrentPageMobile(1);
     setCurrentPageDesktop(1);
-  }, [filtros.busqueda, filtros.categoria, filtros.tipo, filtros.mostrarInactivos]);
+  }, [filtros.busqueda, filtros.categoria, filtros.tipo, filtros.controlaStock, filtros.mostrarInactivos]);
+
+  // Recargar desde backend cuando cambia "Mostrar inactivos".
+  useEffect(() => {
+    onCargarArticulos({ incluirInactivos: filtros.mostrarInactivos });
+  }, [filtros.mostrarInactivos, onCargarArticulos]);
 
   // Ajustar página actual si queda fuera de rango después de operaciones
   useEffect(() => {
@@ -130,6 +146,7 @@ export function ArticulosTab({
     precio: '',
     categoria: '',
     tipo: 'OTRO',
+    controla_stock: getDefaultControlaStockByTipo('OTRO'),
     peso: '1',
     tiempoPreparacion: '',
     stock_actual: '',
@@ -137,6 +154,8 @@ export function ArticulosTab({
     activo: true,
     ingredientes: []
   });
+  const [errors, setErrors] = useState({});
+  const [controlaStockEditadoManualmente, setControlaStockEditadoManualmente] = useState(false);
 
   // Estado para la imagen (para subida a Cloudinary)
   const [imagenFile, setImagenFile] = useState(null);
@@ -167,6 +186,7 @@ export function ArticulosTab({
       precio: '',
       categoria: '',
       tipo: 'OTRO',
+      controla_stock: getDefaultControlaStockByTipo('OTRO'),
       peso: '1',
       tiempoPreparacion: '',
       stock_actual: '',
@@ -175,27 +195,72 @@ export function ArticulosTab({
       ingredientes: []
     });
     setImagenFile(null); // Limpiar imagen seleccionada
+    setErrors({});
+    setControlaStockEditadoManualmente(false);
+  };
+
+  const handleFieldChange = (field, value) => {
+    if (field === 'controla_stock') {
+      setControlaStockEditadoManualmente(true);
+    }
+
+    setFormulario((prev) => {
+      const next = { ...prev, [field]: value };
+
+      if (field === 'tipo' && !controlaStockEditadoManualmente) {
+        next.controla_stock = getDefaultControlaStockByTipo(value);
+      }
+
+      return next;
+    });
+    setErrors(prev => clearFieldError(prev, field));
+
+    if (field === 'controla_stock' && value === false) {
+      setErrors((prev) => ({
+        ...clearFieldError(clearFieldError(prev, 'stock_actual'), 'stock_minimo')
+      }));
+    }
   };
 
   const validarCamposObligatorios = () => {
+    const nextErrors = {};
+
     if (!formulario.nombre.trim()) {
-      return 'El nombre es obligatorio';
+      nextErrors.nombre = 'El nombre es obligatorio';
     }
 
     if (!formulario.precio || parseFloat(formulario.precio) <= 0) {
-      return 'El precio debe ser mayor a 0';
+      nextErrors.precio = 'El precio debe ser mayor a 0';
     }
 
     if (!formulario.categoria.trim()) {
-      return 'La categoría es obligatoria';
+      nextErrors.categoria = 'La categoría es obligatoria';
     }
 
     const peso = Number(formulario.peso);
     if (!Number.isInteger(peso) || peso < 1 || peso > 4) {
-      return 'El peso de preparación debe ser un número entre 1 y 4';
+      nextErrors.peso = 'El tiempo de preparación debe estar entre 1 y 4';
     }
 
-    return null;
+    if (formulario.tipo === 'ELABORADO' && formulario.ingredientes.length === 0) {
+      nextErrors.ingredientes = 'Un artículo elaborado debe tener al menos un ingrediente';
+    }
+
+    if (formulario.controla_stock) {
+      if (formulario.stock_actual === '' || formulario.stock_actual === null || formulario.stock_actual === undefined) {
+        nextErrors.stock_actual = 'El stock actual es obligatorio cuando se controla stock';
+      } else if (Number(formulario.stock_actual) < 0) {
+        nextErrors.stock_actual = 'El stock actual no puede ser negativo';
+      }
+
+      if (formulario.stock_minimo === '' || formulario.stock_minimo === null || formulario.stock_minimo === undefined) {
+        nextErrors.stock_minimo = 'El stock mínimo es obligatorio cuando se controla stock';
+      } else if (Number(formulario.stock_minimo) < 0) {
+        nextErrors.stock_minimo = 'El stock mínimo no puede ser negativo';
+      }
+    }
+
+    return nextErrors;
   };
 
   const obtenerCategoriaId = () => {
@@ -215,8 +280,17 @@ export function ArticulosTab({
   // Handlers
   const handleCrearArticulo = async () => {
     const errorValidacion = validarCamposObligatorios();
-    if (errorValidacion) {
-      toast.error(errorValidacion);
+    setErrors(errorValidacion);
+    if (hasErrors(errorValidacion)) {
+      toast.error(
+        errorValidacion.nombre ||
+        errorValidacion.precio ||
+        errorValidacion.categoria ||
+        errorValidacion.peso ||
+        errorValidacion.ingredientes ||
+        errorValidacion.stock_actual ||
+        errorValidacion.stock_minimo
+      );
       return;
     }
 
@@ -252,8 +326,17 @@ export function ArticulosTab({
 
   const handleActualizarArticulo = async () => {
     const errorValidacion = validarCamposObligatorios();
-    if (errorValidacion) {
-      toast.error(errorValidacion);
+    setErrors(errorValidacion);
+    if (hasErrors(errorValidacion)) {
+      toast.error(
+        errorValidacion.nombre ||
+        errorValidacion.precio ||
+        errorValidacion.categoria ||
+        errorValidacion.peso ||
+        errorValidacion.ingredientes ||
+        errorValidacion.stock_actual ||
+        errorValidacion.stock_minimo
+      );
       return;
     }
 
@@ -329,6 +412,7 @@ export function ArticulosTab({
           precio: articuloCompleto.precio ? articuloCompleto.precio.toString() : '',
           categoria: articuloCompleto.categoria,
           tipo: articuloCompleto.tipo || 'OTRO',
+          controla_stock: resolveControlaStock(articuloCompleto),
           peso: articuloCompleto.peso !== undefined && articuloCompleto.peso !== null
             ? articuloCompleto.peso.toString()
             : '1',
@@ -339,6 +423,8 @@ export function ArticulosTab({
           imagen_url: articuloCompleto.imagen_url || null, // ✅ Agregar imagen_url para preview
           ingredientes: articuloCompleto.contenido || articuloCompleto.ingredientes || []
         });
+        setErrors({});
+        setControlaStockEditadoManualmente(false);
         setModalEditar(true);
       } else {
         toast.error('Error al cargar el artículo');
@@ -382,6 +468,7 @@ export function ArticulosTab({
       busqueda: '',
       categoria: '',
       tipo: '',
+      controlaStock: '',
       mostrarInactivos: false
     });
     setCurrentPageMobile(1);
@@ -518,7 +605,9 @@ export function ArticulosTab({
         isOpen={modalAgregar || modalEditar}
         onClose={handleCloseModal}
         formulario={formulario}
-        setFormulario={setFormulario}
+        onFieldChange={handleFieldChange}
+        errors={errors}
+        setErrors={setErrors}
         categorias={categorias}
         ingredientes={ingredientesDisponibles}
         onSubmit={modalAgregar ? handleCrearArticulo : handleActualizarArticulo}

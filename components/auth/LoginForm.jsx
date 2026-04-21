@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { FieldError } from '@/components/ui/field-error';
 
 export function LoginForm() {
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ export function LoginForm() {
   });
 
   const [showPassword, setShowPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
   const { login, isLoading, error, clearError } = useAuth();
   const router = useRouter();
 
@@ -36,6 +38,8 @@ export function LoginForm() {
       clearError();
     }
 
+    setFieldErrors(prev => ({ ...prev, [name]: undefined }));
+
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -45,7 +49,19 @@ export function LoginForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.usuario.trim() || !formData.password.trim()) {
+    const nextErrors = {};
+
+    if (!formData.usuario.trim()) {
+      nextErrors.usuario = 'El usuario es obligatorio';
+    }
+
+    if (!formData.password.trim()) {
+      nextErrors.password = 'La contraseña es obligatoria';
+    }
+
+    setFieldErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
       return;
     }
 
@@ -94,7 +110,10 @@ export function LoginForm() {
             required
             autoComplete="username"
             className={error ? 'border-red-500 focus-visible:ring-red-500' : ''}
+            error={Boolean(fieldErrors.usuario)}
+            aria-invalid={Boolean(fieldErrors.usuario)}
           />
+          <FieldError error={fieldErrors.usuario} />
         </div>
 
         {/* Contraseña */}
@@ -112,6 +131,8 @@ export function LoginForm() {
               required
               autoComplete="current-password"
               className={`pr-10 ${error ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+              error={Boolean(fieldErrors.password)}
+              aria-invalid={Boolean(fieldErrors.password)}
             />
             <button
               type="button"
@@ -127,6 +148,7 @@ export function LoginForm() {
               )}
             </button>
           </div>
+          <FieldError error={fieldErrors.password} />
         </div>
 
         {/* Recordar sesión */}

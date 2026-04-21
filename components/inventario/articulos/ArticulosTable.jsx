@@ -22,6 +22,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
+import { isArticuloConControlStock, isStockBajoArticulo } from '@/lib/articulosStock';
 
 /**
  * Componente de tabla para mostrar artículos con shadcn/ui
@@ -202,14 +203,18 @@ export const ArticulosTable = ({
 
                 {/* Precio */}
                 <TableCell className="text-right py-1 px-2 min-w-0">
-                  <span className="font-semibold text-green-600">
+                  <span className="font-semibold text-slate-900">
                     ${articulo.precio}
                   </span>
                 </TableCell>
 
                 {/* Stock */}
                 <TableCell className="text-center py-1 min-w-0">
-                  <span className="font-medium">{articulo.stock_actual || 0}</span>
+                  {isArticuloConControlStock(articulo) ? (
+                    <span className="font-medium">{articulo.stock_actual || 0}</span>
+                  ) : (
+                    <span className="text-sm font-medium text-slate-500">No aplica</span>
+                  )}
                 </TableCell>
 
                 {/* Estado */}
@@ -412,12 +417,16 @@ function ArticuloMobileCard({
 
           <Badge 
             className={`text-[10px] md:text-xs ${
-              articulo.stock_actual <= articulo.stock_minimo
+              isArticuloConControlStock(articulo) && isStockBajoArticulo(articulo)
                 ? 'bg-red-50 text-red-700 border-red-300'
-                : 'bg-green-50 text-green-700 border-green-300 hidden md:inline-flex'
+                : isArticuloConControlStock(articulo)
+                  ? 'bg-green-50 text-green-700 border-green-300 hidden md:inline-flex'
+                  : 'bg-slate-100 text-slate-700 border-slate-300'
             }`}
           >
-            Stock: {articulo.stock_actual || 0}
+            {isArticuloConControlStock(articulo)
+              ? `Stock: ${articulo.stock_actual || 0}`
+              : 'Stock: No aplica'}
           </Badge>
 
           <Badge variant="outline" className="hidden md:inline-flex text-xs text-purple-700 border-purple-300">

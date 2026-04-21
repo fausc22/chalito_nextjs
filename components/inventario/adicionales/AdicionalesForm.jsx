@@ -12,6 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { FieldError } from '@/components/ui/field-error';
+import { getInputErrorProps } from '@/lib/form-errors';
 
 /**
  * Componente de formulario para crear/editar adicionales con shadcn/ui
@@ -20,15 +22,12 @@ export const AdicionalesForm = ({
   isOpen,
   onClose,
   formulario,
-  setFormulario,
+  onFieldChange,
+  errors = {},
   onSubmit,
   isEditing = false,
   loading = false,
 }) => {
-  const handleChange = (field, value) => {
-    setFormulario(prev => ({ ...prev, [field]: value }));
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit();
@@ -58,11 +57,12 @@ export const AdicionalesForm = ({
             <Input
               id="nombre"
               value={formulario.nombre || ''}
-              onChange={(e) => handleChange('nombre', e.target.value)}
+              onChange={(e) => onFieldChange('nombre', e.target.value)}
               placeholder="Ej: Extra queso, Extra bacon, Salsa extra..."
               className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-              required
+              {...getInputErrorProps(errors, 'nombre').inputProps}
             />
+            <FieldError error={errors?.nombre} id="nombre-error" />
           </div>
 
           {/* Descripción */}
@@ -73,7 +73,7 @@ export const AdicionalesForm = ({
             <Textarea
               id="descripcion"
               value={formulario.descripcion || ''}
-              onChange={(e) => handleChange('descripcion', e.target.value)}
+              onChange={(e) => onFieldChange('descripcion', e.target.value)}
               placeholder="Descripción opcional del adicional"
               rows={3}
               className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 resize-none"
@@ -89,13 +89,14 @@ export const AdicionalesForm = ({
               id="precio_extra"
               type="number"
               value={formulario.precio_extra !== undefined ? formulario.precio_extra : ''}
-              onChange={(e) => handleChange('precio_extra', parseFloat(e.target.value) || 0)}
+              onChange={(e) => onFieldChange('precio_extra', e.target.value)}
               min="0"
               step="0.01"
               placeholder="0.00"
               className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-              required
+              {...getInputErrorProps(errors, 'precio_extra').inputProps}
             />
+            <FieldError error={errors?.precio_extra} id="precio_extra-error" />
             <p className="text-sm text-muted-foreground">
               Precio adicional que se cobrará cuando el cliente agregue este extra
             </p>
@@ -107,7 +108,7 @@ export const AdicionalesForm = ({
               <Checkbox
                 id="disponible"
                 checked={formulario.disponible !== 0 && formulario.disponible !== false}
-                onCheckedChange={(checked) => handleChange('disponible', checked ? 1 : 0)}
+                onCheckedChange={(checked) => onFieldChange('disponible', checked ? 1 : 0)}
                 className="w-5 h-5 border-2"
               />
               <Label htmlFor="disponible" className="cursor-pointer text-amber-900 font-semibold">
@@ -119,7 +120,7 @@ export const AdicionalesForm = ({
               <Checkbox
                 id="disponible"
                 checked={formulario.disponible !== 0 && formulario.disponible !== false}
-                onCheckedChange={(checked) => handleChange('disponible', checked ? 1 : 0)}
+                onCheckedChange={(checked) => onFieldChange('disponible', checked ? 1 : 0)}
                 className="w-5 h-5 border-2"
               />
               <Label htmlFor="disponible" className="cursor-pointer font-medium text-slate-700">

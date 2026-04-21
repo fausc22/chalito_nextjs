@@ -4,6 +4,7 @@ import { Edit, Trash2, Utensils, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { isArticuloConControlStock, isStockBajoArticulo } from '@/lib/articulosStock';
 
 export function ArticulosCard({ articulo, onEditar, onEliminar, onVerCostos }) {
   const [imageError, setImageError] = useState(false);
@@ -62,12 +63,16 @@ export function ArticulosCard({ articulo, onEditar, onEliminar, onVerCostos }) {
           {/* Stock (mobile: solo si bajo, desktop: siempre) */}
           <Badge 
             className={`text-[10px] sm:text-xs ${
-              articulo.stock_bajo === 1 || articulo.stock_actual <= articulo.stock_minimo
+              isArticuloConControlStock(articulo) && (articulo.stock_bajo === 1 || isStockBajoArticulo(articulo))
                 ? 'bg-red-50 text-red-700 border-red-300'
-                : 'bg-green-50 text-green-700 border-green-300 hidden sm:inline-flex'
+                : isArticuloConControlStock(articulo)
+                  ? 'bg-green-50 text-green-700 border-green-300 hidden sm:inline-flex'
+                  : 'bg-slate-100 text-slate-700 border-slate-300'
             }`}
           >
-            Stock: {articulo.stock_actual}
+            {isArticuloConControlStock(articulo)
+              ? `Stock: ${articulo.stock_actual || 0}`
+              : 'Stock: No aplica'}
           </Badge>
 
           {/* Categoría (solo desktop) */}
@@ -84,7 +89,7 @@ export function ArticulosCard({ articulo, onEditar, onEliminar, onVerCostos }) {
         )}
 
         {/* ⚠️ ALERTAS - Stock bajo prominente */}
-        {articulo.stock_bajo === 1 && (
+        {isArticuloConControlStock(articulo) && articulo.stock_bajo === 1 && (
           <div className="sm:hidden">
             <Badge variant="destructive" className="w-full justify-center text-xs py-1">
               ⚠️ Stock Bajo

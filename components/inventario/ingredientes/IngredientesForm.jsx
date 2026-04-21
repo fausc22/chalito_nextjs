@@ -19,6 +19,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { FieldError } from '@/components/ui/field-error';
+import { getInputErrorProps } from '@/lib/form-errors';
 
 /**
  * Componente de formulario para crear/editar ingredientes con shadcn/ui
@@ -27,15 +29,12 @@ export const IngredientesForm = ({
   isOpen,
   onClose,
   formulario,
-  setFormulario,
+  onFieldChange,
+  errors = {},
   onSubmit,
   isEditing = false,
   loading = false,
 }) => {
-  const handleChange = (field, value) => {
-    setFormulario(prev => ({ ...prev, [field]: value }));
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit();
@@ -65,11 +64,12 @@ export const IngredientesForm = ({
             <Input
               id="nombre"
               value={formulario.nombre || ''}
-              onChange={(e) => handleChange('nombre', e.target.value)}
+              onChange={(e) => onFieldChange('nombre', e.target.value)}
               placeholder="Ej: Lechuga, Tomate, Queso..."
               className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-              required
+              {...getInputErrorProps(errors, 'nombre').inputProps}
             />
+            <FieldError error={errors?.nombre} id="nombre-error" />
           </div>
 
           {/* Descripción */}
@@ -80,7 +80,7 @@ export const IngredientesForm = ({
             <Textarea
               id="descripcion"
               value={formulario.descripcion || ''}
-              onChange={(e) => handleChange('descripcion', e.target.value)}
+              onChange={(e) => onFieldChange('descripcion', e.target.value)}
               placeholder="Descripción opcional del ingrediente"
               rows={3}
               className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 resize-none"
@@ -94,7 +94,7 @@ export const IngredientesForm = ({
             </Label>
             <Select
               value={formulario.unidad_base || 'UNIDADES'}
-              onValueChange={(value) => handleChange('unidad_base', value)}
+              onValueChange={(value) => onFieldChange('unidad_base', value)}
             >
               <SelectTrigger id="unidad_base" className="border-2">
                 <SelectValue placeholder="Seleccionar unidad base" />
@@ -120,12 +120,14 @@ export const IngredientesForm = ({
               id="costo_unitario_base"
               type="number"
               value={formulario.costo_unitario_base !== undefined && formulario.costo_unitario_base !== null ? formulario.costo_unitario_base : ''}
-              onChange={(e) => handleChange('costo_unitario_base', e.target.value)}
+              onChange={(e) => onFieldChange('costo_unitario_base', e.target.value)}
               min="0"
               step="0.01"
               placeholder="0.00"
               className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+              {...getInputErrorProps(errors, 'costo_unitario_base').inputProps}
             />
+            <FieldError error={errors?.costo_unitario_base} id="costo_unitario_base-error" />
             <p className="text-xs text-muted-foreground">
               ¿Cuánto cuesta 1 kilo / 1 litro / 1 unidad de este insumo? Ejemplo: carne → costo por kilo, aceite → costo por litro, pan → costo por unidad.
             </p>
@@ -137,7 +139,7 @@ export const IngredientesForm = ({
               <Checkbox
                 id="disponible"
                 checked={formulario.disponible !== 0 && formulario.disponible !== false}
-                onCheckedChange={(checked) => handleChange('disponible', checked ? 1 : 0)}
+                onCheckedChange={(checked) => onFieldChange('disponible', checked ? 1 : 0)}
                 className="w-5 h-5 border-2"
               />
               <Label htmlFor="disponible" className="cursor-pointer text-amber-900 font-semibold">
@@ -149,7 +151,7 @@ export const IngredientesForm = ({
               <Checkbox
                 id="disponible"
                 checked={formulario.disponible !== 0 && formulario.disponible !== false}
-                onCheckedChange={(checked) => handleChange('disponible', checked ? 1 : 0)}
+                onCheckedChange={(checked) => onFieldChange('disponible', checked ? 1 : 0)}
                 className="w-5 h-5 border-2"
               />
               <Label htmlFor="disponible" className="cursor-pointer font-medium text-slate-700">

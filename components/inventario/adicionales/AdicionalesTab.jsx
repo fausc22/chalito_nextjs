@@ -31,6 +31,7 @@ import { ModalSeleccionarArticulo } from './ModalSeleccionarArticulo';
 import { ArticulosConAdicionales } from './ArticulosConAdicionales';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
+import { clearFieldError, hasErrors } from '@/lib/form-errors';
 
 export function AdicionalesTab({
   adicionales,
@@ -54,6 +55,7 @@ export function AdicionalesTab({
     precio_extra: 0,
     disponible: 1,
   });
+  const [errors, setErrors] = useState({});
 
   // Estados para confirmación de eliminación
   const [adicionalEliminar, setAdicionalEliminar] = useState(null);
@@ -120,6 +122,7 @@ export function AdicionalesTab({
       precio_extra: 0,
       disponible: 1,
     });
+    setErrors({});
     setModalAbierto(true);
   };
 
@@ -132,6 +135,7 @@ export function AdicionalesTab({
       precio_extra: adicional.precio_extra || 0,
       disponible: adicional.disponible,
     });
+    setErrors({});
     setModalAbierto(true);
   };
 
@@ -145,6 +149,29 @@ export function AdicionalesTab({
       precio_extra: 0,
       disponible: 1,
     });
+    setErrors({});
+  };
+
+  const handleFieldChange = (field, value) => {
+    setFormulario(prev => ({ ...prev, [field]: value }));
+    setErrors(prev => clearFieldError(prev, field));
+  };
+
+  const validateForm = () => {
+    const nextErrors = {};
+
+    if (!formulario.nombre || formulario.nombre.trim() === '') {
+      nextErrors.nombre = 'El nombre del adicional es obligatorio';
+    } else if (formulario.nombre.trim().length < 2) {
+      nextErrors.nombre = 'El nombre debe tener al menos 2 caracteres';
+    }
+
+    const precioExtra = parseFloat(formulario.precio_extra);
+    if (Number.isNaN(precioExtra) || precioExtra < 0) {
+      nextErrors.precio_extra = 'El precio extra debe ser un número válido mayor o igual a 0';
+    }
+
+    return nextErrors;
   };
 
   // Abrir modal para seleccionar artículo
@@ -162,24 +189,15 @@ export function AdicionalesTab({
   const handleSubmit = async () => {
     setLoadingSubmit(true);
 
-    if (!formulario.nombre || formulario.nombre.trim() === '') {
-      toast.error('El nombre del adicional es obligatorio');
-      setLoadingSubmit(false);
-      return;
-    }
-
-    if (formulario.nombre.trim().length < 2) {
-      toast.error('El nombre debe tener al menos 2 caracteres');
+    const nextErrors = validateForm();
+    setErrors(nextErrors);
+    if (hasErrors(nextErrors)) {
+      toast.error(nextErrors.nombre || nextErrors.precio_extra);
       setLoadingSubmit(false);
       return;
     }
 
     const precioExtra = parseFloat(formulario.precio_extra);
-    if (isNaN(precioExtra) || precioExtra < 0) {
-      toast.error('El precio extra debe ser un número válido mayor o igual a 0');
-      setLoadingSubmit(false);
-      return;
-    }
 
     try {
       const datos = {
@@ -466,7 +484,8 @@ export function AdicionalesTab({
         isOpen={modalAbierto}
         onClose={cerrarModal}
         formulario={formulario}
-        setFormulario={setFormulario}
+        onFieldChange={handleFieldChange}
+        errors={errors}
         onSubmit={handleSubmit}
         isEditing={!!adicionalEditando}
         loading={loadingSubmit}

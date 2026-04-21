@@ -32,21 +32,28 @@ export function ModalExtras({
     (!producto.extrasDisponibles || producto.extrasDisponibles.length === 0);
   const dobleExtra = opcionesPresentacion.find((e) => /hacela\s*doble/i.test(e.nombre || e.adicional_nombre || e.name || ''));
   const tripleExtra = opcionesPresentacion.find((e) => /hacela\s*triple/i.test(e.nombre || e.adicional_nombre || e.name || ''));
+  const cuadrupleExtra = opcionesPresentacion.find((e) => /hacela\s*cu[aá]druple/i.test(e.nombre || e.adicional_nombre || e.name || ''));
 
-  const presentacionSeleccionada = extrasSeleccionados.find((e) => e.id === dobleExtra?.id)
-    ? 'doble'
+  const presentacionSeleccionada = extrasSeleccionados.find((e) => e.id === cuadrupleExtra?.id)
+    ? 'cuadruple'
     : extrasSeleccionados.find((e) => e.id === tripleExtra?.id)
       ? 'triple'
+      : extrasSeleccionados.find((e) => e.id === dobleExtra?.id)
+        ? 'doble'
       : 'simple';
 
   const setPresentacion = (val) => {
-    const sinPresentacion = extrasSeleccionados.filter((e) => e.id !== dobleExtra?.id && e.id !== tripleExtra?.id);
+    const sinPresentacion = extrasSeleccionados.filter(
+      (e) => e.id !== dobleExtra?.id && e.id !== tripleExtra?.id && e.id !== cuadrupleExtra?.id
+    );
     if (val === 'simple') {
       setExtrasSeleccionados(sinPresentacion);
     } else if (val === 'doble' && dobleExtra) {
       setExtrasSeleccionados([...sinPresentacion, dobleExtra]);
     } else if (val === 'triple' && tripleExtra) {
       setExtrasSeleccionados([...sinPresentacion, tripleExtra]);
+    } else if (val === 'cuadruple' && cuadrupleExtra) {
+      setExtrasSeleccionados([...sinPresentacion, cuadrupleExtra]);
     }
   };
 
@@ -131,8 +138,8 @@ export function ModalExtras({
           {/* Presentación + Extras - Solo si el producto tiene extras */}
           {producto.extrasDisponibles && producto.extrasDisponibles.length > 0 ? (
             <div className="space-y-4">
-              {/* Presentación (radio) - Hacela doble / Hacela triple */}
-              {(dobleExtra || tripleExtra) && (
+              {/* Presentación (radio) - Hacela doble / Hacela triple / Hacela cuadruple */}
+              {(dobleExtra || tripleExtra || cuadrupleExtra) && (
                 <div className="space-y-2">
                   <h4 className="font-semibold text-slate-800 mb-2">Presentación:</h4>
                   <div className="flex flex-wrap gap-4 pl-3">
@@ -170,6 +177,19 @@ export function ModalExtras({
                         />
                         <span className="text-sm font-medium text-slate-800">Triple</span>
                         <span className="text-xs text-slate-600">+${tripleExtra.precio?.toLocaleString('es-AR')}</span>
+                      </label>
+                    )}
+                    {cuadrupleExtra && (
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="presentacion"
+                          checked={presentacionSeleccionada === 'cuadruple'}
+                          onChange={() => setPresentacion('cuadruple')}
+                          className="w-4 h-4 border-2 border-slate-300 text-blue-600"
+                        />
+                        <span className="text-sm font-medium text-slate-800">Cuádruple</span>
+                        <span className="text-xs text-slate-600">+${cuadrupleExtra.precio?.toLocaleString('es-AR')}</span>
                       </label>
                     )}
                   </div>

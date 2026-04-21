@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { isArticuloConControlStock } from '@/lib/articulosStock';
 
 /**
  * 🖥️ Vista de TABLA para Desktop
@@ -123,12 +124,16 @@ export function ArticulosTableView({
 
               {/* Stock */}
               <TableCell className="text-center py-3">
-                <div className="flex flex-col items-center gap-1">
-                  <span className="font-medium">{articulo.stock_actual || 0}</span>
-                  <span className="text-xs text-muted-foreground">
-                    Min: {articulo.stock_minimo || 0}
-                  </span>
-                </div>
+                {isArticuloConControlStock(articulo) ? (
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="font-medium">{articulo.stock_actual || 0}</span>
+                    <span className="text-xs text-muted-foreground">
+                      Min: {articulo.stock_minimo || 0}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-sm font-medium text-slate-500">No aplica</span>
+                )}
               </TableCell>
 
               {/* Estado */}

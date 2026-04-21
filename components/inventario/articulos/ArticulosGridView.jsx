@@ -4,6 +4,7 @@ import { Pencil, Trash2, Utensils } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { isArticuloConControlStock, isStockBajoArticulo } from '@/lib/articulosStock';
 
 /**
  * 📱 Vista de CARDS para Mobile/Tablet
@@ -97,12 +98,16 @@ function ArticuloCard({
 
           <Badge 
             className={`text-[10px] md:text-xs ${
-              articulo.stock_actual <= articulo.stock_minimo
+              isArticuloConControlStock(articulo) && isStockBajoArticulo(articulo)
                 ? 'bg-red-50 text-red-700 border-red-300'
-                : 'bg-green-50 text-green-700 border-green-300 hidden md:inline-flex'
+                : isArticuloConControlStock(articulo)
+                  ? 'bg-green-50 text-green-700 border-green-300 hidden md:inline-flex'
+                  : 'bg-slate-100 text-slate-700 border-slate-300'
             }`}
           >
-            Stock: {articulo.stock_actual || 0}
+            {isArticuloConControlStock(articulo)
+              ? `Stock: ${articulo.stock_actual || 0}`
+              : 'Stock: No aplica'}
           </Badge>
 
           <Badge variant="outline" className="hidden md:inline-flex text-xs text-purple-700 border-purple-300">

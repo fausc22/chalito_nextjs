@@ -8,8 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FieldError } from '@/components/ui/field-error';
 import { ProductCard } from '../ProductCard';
 import { getItemExtras, getSufijoPresentacion, getExtrasSinPresentacion } from '@/lib/extrasUtils';
+import { clearFieldError as clearErrorByPath, getInputErrorProps } from '@/lib/form-errors';
+import { toast } from '@/hooks/use-toast';
 
 // Mapear estado del pedido a texto legible
 const getEstadoTexto = (estado) => {
@@ -183,16 +186,53 @@ export function ModalEditarPedido({
   setMedioPago,
   estadoPago,
   setEstadoPago,
+  fieldErrors = {},
+  setFieldErrors,
+  clearFieldError,
   calcularTotal,
   agregarProductoConExtras,
   modificarCantidad,
   eliminarDelCarrito,
   editarExtrasItem,
   resetearModal,
+  validarPasoCliente,
   actualizarPedido,
   onSuccess
 }) {
   const [carritoExpandidoMobile, setCarritoExpandidoMobile] = useState(true);
+
+  const clearInlineError = (fieldPath) => {
+    if (typeof clearFieldError === 'function') {
+      clearFieldError(fieldPath);
+      return;
+    }
+
+    if (typeof setFieldErrors === 'function') {
+      setFieldErrors((prev) => clearErrorByPath(prev, fieldPath));
+    }
+  };
+
+  const updateClienteField = (fieldPath, value) => {
+    setCliente((prev) => {
+      if (fieldPath.startsWith('direccion.')) {
+        const nestedField = fieldPath.replace('direccion.', '');
+        return {
+          ...prev,
+          direccion: {
+            ...prev.direccion,
+            [nestedField]: value,
+          },
+        };
+      }
+
+      return {
+        ...prev,
+        [fieldPath]: value,
+      };
+    });
+
+    clearInlineError(fieldPath);
+  };
 
   const handleClose = (open) => {
     if (!open) {
@@ -482,20 +522,24 @@ export function ModalEditarPedido({
                   <Label className="text-xs font-medium">Nombre del Cliente *</Label>
                   <Input
                     value={cliente.nombre}
-                    onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })}
+                    onChange={(e) => updateClienteField('nombre', e.target.value)}
                     placeholder="Ej: Juan Pérez"
                     className="mt-1 h-8 text-sm"
+                    {...getInputErrorProps(fieldErrors, 'nombre').inputProps}
                   />
+                  <FieldError error={fieldErrors?.nombre} id="nombre-error" />
                 </div>
 
                 <div>
                   <Label className="text-xs font-medium">Teléfono *</Label>
                   <Input
                     value={cliente.telefono}
-                    onChange={(e) => setCliente({ ...cliente, telefono: e.target.value })}
+                    onChange={(e) => updateClienteField('telefono', e.target.value)}
                     placeholder="Ej: 3815-123456"
                     className="mt-1 h-8 text-sm"
+                    {...getInputErrorProps(fieldErrors, 'telefono').inputProps}
                   />
+                  <FieldError error={fieldErrors?.telefono} id="telefono-error" />
                 </div>
 
                 <div className="col-span-2">
@@ -503,10 +547,12 @@ export function ModalEditarPedido({
                   <Input
                     type="email"
                     value={cliente.email}
-                    onChange={(e) => setCliente({ ...cliente, email: e.target.value })}
+                    onChange={(e) => updateClienteField('email', e.target.value)}
                     placeholder="Ej: cliente@email.com"
                     className="mt-1 h-8 text-sm"
+                    {...getInputErrorProps(fieldErrors, 'email').inputProps}
                   />
+                  <FieldError error={fieldErrors?.email} id="email-error" />
                 </div>
               </div>
             </div>
@@ -549,36 +595,31 @@ export function ModalEditarPedido({
                     <Label className="text-xs font-medium">Calle *</Label>
                     <Input
                       value={cliente.direccion.calle}
-                      onChange={(e) => setCliente({
-                        ...cliente,
-                        direccion: { ...cliente.direccion, calle: e.target.value }
-                      })}
+                      onChange={(e) => updateClienteField('direccion.calle', e.target.value)}
                       placeholder="Ej: Av. Belgrano"
                       className="mt-1 h-8 text-sm"
+                      {...getInputErrorProps(fieldErrors, 'direccion.calle').inputProps}
                     />
+                    <FieldError error={fieldErrors?.direccion?.calle} id="direccion-calle-error" />
                   </div>
 
                   <div>
                     <Label className="text-xs font-medium">Número/Altura *</Label>
                     <Input
                       value={cliente.direccion.numero}
-                      onChange={(e) => setCliente({
-                        ...cliente,
-                        direccion: { ...cliente.direccion, numero: e.target.value }
-                      })}
+                      onChange={(e) => updateClienteField('direccion.numero', e.target.value)}
                       placeholder="Ej: 1234"
                       className="mt-1 h-8 text-sm"
+                      {...getInputErrorProps(fieldErrors, 'direccion.numero').inputProps}
                     />
+                    <FieldError error={fieldErrors?.direccion?.numero} id="direccion-numero-error" />
                   </div>
 
                   <div>
                     <Label className="text-xs font-medium">Edificio/Casa</Label>
                     <Input
                       value={cliente.direccion.edificio}
-                      onChange={(e) => setCliente({
-                        ...cliente,
-                        direccion: { ...cliente.direccion, edificio: e.target.value }
-                      })}
+                      onChange={(e) => updateClienteField('direccion.edificio', e.target.value)}
                       placeholder="Ej: Torre A"
                       className="mt-1 h-8 text-sm"
                     />
@@ -588,10 +629,7 @@ export function ModalEditarPedido({
                     <Label className="text-xs font-medium">Piso/Depto</Label>
                     <Input
                       value={cliente.direccion.piso}
-                      onChange={(e) => setCliente({
-                        ...cliente,
-                        direccion: { ...cliente.direccion, piso: e.target.value }
-                      })}
+                      onChange={(e) => updateClienteField('direccion.piso', e.target.value)}
                       placeholder="Ej: 3° A"
                       className="mt-1 h-8 text-sm"
                     />
@@ -601,10 +639,7 @@ export function ModalEditarPedido({
                     <Label className="text-xs font-medium">Observaciones</Label>
                     <Textarea
                       value={cliente.direccion.observaciones}
-                      onChange={(e) => setCliente({
-                        ...cliente,
-                        direccion: { ...cliente.direccion, observaciones: e.target.value }
-                      })}
+                      onChange={(e) => updateClienteField('direccion.observaciones', e.target.value)}
                       placeholder="Ej: Timbre B, portón verde"
                       rows={2}
                       className="mt-1 text-sm"
@@ -685,9 +720,14 @@ export function ModalEditarPedido({
                     <Input
                       type="time"
                       value={horaProgramada}
-                      onChange={(e) => setHoraProgramada(e.target.value)}
+                      onChange={(e) => {
+                        setHoraProgramada(e.target.value);
+                        clearInlineError('horaProgramada');
+                      }}
                       className="mt-1 h-8 font-mono text-sm"
+                      {...getInputErrorProps(fieldErrors, 'horaProgramada').inputProps}
                     />
+                    <FieldError error={fieldErrors?.horaProgramada} id="horaProgramada-error" />
                   </div>
                 )}
 
@@ -953,8 +993,14 @@ export function ModalEditarPedido({
                 Volver
               </Button>
               <Button
-                onClick={() => setPasoModal(3)}
-                disabled={!cliente.nombre || !cliente.telefono || (tipoEntrega === 'delivery' && !cliente.direccion.calle)}
+                onClick={() => {
+                  const { valid, mensaje } = validarPasoCliente(cliente, tipoEntrega);
+                  if (!valid) {
+                    toast.error(mensaje);
+                    return;
+                  }
+                  setPasoModal(3);
+                }}
                 className="gap-2 bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
               >
                 Siguiente: Resumen

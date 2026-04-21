@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { isArticuloConControlStock, isStockBajoArticulo } from '@/lib/articulosStock';
 
 export function ProductCard({ producto, onAgregar }) {
   const [cantidad, setCantidad] = useState(1);
@@ -71,11 +72,11 @@ export function ProductCard({ producto, onAgregar }) {
             </Badge>
           )}
           
-          {producto.stock_actual !== undefined && (
+          {isArticuloConControlStock(producto) && producto.stock_actual !== undefined && (
             <Badge 
               variant="outline" 
               className={`text-xs px-2 py-0.5 ${
-                producto.stock_actual <= producto.stock_minimo 
+                isStockBajoArticulo(producto)
                   ? 'bg-red-50 text-red-700 border-red-300' 
                   : 'bg-green-50 text-green-700 border-green-300'
               }`}

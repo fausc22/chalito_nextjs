@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { FieldError } from '@/components/ui/field-error';
 
 const FORMAS_PAGO = [
     { value: 'EFECTIVO', label: 'Efectivo' },
@@ -37,12 +38,28 @@ export function GastosForm({
     isEditing,
     loading
 }) {
+    const [errors, setErrors] = useState({});
+
     const handleChange = (field, value) => {
         setFormulario(prev => ({ ...prev, [field]: value }));
+        setErrors(prev => ({ ...prev, [field]: undefined }));
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        const nextErrors = {};
+
+        if (!formulario.categoria_id) nextErrors.categoria_id = 'La categoría es obligatoria';
+        if (!formulario.descripcion?.trim()) nextErrors.descripcion = 'La descripción es obligatoria';
+        if (!formulario.monto || parseFloat(formulario.monto) <= 0) nextErrors.monto = 'El monto debe ser mayor a 0';
+        if (!formulario.cuenta_id) nextErrors.cuenta_id = 'La cuenta de fondos es obligatoria';
+
+        setErrors(nextErrors);
+
+        if (Object.keys(nextErrors).some((key) => nextErrors[key])) {
+            return;
+        }
+
         onSubmit();
     };
 
@@ -68,7 +85,7 @@ export function GastosForm({
                             value={formulario.categoria_id?.toString() || ''}
                             onValueChange={(value) => handleChange('categoria_id', value)}
                         >
-                            <SelectTrigger className="mt-1">
+                            <SelectTrigger className="mt-1" error={Boolean(errors.categoria_id)} aria-invalid={Boolean(errors.categoria_id)}>
                                 <SelectValue placeholder="Seleccionar categoría" />
                             </SelectTrigger>
                             <SelectContent>
@@ -79,6 +96,7 @@ export function GastosForm({
                                 ))}
                             </SelectContent>
                         </Select>
+                        <FieldError error={errors.categoria_id} />
                     </div>
 
                     {/* Descripción */}
@@ -93,7 +111,10 @@ export function GastosForm({
                             placeholder="Ej: Compra de harina para producción"
                             className="mt-1"
                             maxLength={255}
+                            error={Boolean(errors.descripcion)}
+                            aria-invalid={Boolean(errors.descripcion)}
                         />
+                        <FieldError error={errors.descripcion} />
                     </div>
 
                     {/* Monto */}
@@ -114,8 +135,11 @@ export function GastosForm({
                                 onChange={(e) => handleChange('monto', e.target.value)}
                                 placeholder="0.00"
                                 className="pl-8"
+                                error={Boolean(errors.monto)}
+                                aria-invalid={Boolean(errors.monto)}
                             />
                         </div>
+                        <FieldError error={errors.monto} />
                     </div>
 
                     {/* Forma de Pago */}
@@ -150,7 +174,7 @@ export function GastosForm({
                             onValueChange={(value) => handleChange('cuenta_id', value)}
                             required
                         >
-                            <SelectTrigger className="mt-1">
+                            <SelectTrigger className="mt-1" error={Boolean(errors.cuenta_id)} aria-invalid={Boolean(errors.cuenta_id)}>
                                 <SelectValue placeholder="Seleccionar cuenta de fondos" />
                             </SelectTrigger>
                             <SelectContent>
@@ -177,11 +201,7 @@ export function GastosForm({
                                 )}
                             </p>
                         )}
-                        {!formulario.cuenta_id && (
-                            <p className="text-xs text-red-600 mt-1">
-                                La cuenta de fondos es obligatoria
-                            </p>
-                        )}
+                        <FieldError error={errors.cuenta_id} />
                     </div>
 
                     {/* Observaciones */}

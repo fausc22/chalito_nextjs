@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { Utensils, Check, Plus, X, Image as ImageIcon, Upload } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +22,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
+import { FieldError } from '@/components/ui/field-error';
+import { clearFieldError, getInputErrorProps } from '@/lib/form-errors';
 
 /**
  * Componente de formulario para crear/editar artículos
@@ -29,7 +32,9 @@ export const ArticulosForm = ({
   isOpen,
   onClose,
   formulario,
-  setFormulario,
+  onFieldChange,
+  errors = {},
+  setErrors,
   categorias = [],
   ingredientes = [],
   onSubmit,
@@ -61,7 +66,7 @@ export const ArticulosForm = ({
     } else if (isOpen && !isEditing) {
       ingredientesOriginalesRef.current = [];
     }
-  }, [isOpen, isEditing]);
+  }, [formulario.ingredientes, isOpen, isEditing]);
 
   // Limpiar imagen cuando se cierra el modal
   useEffect(() => {
@@ -72,7 +77,7 @@ export const ArticulosForm = ({
         fileInputRef.current.value = '';
       }
     }
-  }, [isOpen]);
+  }, [isOpen, setImagenFile]);
 
   // Cargar imagen existente cuando se edita un artículo
   useEffect(() => {
@@ -92,24 +97,23 @@ export const ArticulosForm = ({
 
       // Si cambia de ELABORADO a otro tipo, limpiar ingredientes
       if (tipoAnterior === 'ELABORADO' && value !== 'ELABORADO') {
-        setFormulario(prev => ({ ...prev, tipo: value, ingredientes: [] }));
+        onFieldChange('tipo', value);
+        onFieldChange('ingredientes', []);
         return;
       }
 
       // Si cambia de otro tipo a ELABORADO, restaurar ingredientes originales
       if (tipoAnterior !== 'ELABORADO' && value === 'ELABORADO') {
-        setFormulario(prev => ({
-          ...prev,
-          tipo: value,
-          ingredientes: ingredientesOriginalesRef.current.length > 0
-            ? [...ingredientesOriginalesRef.current]
-            : []
-        }));
+        onFieldChange('tipo', value);
+        onFieldChange(
+          'ingredientes',
+          ingredientesOriginalesRef.current.length > 0 ? [...ingredientesOriginalesRef.current] : []
+        );
         return;
       }
     }
 
-    setFormulario(prev => ({ ...prev, [field]: value }));
+    onFieldChange(field, value);
   };
 
   // ==================== HANDLERS PARA IMAGEN ====================
@@ -122,6 +126,7 @@ export const ArticulosForm = ({
     // Validar tipo de archivo
     const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
     if (!tiposPermitidos.includes(file.type)) {
+      setErrors?.((prev) => ({ ...prev, imagen: 'Solo se permiten imágenes JPG, PNG o WebP' }));
       toast({
         variant: 'destructive',
         title: 'Formato no válido',
@@ -134,6 +139,7 @@ export const ArticulosForm = ({
     // Validar tamaño (máximo 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
+      setErrors?.((prev) => ({ ...prev, imagen: 'La imagen no debe superar los 5MB' }));
       toast({
         variant: 'destructive',
         title: 'Archivo muy grande',
@@ -144,6 +150,7 @@ export const ArticulosForm = ({
     }
 
     // Guardar archivo en estado (NO se envía al backend)
+    setErrors?.((prev) => clearFieldError(prev, 'imagen'));
     setImagenFile(file);
 
     // Crear preview
@@ -162,6 +169,7 @@ export const ArticulosForm = ({
   const handleEliminarImagen = () => {
     setImagenFile(null);
     setImagenPreview(null);
+    setErrors?.((prev) => clearFieldError(prev, 'imagen'));
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -170,42 +178,45 @@ export const ArticulosForm = ({
   // Agregar ingrediente a la lista
   const handleAgregarIngrediente = () => {
     if (!ingredienteTemp.ingrediente_id) {
+      setErrors?.((prev) => ({ ...prev, ingrediente_temp: 'Debes seleccionar un ingrediente' }));
       toast.error('Debes seleccionar un ingrediente');
       return;
     }
 
     if (!ingredienteTemp.cantidad || ingredienteTemp.cantidad.trim() === '') {
+      setErrors?.((prev) => ({ ...prev, ingrediente_temp: 'Debes ingresar una cantidad' }));
       toast.error('Debes ingresar una cantidad');
       return;
     }
 
     const cantidad = parseFloat(ingredienteTemp.cantidad);
     if (isNaN(cantidad) || cantidad <= 0) {
+      setErrors?.((prev) => ({ ...prev, ingrediente_temp: 'La cantidad debe ser mayor a 0' }));
       toast.error('La cantidad debe ser mayor a 0');
       return;
     }
 
     const ingrediente = ingredientes.find(i => i.id === parseInt(ingredienteTemp.ingrediente_id));
     if (!ingrediente) {
+      setErrors?.((prev) => ({ ...prev, ingrediente_temp: 'Ingrediente no encontrado' }));
       toast.error('Ingrediente no encontrado');
       return;
     }
 
     // Verificar que no esté ya agregado
     if (formulario.ingredientes.find(i => i.ingrediente_id === parseInt(ingredienteTemp.ingrediente_id))) {
+      setErrors?.((prev) => ({ ...prev, ingrediente_temp: 'Este ingrediente ya fue agregado' }));
       toast.error('Este ingrediente ya fue agregado');
       return;
     }
 
-    setFormulario(prev => ({
-      ...prev,
-      ingredientes: [...prev.ingredientes, {
+    onFieldChange('ingredientes', [...formulario.ingredientes, {
         ingrediente_id: parseInt(ingredienteTemp.ingrediente_id),
         nombre: ingrediente.nombre,
         cantidad: cantidad,
         unidad_medida: ingredienteTemp.unidad_medida
-      }]
-    }));
+      }]);
+    setErrors?.((prev) => clearFieldError(clearFieldError(prev, 'ingrediente_temp'), 'ingredientes'));
 
     // Resetear selector
     setIngredienteTemp({
@@ -217,10 +228,7 @@ export const ArticulosForm = ({
 
   // Quitar ingrediente de la lista
   const handleQuitarIngrediente = (ingrediente_id) => {
-    setFormulario(prev => ({
-      ...prev,
-      ingredientes: prev.ingredientes.filter(i => i.ingrediente_id !== ingrediente_id)
-    }));
+    onFieldChange('ingredientes', formulario.ingredientes.filter(i => i.ingrediente_id !== ingrediente_id));
   };
 
   const handleSubmit = (e) => {
@@ -228,12 +236,14 @@ export const ArticulosForm = ({
 
     const peso = Number(formulario.peso);
     if (!Number.isInteger(peso) || peso < 1 || peso > 4) {
+      setErrors?.((prev) => ({ ...prev, peso: 'El tiempo de preparación debe estar entre 1 y 4' }));
       toast.error('El peso de preparación es obligatorio y debe estar entre 1 y 4');
       return;
     }
 
     // Validación: Si es ELABORADO, debe tener ingredientes
     if (formulario.tipo === 'ELABORADO' && formulario.ingredientes.length === 0) {
+      setErrors?.((prev) => ({ ...prev, ingredientes: 'Un artículo ELABORADO debe tener al menos un ingrediente' }));
       toast.error('Un artículo ELABORADO debe tener al menos un ingrediente');
       return;
     }
@@ -241,9 +251,11 @@ export const ArticulosForm = ({
     onSubmit();
   };
 
+  const controlaStockActivo = formulario.controla_stock !== false;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0 pb-2">
           <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
             <Utensils className="h-5 w-5" />
@@ -256,7 +268,7 @@ export const ArticulosForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 pt-4 pl-4 pr-4">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto space-y-4 pt-4 pl-4 pr-4">
           {/* Código y Nombre */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -281,8 +293,9 @@ export const ArticulosForm = ({
                 onChange={(e) => handleChange('nombre', e.target.value)}
                 placeholder="Ej: Hamburguesa Clásica"
                 className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-                required
+                {...getInputErrorProps(errors, 'nombre').inputProps}
               />
+              <FieldError error={errors?.nombre} id="nombre-error" />
             </div>
           </div>
 
@@ -309,12 +322,6 @@ export const ArticulosForm = ({
                 Imagen del artículo (Opcional)
               </Label>
             </div>
-
-            {/* Texto informativo */}
-            <p className="text-xs text-slate-500 leading-relaxed">
-              La imagen es opcional. Por ahora solo se puede seleccionar, pero no se subirá. 
-              Podrás agregarla más adelante cuando se implemente la subida a Cloudinary.
-            </p>
 
             {/* Input de archivo */}
             <div className="space-y-3">
@@ -356,10 +363,13 @@ export const ArticulosForm = ({
               {imagenPreview && (
                 <div className="relative">
                   <div className="relative w-full h-40 sm:h-48 bg-slate-100 rounded-lg overflow-hidden border-2 border-slate-200">
-                    <img
+                    <Image
                       src={imagenPreview}
-                      alt="Preview"
-                      className="w-full h-full object-contain"
+                      alt="Vista previa del artículo"
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 640px) 100vw, 700px"
+                      unoptimized={typeof imagenPreview === 'string' && imagenPreview.startsWith('data:')}
                     />
                   </div>
                   <p className="text-xs text-slate-500 mt-2">
@@ -375,6 +385,7 @@ export const ArticulosForm = ({
                   Formatos: JPG, PNG, WebP • Tamaño máximo: 5MB
                 </p>
               )}
+              <FieldError error={errors?.imagen} id="imagen-error" />
             </div>
           </div>
 
@@ -392,8 +403,9 @@ export const ArticulosForm = ({
                 onChange={(e) => handleChange('precio', e.target.value)}
                 placeholder="0.00"
                 className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-                required
+                {...getInputErrorProps(errors, 'precio').inputProps}
               />
+              <FieldError error={errors?.precio} id="precio-error" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="tipo" className="text-sm font-medium">
@@ -402,9 +414,8 @@ export const ArticulosForm = ({
               <Select
                 value={formulario.tipo || 'OTRO'}
                 onValueChange={(value) => handleChange('tipo', value)}
-                required
               >
-                <SelectTrigger id="tipo" className="border-2">
+                <SelectTrigger id="tipo" className="border-2" {...getInputErrorProps(errors, 'tipo').inputProps}>
                   <SelectValue placeholder="Seleccionar tipo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -413,6 +424,7 @@ export const ArticulosForm = ({
                   <SelectItem value="OTRO">OTRO</SelectItem>
                 </SelectContent>
               </Select>
+              <FieldError error={errors?.tipo} id="tipo-error" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="peso" className="text-sm font-medium">
@@ -422,7 +434,7 @@ export const ArticulosForm = ({
                 value={(formulario.peso ?? '1').toString()}
                 onValueChange={(value) => handleChange('peso', value)}
               >
-                <SelectTrigger id="peso" className="border-2">
+                <SelectTrigger id="peso" className="border-2" {...getInputErrorProps(errors, 'peso').inputProps}>
                   <SelectValue placeholder="Seleccionar peso" />
                 </SelectTrigger>
                 <SelectContent>
@@ -432,6 +444,7 @@ export const ArticulosForm = ({
                   <SelectItem value="4">4 - Complejo (ej: lomos, vacío, bondiola)</SelectItem>
                 </SelectContent>
               </Select>
+              <FieldError error={errors?.peso} id="peso-error" />
             </div>
           </div>
 
@@ -494,6 +507,8 @@ export const ArticulosForm = ({
                   Agregar
                 </Button>
               </div>
+              <FieldError error={errors?.ingrediente_temp} id="ingrediente_temp-error" />
+              <FieldError error={errors?.ingredientes} id="ingredientes-error" />
 
               {/* Lista de ingredientes agregados */}
               {formulario.ingredientes.length > 0 && (
@@ -523,35 +538,62 @@ export const ArticulosForm = ({
             </div>
           )}
 
-          {/* Stock Actual y Stock Mínimo */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="stock_actual" className="text-sm font-medium">
-                Stock Actual
-              </Label>
-              <Input
-                id="stock_actual"
-                type="number"
-                min="0"
-                value={formulario.stock_actual || ''}
-                onChange={(e) => handleChange('stock_actual', e.target.value)}
-                placeholder="0"
-                className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+          {/* Control de stock */}
+          <div className={`border-2 rounded-lg p-4 space-y-3 ${controlaStockActivo ? 'border-emerald-300 bg-emerald-50/50' : 'border-slate-300 bg-slate-50'}`}>
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="controla_stock"
+                checked={controlaStockActivo}
+                onCheckedChange={(checked) => handleChange('controla_stock', checked === true)}
+                className="w-5 h-5 mt-0.5 border-2"
               />
+              <div className="space-y-1">
+                <Label htmlFor="controla_stock" className="cursor-pointer font-medium text-slate-800">
+                  Controlar stock de este artículo
+                </Label>
+                <p className="text-xs text-slate-600">
+                  {controlaStockActivo
+                    ? 'Este artículo manejará stock propio.'
+                    : 'Este artículo no manejará stock propio.'}
+                </p>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="stock_minimo" className="text-sm font-medium">
-                Stock Mínimo
-              </Label>
-              <Input
-                id="stock_minimo"
-                type="number"
-                min="0"
-                value={formulario.stock_minimo || ''}
-                onChange={(e) => handleChange('stock_minimo', e.target.value)}
-                placeholder="0"
-                className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-              />
+
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${controlaStockActivo ? '' : 'opacity-60'}`}>
+              <div className="space-y-2">
+                <Label htmlFor="stock_actual" className="text-sm font-medium">
+                  Stock Actual
+                </Label>
+                <Input
+                  id="stock_actual"
+                  type="number"
+                  min="0"
+                  value={formulario.stock_actual || ''}
+                  onChange={(e) => handleChange('stock_actual', e.target.value)}
+                  placeholder={controlaStockActivo ? '0' : 'No aplica'}
+                  disabled={!controlaStockActivo}
+                  className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed"
+                  {...getInputErrorProps(errors, 'stock_actual').inputProps}
+                />
+                <FieldError error={errors?.stock_actual} id="stock_actual-error" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="stock_minimo" className="text-sm font-medium">
+                  Stock Mínimo
+                </Label>
+                <Input
+                  id="stock_minimo"
+                  type="number"
+                  min="0"
+                  value={formulario.stock_minimo || ''}
+                  onChange={(e) => handleChange('stock_minimo', e.target.value)}
+                  placeholder={controlaStockActivo ? '0' : 'No aplica'}
+                  disabled={!controlaStockActivo}
+                  className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed"
+                  {...getInputErrorProps(errors, 'stock_minimo').inputProps}
+                />
+                <FieldError error={errors?.stock_minimo} id="stock_minimo-error" />
+              </div>
             </div>
           </div>
 
@@ -563,9 +605,8 @@ export const ArticulosForm = ({
             <Select
               value={formulario.categoria || ''}
               onValueChange={(value) => handleChange('categoria', value)}
-              required
             >
-              <SelectTrigger id="categoria" className="border-2">
+              <SelectTrigger id="categoria" className="border-2" {...getInputErrorProps(errors, 'categoria').inputProps}>
                 <SelectValue placeholder="Seleccionar categoría" />
               </SelectTrigger>
               <SelectContent>
@@ -579,6 +620,7 @@ export const ArticulosForm = ({
                 ))}
               </SelectContent>
             </Select>
+            <FieldError error={errors?.categoria} id="categoria-error" />
           </div>
 
           {/* Checkbox Activo / Reactivar */}

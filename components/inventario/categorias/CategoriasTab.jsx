@@ -23,6 +23,7 @@ import {
 import { CategoriaCard } from './CategoriaCard';
 import { CategoriasForm } from './CategoriasForm';
 import { toast } from '@/hooks/use-toast';
+import { clearFieldError, hasErrors } from '@/lib/form-errors';
 
 export function CategoriasTab({
   categorias,
@@ -41,6 +42,7 @@ export function CategoriasTab({
     descripcion: '',
     activo: true,
   });
+  const [errors, setErrors] = useState({});
 
   // Estados para confirmación de eliminación
   const [categoriaEliminar, setCategoriaEliminar] = useState(null);
@@ -100,6 +102,7 @@ export function CategoriasTab({
       descripcion: '',
       activo: true,
     });
+    setErrors({});
     setModalAbierto(true);
   };
 
@@ -111,6 +114,7 @@ export function CategoriasTab({
       descripcion: categoria.descripcion || '',
       activo: (categoria.activo === 1 || categoria.activo === "1" || categoria.activo === true) ? 1 : 0,
     });
+    setErrors({});
     setModalAbierto(true);
   };
 
@@ -123,21 +127,34 @@ export function CategoriasTab({
       descripcion: '',
       activo: true,
     });
+    setErrors({});
+  };
+
+  const handleFieldChange = (field, value) => {
+    setFormulario(prev => ({ ...prev, [field]: value }));
+    setErrors(prev => clearFieldError(prev, field));
+  };
+
+  const validateForm = () => {
+    const nextErrors = {};
+
+    if (!formulario.nombre || formulario.nombre.trim() === '') {
+      nextErrors.nombre = 'El nombre de la categoría es obligatorio';
+    } else if (formulario.nombre.trim().length < 2) {
+      nextErrors.nombre = 'El nombre debe tener al menos 2 caracteres';
+    }
+
+    return nextErrors;
   };
 
   // Manejar envío del formulario
   const handleSubmit = async () => {
     setLoadingSubmit(true);
 
-    // Validaciones
-    if (!formulario.nombre || formulario.nombre.trim() === '') {
-      toast.error('El nombre de la categoría es obligatorio');
-      setLoadingSubmit(false);
-      return;
-    }
-
-    if (formulario.nombre.trim().length < 2) {
-      toast.error('El nombre debe tener al menos 2 caracteres');
+    const nextErrors = validateForm();
+    setErrors(nextErrors);
+    if (hasErrors(nextErrors)) {
+      toast.error(Object.values(nextErrors)[0]);
       setLoadingSubmit(false);
       return;
     }
@@ -342,7 +359,8 @@ export function CategoriasTab({
         isOpen={modalAbierto}
         onClose={cerrarModal}
         formulario={formulario}
-        setFormulario={setFormulario}
+        onFieldChange={handleFieldChange}
+        errors={errors}
         onSubmit={handleSubmit}
         isEditing={!!categoriaEditando}
         loading={loadingSubmit}

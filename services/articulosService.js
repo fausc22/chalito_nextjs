@@ -1,10 +1,17 @@
 import { apiRequest } from './api';
 import { API_CONFIG } from '../config/api';
+import { resolveControlaStock } from '../lib/articulosStock';
 
 const normalizarArticulo = (articulo = {}) => ({
   ...articulo,
+  activo:
+    articulo.activo === true ||
+    articulo.activo === 1 ||
+    articulo.activo === '1' ||
+    articulo.activo === 'true',
   categoria: articulo.categoria ?? articulo.categoria_nombre ?? '',
   codigo: articulo.codigo ?? articulo.codigo_barra ?? '',
+  controla_stock: resolveControlaStock(articulo),
   contenido: Array.isArray(articulo.contenido) ? articulo.contenido : (Array.isArray(articulo.ingredientes) ? articulo.ingredientes : [])
 });
 
@@ -69,12 +76,22 @@ export const articulosService = {
       if (filtros.categoria || filtros.categoria_id) {
         params.append('categoria', filtros.categoria || filtros.categoria_id);
       }
+      const incluirInactivos = filtros.incluirInactivos === true;
+      const tieneFiltroDisponibilidad =
+        filtros.disponible !== undefined &&
+        filtros.disponible !== null &&
+        filtros.disponible !== '' &&
+        filtros.disponible !== 'all';
+
       // articulosController usa 'disponible' en query string
-      if (filtros.disponible !== undefined) {
+      if (tieneFiltroDisponibilidad) {
         params.append('disponible', filtros.disponible ? 'true' : 'false');
       }
-      // Si no se especifica, por defecto traer solo activos
-      if (filtros.disponible === undefined) {
+      if (filtros.controla_stock !== undefined && filtros.controla_stock !== null && filtros.controla_stock !== '') {
+        params.append('controla_stock', filtros.controla_stock ? 'true' : 'false');
+      }
+      // Por defecto traer solo activos, salvo que se pida incluir inactivos.
+      if (!tieneFiltroDisponibilidad && !incluirInactivos) {
         params.append('disponible', 'true');
       }
 
@@ -213,6 +230,9 @@ export const articulosService = {
       // ==================== FIN SUBIDA ====================
 
       // Mapear campos del frontend al backend
+      const controlaStock = articuloData.controla_stock !== undefined
+        ? articuloData.controla_stock === true || articuloData.controla_stock === 1 || articuloData.controla_stock === '1'
+        : resolveControlaStock(articuloData);
       const dataToSend = {
         categoria_id: articuloData.categoria_id,
         nombre: articuloData.nombre,
@@ -220,8 +240,9 @@ export const articulosService = {
         precio: parseFloat(articuloData.precio),
         peso: parseInt(articuloData.peso, 10),
         codigo_barra: articuloData.codigo || null,
-        stock_actual: articuloData.stock_actual ? parseInt(articuloData.stock_actual) : 0,
-        stock_minimo: articuloData.stock_minimo ? parseInt(articuloData.stock_minimo) : 0,
+        controla_stock: controlaStock,
+        stock_actual: controlaStock && articuloData.stock_actual ? parseInt(articuloData.stock_actual, 10) : 0,
+        stock_minimo: controlaStock && articuloData.stock_minimo ? parseInt(articuloData.stock_minimo, 10) : 0,
         tipo: articuloData.tipo || 'OTRO',
         imagen_url: imagen_url, // URL de Cloudinary o null
         ingredientes: articuloData.tipo === 'ELABORADO' ? (articuloData.ingredientes || []) : []
@@ -306,6 +327,9 @@ export const articulosService = {
       // ==================== FIN ACTUALIZACIÓN ====================
 
       // Mapear campos del frontend al backend
+      const controlaStock = articuloData.controla_stock !== undefined
+        ? articuloData.controla_stock === true || articuloData.controla_stock === 1 || articuloData.controla_stock === '1'
+        : resolveControlaStock(articuloData);
       const dataToSend = {
         categoria_id: articuloData.categoria_id,
         nombre: articuloData.nombre,
@@ -313,8 +337,9 @@ export const articulosService = {
         precio: parseFloat(articuloData.precio),
         peso: parseInt(articuloData.peso, 10),
         codigo_barra: articuloData.codigo || null,
-        stock_actual: articuloData.stock_actual !== undefined && articuloData.stock_actual !== '' ? parseInt(articuloData.stock_actual) : 0,
-        stock_minimo: articuloData.stock_minimo !== undefined && articuloData.stock_minimo !== '' ? parseInt(articuloData.stock_minimo) : 0,
+        controla_stock: controlaStock,
+        stock_actual: controlaStock && articuloData.stock_actual !== undefined && articuloData.stock_actual !== '' ? parseInt(articuloData.stock_actual, 10) : 0,
+        stock_minimo: controlaStock && articuloData.stock_minimo !== undefined && articuloData.stock_minimo !== '' ? parseInt(articuloData.stock_minimo, 10) : 0,
         tipo: articuloData.tipo || 'OTRO',
         activo: articuloData.activo ? 1 : 0,
         imagen_url: imagen_url, // URL actualizada o existente

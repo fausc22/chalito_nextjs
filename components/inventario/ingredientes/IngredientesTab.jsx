@@ -28,6 +28,7 @@ import { IngredientesCard } from './IngredientesCard';
 import { IngredientesTable } from './IngredientesTable';
 import { IngredientesFilters } from './IngredientesFilters';
 import { toast } from '@/hooks/use-toast';
+import { clearFieldError, hasErrors } from '@/lib/form-errors';
 
 export function IngredientesTab({
   ingredientes,
@@ -49,6 +50,7 @@ export function IngredientesTab({
     costo_unitario_base: '',
     disponible: 1,
   });
+  const [errors, setErrors] = useState({});
 
   // Estados para confirmación de eliminación
   const [ingredienteEliminar, setIngredienteEliminar] = useState(null);
@@ -120,6 +122,7 @@ export function IngredientesTab({
       costo_unitario_base: '',
       disponible: 1,
     });
+    setErrors({});
     setModalAbierto(true);
   };
 
@@ -135,6 +138,7 @@ export function IngredientesTab({
         : '',
       disponible: ingrediente.disponible,
     });
+    setErrors({});
     setModalAbierto(true);
   };
 
@@ -149,21 +153,45 @@ export function IngredientesTab({
       costo_unitario_base: '',
       disponible: 1,
     });
+    setErrors({});
+  };
+
+  const handleFieldChange = (field, value) => {
+    setFormulario(prev => ({ ...prev, [field]: value }));
+    setErrors(prev => clearFieldError(prev, field));
+  };
+
+  const validateForm = () => {
+    const nextErrors = {};
+
+    if (!formulario.nombre || formulario.nombre.trim() === '') {
+      nextErrors.nombre = 'El nombre del ingrediente es obligatorio';
+    } else if (formulario.nombre.trim().length < 2) {
+      nextErrors.nombre = 'El nombre debe tener al menos 2 caracteres';
+    }
+
+    if (
+      formulario.costo_unitario_base !== '' &&
+      formulario.costo_unitario_base !== null &&
+      formulario.costo_unitario_base !== undefined
+    ) {
+      const parsed = parseFloat(formulario.costo_unitario_base);
+      if (Number.isNaN(parsed) || parsed < 0) {
+        nextErrors.costo_unitario_base = 'El costo unitario base debe ser un número válido mayor o igual a 0';
+      }
+    }
+
+    return nextErrors;
   };
 
   // Manejar envío del formulario
   const handleSubmit = async () => {
     setLoadingSubmit(true);
 
-    // Validaciones
-    if (!formulario.nombre || formulario.nombre.trim() === '') {
-      toast.error('El nombre del ingrediente es obligatorio');
-      setLoadingSubmit(false);
-      return;
-    }
-
-    if (formulario.nombre.trim().length < 2) {
-      toast.error('El nombre debe tener al menos 2 caracteres');
+    const nextErrors = validateForm();
+    setErrors(nextErrors);
+    if (hasErrors(nextErrors)) {
+      toast.error(Object.values(nextErrors)[0]);
       setLoadingSubmit(false);
       return;
     }
@@ -171,13 +199,7 @@ export function IngredientesTab({
     // Validación opcional de costo unitario base
     let costoUnitarioBaseValue = null;
     if (formulario.costo_unitario_base !== '' && formulario.costo_unitario_base !== null && formulario.costo_unitario_base !== undefined) {
-      const parsed = parseFloat(formulario.costo_unitario_base);
-      if (isNaN(parsed) || parsed < 0) {
-        toast.error('El costo unitario base debe ser un número válido mayor o igual a 0');
-        setLoadingSubmit(false);
-        return;
-      }
-      costoUnitarioBaseValue = parsed;
+      costoUnitarioBaseValue = parseFloat(formulario.costo_unitario_base);
     }
 
     const unidadBase = (formulario.unidad_base || '').trim() || 'UNIDADES';
@@ -436,7 +458,8 @@ export function IngredientesTab({
         isOpen={modalAbierto}
         onClose={cerrarModal}
         formulario={formulario}
-        setFormulario={setFormulario}
+        onFieldChange={handleFieldChange}
+        errors={errors}
         onSubmit={handleSubmit}
         isEditing={!!ingredienteEditando}
         loading={loadingSubmit}

@@ -115,6 +115,71 @@ body {
   @apply bg-gray-50 text-gray-900;
 }
 
+/* Sonner global hardening: base solida y variantes consistentes */
+.chalito-sonner[data-sonner-toaster] [data-sonner-toast] {
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.chalito-sonner[data-sonner-toaster] [data-sonner-toast].chalito-toast-shell {
+  background-color: #f0fdf4 !important;
+  border-color: #86efac !important;
+  color: #14532d !important;
+  box-shadow: 0 20px 45px -24px rgba(15, 23, 42, 0.35) !important;
+}
+
+.chalito-sonner[data-sonner-toaster] [data-sonner-toast].chalito-toast-shell--success {
+  background-color: #dcfce7 !important;
+  border-color: #86efac !important;
+  color: #14532d !important;
+}
+
+.chalito-sonner[data-sonner-toaster] [data-sonner-toast].chalito-toast-shell--info {
+  background-color: #e0f2fe !important;
+  border-color: #7dd3fc !important;
+  color: #0c4a6e !important;
+}
+
+.chalito-sonner[data-sonner-toaster] [data-sonner-toast].chalito-toast-shell--error {
+  background-color: #ffe4e6 !important;
+  border-color: #fda4af !important;
+  color: #881337 !important;
+}
+
+.chalito-sonner[data-sonner-toaster] [data-sonner-toast].chalito-toast-shell--warning {
+  background-color: #fef3c7 !important;
+  border-color: #fcd34d !important;
+  color: #78350f !important;
+}
+
+.chalito-sonner[data-sonner-toaster] [data-sonner-toast].chalito-toast-shell--loading {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.chalito-sonner[data-sonner-toaster] [data-sonner-toast] > div,
+.chalito-sonner[data-sonner-toaster] [data-sonner-toast] [data-content],
+.chalito-sonner[data-sonner-toaster] [data-sonner-toast] [data-title],
+.chalito-sonner[data-sonner-toaster] [data-sonner-toast] [data-description] {
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.chalito-sonner[data-sonner-toaster] [data-sonner-toast] [data-close-button] {
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  color: inherit !important;
+}
+
+.chalito-sonner[data-sonner-toaster] [data-sonner-toast] button[aria-label="Cerrar notificacion"] {
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  z-index: 1 !important;
+}
+
 #__next {
   margin: 0;
   padding: 0;
@@ -320,6 +385,11 @@ a:hover {
 }
 
 /* KDS: scrollbar minimal en cards */
+.kds-card-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f3f4f6;
+  scrollbar-gutter: stable;
+}
 .kds-card-scroll::-webkit-scrollbar {
   width: 6px;
 }
