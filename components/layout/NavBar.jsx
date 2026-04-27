@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
 import { ROUTES } from '../../config/routes';
 import { ROLE_NAMES, ROLE_ICONS } from '../../config/api';
-import { Menu, LogOut, Home, Package, User, Settings, ChevronDown, Plus, ChevronRight, CreditCard, TrendingDown, TrendingUp, Wallet, Users } from 'lucide-react';
+import { Menu, LogOut, Home, Package, User, Settings, ChevronDown, Plus, ChevronRight, CreditCard, TrendingDown, TrendingUp, Wallet, Users, BarChart3 } from 'lucide-react';
 import Image from 'next/image';
 import {
   DropdownMenu,
@@ -143,6 +143,13 @@ export function NavBar({
                 <span className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4" />
                   Ventas
+                </span>
+              </Link>
+
+              <Link href={ROUTES.REPORTES} className={navLinkClasses(ROUTES.REPORTES)}>
+                <span className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Reportes
                 </span>
               </Link>
 
@@ -321,6 +328,19 @@ export function NavBar({
                   >
                     <Users className="h-5 w-5" />
                     Empleados
+                  </Link>
+
+                  <Link
+                    href={ROUTES.REPORTES}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${
+                      isActiveRoute(ROUTES.REPORTES)
+                        ? 'bg-blue-700 text-white'
+                        : 'text-blue-200 hover:text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    <BarChart3 className="h-5 w-5" />
+                    Reportes
                   </Link>
 
                   <Link

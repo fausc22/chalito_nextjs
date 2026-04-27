@@ -36,6 +36,9 @@ export const API_CONFIG = {
       RESUMEN: '/ventas/resumen',
       MEDIOS_PAGO: '/ventas/medios-pago',
     },
+    REPORTES: {
+      DASHBOARD: '/reportes/dashboard',
+    },
     ARTICULOS: {
       LIST: '/articulos',
       CREATE: '/articulos',

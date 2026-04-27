@@ -71,9 +71,9 @@ function DashboardContent() {
       title: 'Estadísticas',
       description: 'Métricas y análisis de rendimiento',
       icon: '📈',
-      href: null,
+      href: '/reportes',
       color: 'indigo',
-      disabled: true,
+      disabled: false,
     },
     {
       title: 'Empleados',
@@ -166,7 +166,7 @@ function DashboardContent() {
                 </h3>
                 <p className="text-blue-700">
                   Los módulos marcados como &quot;Próximamente&quot; estarán disponibles en futuras actualizaciones.
-                  Actualmente puedes acceder a <strong>Pedidos</strong>, <strong>Ventas</strong>, <strong>Inventario</strong> y <strong>Gastos</strong>.
+                  Mientras tanto, podés usar todos los módulos que no estén marcados como pendientes.
                 </p>
               </div>
             </div>
