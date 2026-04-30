@@ -14,6 +14,9 @@ function MyApp({ Component, pageProps }) {
         <meta name="theme-color" content="#f2750b" />
         <meta name="description" content="Sistema de gestión gastronómica El Chalito" />
         <link rel="icon" href="/cactus-chalito.png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       </Head>
 
       <NotificationProvider>
