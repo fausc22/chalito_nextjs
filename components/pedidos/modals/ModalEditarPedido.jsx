@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FieldError } from '@/components/ui/field-error';
 import { ProductCard } from '../ProductCard';
+import ClienteAutocomplete from '../ClienteAutocomplete';
 import { getItemExtras, getSufijoPresentacion, getExtrasSinPresentacion } from '@/lib/extrasUtils';
 import { clearFieldError as clearErrorByPath, getInputErrorProps } from '@/lib/form-errors';
 import { toast } from '@/hooks/use-toast';
@@ -25,6 +26,16 @@ const getEstadoTexto = (estado) => {
   };
   return estados[estado] || estado.toUpperCase();
 };
+
+const sanitizeNombre = (v) => (v || '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, '');
+const sanitizeTelefono = (v) => {
+  const s = (v || '').trim();
+  const hasPlus = s.startsWith('+');
+  const rest = (hasPlus ? s.slice(1) : s).replace(/[^\d\s\-()]/g, '');
+  return (hasPlus ? '+' : '') + rest;
+};
+const sanitizeDireccion = (v) => (v || '').replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.,'\-/°]/g, '');
+const sanitizeNumeroAltura = (v) => (v || '').replace(/[^a-zA-Z0-9\s\-°]/g, '');
 
 const CartSummaryMobile = ({
   carrito,
@@ -200,6 +211,7 @@ export function ModalEditarPedido({
   onSuccess
 }) {
   const [carritoExpandidoMobile, setCarritoExpandidoMobile] = useState(true);
+  const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
 
   const clearInlineError = (fieldPath) => {
     if (typeof clearFieldError === 'function') {
@@ -239,6 +251,20 @@ export function ModalEditarPedido({
       resetearModal();
       onClose();
     }
+  };
+
+  const handleSelectCliente = (clienteData) => {
+    setClienteSeleccionado(clienteData || null);
+    if (!clienteData) return;
+    setCliente((prev) => ({
+      ...prev,
+      nombre: sanitizeNombre(clienteData.nombre || ''),
+      telefono: sanitizeTelefono(clienteData.telefono || ''),
+      email: (clienteData.email || '').trim(),
+    }));
+    clearInlineError('nombre');
+    clearInlineError('telefono');
+    clearInlineError('email');
   };
 
   const handleActualizarPedido = async () => {
@@ -520,12 +546,11 @@ export function ModalEditarPedido({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs font-medium">Nombre del Cliente *</Label>
-                  <Input
+                  <ClienteAutocomplete
                     value={cliente.nombre}
-                    onChange={(e) => updateClienteField('nombre', e.target.value)}
+                    onInputChange={(nextValue) => updateClienteField('nombre', sanitizeNombre(nextValue))}
+                    onSelectCliente={handleSelectCliente}
                     placeholder="Ej: Juan Pérez"
-                    className="mt-1 h-8 text-sm"
-                    {...getInputErrorProps(fieldErrors, 'nombre').inputProps}
                   />
                   <FieldError error={fieldErrors?.nombre} id="nombre-error" />
                 </div>
@@ -534,7 +559,7 @@ export function ModalEditarPedido({
                   <Label className="text-xs font-medium">Teléfono *</Label>
                   <Input
                     value={cliente.telefono}
-                    onChange={(e) => updateClienteField('telefono', e.target.value)}
+                    onChange={(e) => updateClienteField('telefono', sanitizeTelefono(e.target.value))}
                     placeholder="Ej: 3815-123456"
                     className="mt-1 h-8 text-sm"
                     {...getInputErrorProps(fieldErrors, 'telefono').inputProps}
@@ -547,7 +572,7 @@ export function ModalEditarPedido({
                   <Input
                     type="email"
                     value={cliente.email}
-                    onChange={(e) => updateClienteField('email', e.target.value)}
+                    onChange={(e) => updateClienteField('email', e.target.value.trim())}
                     placeholder="Ej: cliente@email.com"
                     className="mt-1 h-8 text-sm"
                     {...getInputErrorProps(fieldErrors, 'email').inputProps}
@@ -591,11 +616,23 @@ export function ModalEditarPedido({
                   Dirección de Entrega
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {clienteSeleccionado?.ultima_direccion ? (
+                    <div className="col-span-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-8 text-xs"
+                        onClick={() => updateClienteField('direccion.calle', clienteSeleccionado.ultima_direccion)}
+                      >
+                        Usar dirección guardada: {clienteSeleccionado.ultima_direccion}
+                      </Button>
+                    </div>
+                  ) : null}
                   <div>
                     <Label className="text-xs font-medium">Calle *</Label>
                     <Input
                       value={cliente.direccion.calle}
-                      onChange={(e) => updateClienteField('direccion.calle', e.target.value)}
+                      onChange={(e) => updateClienteField('direccion.calle', sanitizeDireccion(e.target.value).slice(0, 200))}
                       placeholder="Ej: Av. Belgrano"
                       className="mt-1 h-8 text-sm"
                       {...getInputErrorProps(fieldErrors, 'direccion.calle').inputProps}
@@ -607,7 +644,7 @@ export function ModalEditarPedido({
                     <Label className="text-xs font-medium">Número/Altura *</Label>
                     <Input
                       value={cliente.direccion.numero}
-                      onChange={(e) => updateClienteField('direccion.numero', e.target.value)}
+                      onChange={(e) => updateClienteField('direccion.numero', sanitizeNumeroAltura(e.target.value).slice(0, 30))}
                       placeholder="Ej: 1234"
                       className="mt-1 h-8 text-sm"
                       {...getInputErrorProps(fieldErrors, 'direccion.numero').inputProps}
@@ -619,7 +656,7 @@ export function ModalEditarPedido({
                     <Label className="text-xs font-medium">Edificio/Casa</Label>
                     <Input
                       value={cliente.direccion.edificio}
-                      onChange={(e) => updateClienteField('direccion.edificio', e.target.value)}
+                      onChange={(e) => updateClienteField('direccion.edificio', sanitizeDireccion(e.target.value).slice(0, 100))}
                       placeholder="Ej: Torre A"
                       className="mt-1 h-8 text-sm"
                     />
@@ -629,7 +666,7 @@ export function ModalEditarPedido({
                     <Label className="text-xs font-medium">Piso/Depto</Label>
                     <Input
                       value={cliente.direccion.piso}
-                      onChange={(e) => updateClienteField('direccion.piso', e.target.value)}
+                      onChange={(e) => updateClienteField('direccion.piso', sanitizeDireccion(e.target.value).slice(0, 50))}
                       placeholder="Ej: 3° A"
                       className="mt-1 h-8 text-sm"
                     />
@@ -639,7 +676,7 @@ export function ModalEditarPedido({
                     <Label className="text-xs font-medium">Observaciones</Label>
                     <Textarea
                       value={cliente.direccion.observaciones}
-                      onChange={(e) => updateClienteField('direccion.observaciones', e.target.value)}
+                      onChange={(e) => updateClienteField('direccion.observaciones', sanitizeDireccion(e.target.value).slice(0, 300))}
                       placeholder="Ej: Timbre B, portón verde"
                       rows={2}
                       className="mt-1 text-sm"

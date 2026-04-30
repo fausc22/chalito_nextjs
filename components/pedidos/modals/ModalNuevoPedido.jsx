@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { FieldError } from '@/components/ui/field-error';
 import { ProductCard } from '../ProductCard';
+import ClienteAutocomplete from '../ClienteAutocomplete';
 import { toast } from '@/hooks/use-toast';
 import { getSufijoPresentacion, getExtrasSinPresentacion } from '@/lib/extrasUtils';
 import { clearFieldError as clearErrorByPath, getInputErrorProps } from '@/lib/form-errors';
@@ -206,6 +207,7 @@ export function ModalNuevoPedido({
   onSuccess
 }) {
   const [carritoExpandidoMobile, setCarritoExpandidoMobile] = useState(true);
+  const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
 
   const clearInlineError = (fieldPath) => {
     if (typeof clearFieldError === 'function') {
@@ -245,6 +247,21 @@ export function ModalNuevoPedido({
       resetearModal();
       onClose();
     }
+  };
+
+  const handleSelectCliente = (clienteData) => {
+    setClienteSeleccionado(clienteData || null);
+    if (!clienteData) return;
+
+    setCliente((prev) => ({
+      ...prev,
+      nombre: sanitizeNombre(clienteData.nombre || ''),
+      telefono: sanitizeTelefono(clienteData.telefono || ''),
+      email: (clienteData.email || '').trim(),
+    }));
+    clearInlineError('nombre');
+    clearInlineError('telefono');
+    clearInlineError('email');
   };
 
   const handleCrearPedido = async () => {
@@ -560,13 +577,11 @@ export function ModalNuevoPedido({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs font-medium">Nombre del Cliente *</Label>
-                  <Input
+                  <ClienteAutocomplete
                     value={cliente.nombre}
-                    onChange={(e) => updateClienteField('nombre', sanitizeNombre(e.target.value))}
+                    onInputChange={(nextValue) => updateClienteField('nombre', sanitizeNombre(nextValue))}
+                    onSelectCliente={handleSelectCliente}
                     placeholder="Ej: Juan Pérez"
-                    className="mt-1 h-8 text-sm"
-                    maxLength={100}
-                    {...getInputErrorProps(fieldErrors, 'nombre').inputProps}
                   />
                   <FieldError error={fieldErrors?.nombre} id="nombre-error" />
                 </div>
@@ -634,6 +649,18 @@ export function ModalNuevoPedido({
                   Dirección de Entrega
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {clienteSeleccionado?.ultima_direccion ? (
+                    <div className="col-span-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-8 text-xs"
+                        onClick={() => updateClienteField('direccion.calle', clienteSeleccionado.ultima_direccion)}
+                      >
+                        Usar dirección guardada: {clienteSeleccionado.ultima_direccion}
+                      </Button>
+                    </div>
+                  ) : null}
                   <div>
                     <Label className="text-xs font-medium">Calle *</Label>
                     <Input
