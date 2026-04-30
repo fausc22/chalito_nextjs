@@ -12,6 +12,7 @@ export const ROUTES = {
   GASTOS: '/gastos',
   FONDOS: '/fondos',
   REPORTES: '/reportes',
+  CLIENTES: '/clientes',
   PERFIL: '/perfil',
   COCINA: '/cocina',
 };
@@ -29,6 +30,7 @@ export const PROTECTED_ROUTES = [
   ROUTES.GASTOS,
   ROUTES.FONDOS,
   ROUTES.REPORTES,
+  ROUTES.CLIENTES,
   ROUTES.PERFIL,
   ROUTES.COCINA,
 ];
@@ -43,6 +45,7 @@ export const ROUTE_TITLES = {
   [ROUTES.GASTOS]: 'Gastos',
   [ROUTES.FONDOS]: 'Fondos',
   [ROUTES.REPORTES]: 'Reportes',
+  [ROUTES.CLIENTES]: 'Clientes',
   [ROUTES.PERFIL]: 'Perfil',
   [ROUTES.COCINA]: 'Cocina',
 };

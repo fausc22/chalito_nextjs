@@ -153,6 +153,15 @@ export function NavBar({
                 </span>
               </Link>
 
+              {(userRole === 'ADMIN' || userRole === 'GERENTE') && (
+                <Link href={ROUTES.CLIENTES} className={navLinkClasses(ROUTES.CLIENTES)}>
+                  <span className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Clientes
+                  </span>
+                </Link>
+              )}
+
               <Link href={ROUTES.GASTOS} className={navLinkClasses(ROUTES.GASTOS)}>
                 <span className="flex items-center gap-2">
                   <TrendingDown className="h-4 w-4" />
@@ -342,6 +351,21 @@ export function NavBar({
                     <BarChart3 className="h-5 w-5" />
                     Reportes
                   </Link>
+
+                  {(userRole === 'ADMIN' || userRole === 'GERENTE') && (
+                    <Link
+                      href={ROUTES.CLIENTES}
+                      onClick={() => setIsMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${
+                        isActiveRoute(ROUTES.CLIENTES)
+                          ? 'bg-blue-700 text-white'
+                          : 'text-blue-200 hover:text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      <Users className="h-5 w-5" />
+                      Clientes
+                    </Link>
+                  )}
 
                   <Link
                     href={ROUTES.GASTOS}

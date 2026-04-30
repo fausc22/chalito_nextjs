@@ -159,6 +159,14 @@ export const API_CONFIG = {
         BY_ID: (liquidacionId) => `/empleados/liquidaciones/${liquidacionId}`,
       },
     },
+    CLIENTES: {
+      LIST: '/clientes',
+      SUGERENCIAS: '/clientes/sugerencias',
+      BY_ID: (id) => `/clientes/${id}`,
+      HISTORIAL: (id) => `/clientes/${id}/historial`,
+      UPDATE: (id) => `/clientes/${id}`,
+      DELETE: (id) => `/clientes/${id}`,
+    },
   },
 
   TIMEOUT: 10000,
