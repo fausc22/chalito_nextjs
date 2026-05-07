@@ -689,6 +689,58 @@ export const pedidosService = {
   },
 
   /**
+   * Iniciar preparación manual (RECIBIDO/PROGRAMADO → EN_PREPARACION).
+   * Usa lock en backend y setea transicion_automatica = false.
+   */
+  iniciarPreparacionManual: async (id) => {
+    try {
+      const response = await apiRequest.post(
+        API_CONFIG.ENDPOINTS.PEDIDOS.INICIAR_PREPARACION_MANUAL(id),
+        {}
+      );
+
+      if (response.data?.error === true || response.data?.success === false) {
+        const errData = response.data.data || response.data;
+        const errorMessage =
+          response.data.message ||
+          response.data.mensaje ||
+          errData?.message ||
+          errData?.mensaje ||
+          'Error al iniciar preparación manual';
+        return {
+          success: false,
+          error: errorMessage,
+          status: response.data.status,
+          rateLimit: response.data.rateLimit === true || response.data.status === 429,
+        };
+      }
+
+      const data = response.data.data || response.data;
+      const pedidoBackend = data.pedido || data;
+      const articulos = Array.isArray(pedidoBackend?.articulos) ? pedidoBackend.articulos : [];
+      const pedidoFrontend = transformarPedidoBackendAFrontend(pedidoBackend, articulos);
+
+      return {
+        success: true,
+        data: pedidoFrontend,
+        mensaje: response.data.message || 'Preparación iniciada manualmente',
+      };
+    } catch (error) {
+      const errData = error.response?.data;
+      return {
+        success: false,
+        error:
+          errData?.message ||
+          errData?.mensaje ||
+          error.message ||
+          'Error al iniciar preparación manual',
+        status: error.response?.status,
+        rateLimit: errData?.rateLimit === true || error.response?.status === 429,
+      };
+    }
+  },
+
+  /**
    * Actualizar observaciones de un pedido
    */
   actualizarObservaciones: async (id, observaciones) => {

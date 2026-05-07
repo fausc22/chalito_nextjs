@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
+import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, DragOverlay, defaultDropAnimationSideEffects } from '@dnd-kit/core';
 import { ProtectedRoute } from '../../components/auth/ProtectedRoute';
 import { NavBar } from '../../components/layout/NavBar';
 import { Footer } from '../../components/layout/Footer';
@@ -608,8 +608,18 @@ function VentasContent() {
                   </div>
                 </div>
               </div>
-              <DragOverlay 
-                dropAnimation={null}
+              <DragOverlay
+                dropAnimation={{
+                  duration: 200,
+                  easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+                  sideEffects: defaultDropAnimationSideEffects({
+                    styles: {
+                      active: {
+                        opacity: '0.5',
+                      },
+                    },
+                  }),
+                }}
                 style={{ cursor: 'grabbing' }}
               >
                 {activePedido ? (
@@ -841,9 +851,18 @@ function VentasContent() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Mover pedido a preparación</AlertDialogTitle>
-            <AlertDialogDescription>
-              Este pedido se adelantará manualmente a En preparación y dejará de esperar la transición automática.
-              ¿Querés continuar?
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  Pedido <strong>#{pedidoDragConfirm?.id}</strong>
+                  {pedidoDragConfirm?.clienteNombre ? (
+                    <> de <strong>{pedidoDragConfirm.clienteNombre}</strong></>
+                  ) : null}{' '}
+                  pasará a <strong>En preparación</strong>.
+                </p>
+                <p>Se inicia el timer de cocina en este momento y se genera la comanda si corresponde.</p>
+                <p className="text-xs">Dejará de esperar la transición automática por capacidad/horario.</p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -860,9 +879,9 @@ function VentasContent() {
             <AlertDialogAction
               onClick={confirmarDragManual}
               disabled={dragConfirmLoading}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-70"
             >
-              Aceptar
+              {dragConfirmLoading ? 'Procesando…' : 'Aceptar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

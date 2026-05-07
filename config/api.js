@@ -23,6 +23,7 @@ export const API_CONFIG = {
       COBRAR: (id) => `/pedidos/${id}/cobrar`,
       COMANDA_PRINT: (id) => `/pedidos/${id}/comanda-print`,
       TICKET_PRINT: (id) => `/pedidos/${id}/ticket-print`,
+      INICIAR_PREPARACION_MANUAL: (id) => `/pedidos/${id}/iniciar-preparacion-manual`,
     },
     CONFIGURACION: {
       LIST: '/configuracion-sistema',

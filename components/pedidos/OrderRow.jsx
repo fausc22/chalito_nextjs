@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { motion } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
@@ -80,6 +81,7 @@ function OrderRowComponent({
   const showHighlight = isHighlighted || isActualizadoRecientemente;
   const isPaid = isPedidoPaid(pedido);
   const isMercadoPagoPendiente = isPedidoMercadoPagoPendiente(pedido);
+  const isPendingUpdate = Boolean(pedido.uiPendingStateUpdate);
 
   const isNewEntry = isNewWebOrder || isNew;
   const RowWrapper = isNewEntry ? motion.div : 'div';
@@ -98,13 +100,25 @@ function OrderRowComponent({
       style={style}
       data-pedido-id={pedido.id}
       className={`
-        group bg-white rounded-lg overflow-hidden
+        group relative bg-white rounded-lg overflow-hidden
         hover:shadow-md transition-all mb-3 flex flex-col
         ${showHighlight ? 'bg-amber-100 border-amber-500 ring-1 ring-amber-300 animate-breathe' : 'border border-slate-300'}
         ${isDragging ? 'select-none' : ''}
         w-full min-h-[100px]
       `}
     >
+      {isPendingUpdate && (
+        <div
+          className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-white/75 backdrop-blur-[1px]"
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-slate-600" />
+            <span>Procesando…</span>
+          </div>
+        </div>
+      )}
       {/* Header Superior: Fondo oscuro igual a las cards */}
       <div className="bg-slate-200 pb-2 pt-3 px-3 flex-shrink-0">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -199,20 +213,31 @@ function OrderRowComponent({
                   inline-flex flex-col items-end justify-center flex-shrink-0
                   px-2.5 py-1 rounded-md border text-xs leading-tight
                   ${
-                    estadoTemporal.isLate
-                      ? 'bg-red-50 border-red-300 text-red-700'
-                      : (estadoTemporal.isNearLimit || estadoTemporal.isNearScheduled)
-                        ? 'bg-amber-50 border-amber-300 text-amber-700'
-                        : 'bg-slate-50 border-slate-300 text-slate-700'
+                    isPendingUpdate
+                      ? 'border-slate-200 bg-slate-100 text-slate-500'
+                      : estadoTemporal.isLate
+                        ? 'bg-red-50 border-red-300 text-red-700'
+                        : (estadoTemporal.isNearLimit || estadoTemporal.isNearScheduled)
+                          ? 'bg-amber-50 border-amber-300 text-amber-700'
+                          : 'bg-slate-50 border-slate-300 text-slate-700'
                   }
                 `}
               >
-                <span className="font-semibold">
-                  {estadoTemporal.subLabel}
-                </span>
-                <span className="text-xs font-semibold">
-                  {mainTimeText}
-                </span>
+                {isPendingUpdate ? (
+                  <>
+                    <span className="h-3 w-14 animate-pulse rounded bg-slate-200" />
+                    <span className="mt-1 h-3 w-10 animate-pulse rounded bg-slate-200" />
+                  </>
+                ) : (
+                  <>
+                    <span className="font-semibold">
+                      {estadoTemporal.subLabel}
+                    </span>
+                    <span className="text-xs font-semibold">
+                      {mainTimeText}
+                    </span>
+                  </>
+                )}
               </div>
             )}
           </div>

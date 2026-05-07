@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef, memo } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Package } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useDroppable } from '@dnd-kit/core';
@@ -184,7 +185,7 @@ function PedidosColumnComponent({
       <div
         ref={setNodeRef}
         className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 transition-colors p-2 sm:p-3 ${listMaxHeightClass} ${
-          estado === 'en_cocina' && isOver ? 'bg-blue-50 ring-2 ring-blue-200' : ''
+          estado === 'en_cocina' && isOver ? 'bg-blue-100 ring-2 ring-blue-400 shadow-inner' : ''
         }`}
       >
         {pedidos.length === 0 ? (
@@ -195,48 +196,70 @@ function PedidosColumnComponent({
         ) : vistaTabla ? (
           // Vista de tabla con filas - ocupa todo el ancho disponible
           <div className="w-full">
-            {pedidosPaginados.map(pedido => (
-              <OrderRow
-                key={pedido.id}
-                pedido={pedido}
-                currentTime={currentTime}
-                onMarcharACocina={onMarcharACocina}
-                onListo={onListo}
-                onEntregar={onEntregar}
-                onEditar={onEditar}
-                onCancelar={onCancelar}
-                onCobrar={onCobrar}
-                onImprimir={onImprimir}
-                cobrandoPedidoId={cobrandoPedidoId}
-                isHighlighted={highlightedPedidoIds.has(String(pedido.id))}
-                isNewWebOrder={newWebOrderIds.has(String(pedido.id))}
-                isNew={newAnimatedPedidoIds.has(String(pedido.id))}
-                isDraggable={estado === 'recibido' && !isPedidoMercadoPagoPendiente(pedido)}
-              />
-            ))}
+            <AnimatePresence mode="popLayout" initial={false}>
+              {pedidosPaginados.map((pedido) => (
+                <motion.div
+                  key={pedido.id}
+                  layout
+                  className="w-full"
+                  initial={{ opacity: 0, y: -10, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -24, scale: 0.95 }}
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                >
+                  <OrderRow
+                    pedido={pedido}
+                    currentTime={currentTime}
+                    onMarcharACocina={onMarcharACocina}
+                    onListo={onListo}
+                    onEntregar={onEntregar}
+                    onEditar={onEditar}
+                    onCancelar={onCancelar}
+                    onCobrar={onCobrar}
+                    onImprimir={onImprimir}
+                    cobrandoPedidoId={cobrandoPedidoId}
+                    isHighlighted={highlightedPedidoIds.has(String(pedido.id))}
+                    isNewWebOrder={newWebOrderIds.has(String(pedido.id))}
+                    isNew={newAnimatedPedidoIds.has(String(pedido.id))}
+                    isDraggable={estado === 'recibido' && !isPedidoMercadoPagoPendiente(pedido)}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         ) : (
           // Vista de cards en grid
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 items-stretch">
-            {pedidosPaginados.map(pedido => (
-              <OrderCard
-                key={pedido.id}
-                pedido={pedido}
-                currentTime={currentTime}
-                onMarcharACocina={onMarcharACocina}
-                onListo={onListo}
-                onEntregar={onEntregar}
-                onEditar={onEditar}
-                onCancelar={onCancelar}
-                onCobrar={onCobrar}
-                onImprimir={onImprimir}
-                cobrandoPedidoId={cobrandoPedidoId}
-                isHighlighted={highlightedPedidoIds.has(String(pedido.id))}
-                isNewWebOrder={newWebOrderIds.has(String(pedido.id))}
-                isNew={newAnimatedPedidoIds.has(String(pedido.id))}
-                isDraggable={estado === 'recibido' && !isPedidoMercadoPagoPendiente(pedido)}
-              />
-            ))}
+            <AnimatePresence mode="popLayout" initial={false}>
+              {pedidosPaginados.map((pedido) => (
+                <motion.div
+                  key={pedido.id}
+                  layout
+                  className="h-full min-h-0"
+                  initial={{ opacity: 0, y: -10, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -24, scale: 0.95 }}
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                >
+                  <OrderCard
+                    pedido={pedido}
+                    currentTime={currentTime}
+                    onMarcharACocina={onMarcharACocina}
+                    onListo={onListo}
+                    onEntregar={onEntregar}
+                    onEditar={onEditar}
+                    onCancelar={onCancelar}
+                    onCobrar={onCobrar}
+                    onImprimir={onImprimir}
+                    cobrandoPedidoId={cobrandoPedidoId}
+                    isHighlighted={highlightedPedidoIds.has(String(pedido.id))}
+                    isNewWebOrder={newWebOrderIds.has(String(pedido.id))}
+                    isNew={newAnimatedPedidoIds.has(String(pedido.id))}
+                    isDraggable={estado === 'recibido' && !isPedidoMercadoPagoPendiente(pedido)}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </div>

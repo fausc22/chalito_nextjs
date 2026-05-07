@@ -98,6 +98,7 @@ const buildPedidoFingerprint = (pedido) => {
     pedido.total,
     pedido.timestamp,
     pedido.horaInicioPreparacion,
+    pedido.horaEsperadaFinalizacion,
     pedido.horaListo,
     pedido.horaEntrega ? new Date(pedido.horaEntrega).getTime() : '',
     pedido.transicionAutomatica,
@@ -122,6 +123,8 @@ export const usePedidos = () => {
   const nextFetchRequestIdRef = useRef(0);
   const hasLoadedOnceRef = useRef(false);
   const clearUpdateTimeoutsRef = useRef(new Map());
+  /** Evita acciones duplicadas (marchar / listo / entregar) en el mismo pedido. */
+  const inFlightPedidosRef = useRef(new Set());
   const { updatePollingStatus, updateWebsocketStatus, markWorkerHeartbeat } = useConnectionStatus();
   const { playSoundThrottled } = useWebOrderAlerts();
 
@@ -236,6 +239,19 @@ export const usePedidos = () => {
       nextPedido.medio_pago = currentPedido.medio_pago;
       nextPedido.medioPago = currentPedido.medioPago;
     }
+
+    const shouldProtectTimingFromStaleRemote =
+      sourcePriority < SOURCE_PRIORITY.local && hasRecentLocalMutation;
+
+    if (shouldProtectTimingFromStaleRemote) {
+      if (currentPedido?.horaInicioPreparacion && !nextPedido.horaInicioPreparacion) {
+        nextPedido.horaInicioPreparacion = currentPedido.horaInicioPreparacion;
+      }
+      if (currentPedido?.horaEsperadaFinalizacion && !nextPedido.horaEsperadaFinalizacion) {
+        nextPedido.horaEsperadaFinalizacion = currentPedido.horaEsperadaFinalizacion;
+      }
+    }
+
     nextPedido.version = parseVersionValue(nextPedido.version);
     nextPedido.updated_at =
       nextPedido.updated_at || nextPedido.updatedAt || currentPedido?.updated_at || null;
@@ -702,8 +718,20 @@ export const usePedidos = () => {
         return { success: false, reason: 'not-found', error: 'Pedido no encontrado' };
       }
 
+      if (inFlightPedidosRef.current.has(normalizedId)) {
+        toast.warning('Procesando...', {
+          description: 'Este pedido ya está siendo actualizado.',
+        });
+        return { success: false, reason: 'in-flight' };
+      }
+
+      inFlightPedidosRef.current.add(normalizedId);
+
       const ahoraMs = Date.now();
       const ahoraIso = new Date(ahoraMs).toISOString();
+      const tiempoEstimadoMin = pedidoPrevio.tiempoEstimadoPreparacion ?? 15;
+      const tiempoEstimadoMs = tiempoEstimadoMin * 60000;
+
       setPedidoPendingState(normalizedId, true);
       patchPedido(
         normalizedId,
@@ -711,6 +739,7 @@ export const usePedidos = () => {
           estado: 'en_cocina',
           transicionAutomatica: false,
           horaInicioPreparacion: ahoraMs,
+          horaEsperadaFinalizacion: ahoraMs + tiempoEstimadoMs,
           version: ahoraMs,
           updated_at: ahoraIso,
           updatedAt: ahoraIso,
@@ -721,42 +750,119 @@ export const usePedidos = () => {
       debugPedidos('action_marchar_cocina_start', { pedidoId: normalizedId });
       let response;
       try {
-        response = await pedidosService.actualizarEstadoPedido(normalizedId, 'en_cocina', {
-          // Flujo manual (drag/boton): excluir del motor automatico
-          transicionAutomatica: false
+        try {
+          response = await pedidosService.iniciarPreparacionManual(normalizedId);
+        } catch (err) {
+          response = {
+            success: false,
+            error: err?.message || 'Error inesperado al marchar a cocina',
+          };
+        }
+
+        if (response.success) {
+          if (response.data) {
+            patchPedido(
+              normalizedId,
+              {
+                ...response.data,
+                id: normalizedId,
+              },
+              'manual'
+            );
+          }
+          setPedidoPendingState(normalizedId, false);
+
+          if (response.data) {
+            const tiempoMin = response.data.tiempoEstimadoPreparacion ?? tiempoEstimadoMin;
+            const horaFin = response.data.horaEsperadaFinalizacion
+              ? new Date(response.data.horaEsperadaFinalizacion)
+              : new Date(ahoraMs + tiempoMin * 60000);
+            const horaFinStr = `${String(horaFin.getHours()).padStart(2, '0')}:${String(
+              horaFin.getMinutes()
+            ).padStart(2, '0')}`;
+
+            toast.success(`Pedido #${normalizedId} marchado a cocina`, {
+              description: `${response.data.clienteNombre || pedidoPrevio.clienteNombre} · ${tiempoMin} min estimados · Listo ~${horaFinStr}`,
+            });
+          } else {
+            toast.success(`Pedido #${normalizedId} marchado a cocina`, {
+              description: `${pedidoPrevio.clienteNombre} · sincronizando datos…`,
+            });
+          }
+          debugPedidos('action_marchar_cocina_success', { pedidoId: normalizedId });
+          return { success: true };
+        }
+
+        const rawMessage = (response.error || '').toString();
+        const msg = rawMessage.toLowerCase();
+
+        const isRateLimit =
+          response.rateLimit === true ||
+          response.status === 429 ||
+          msg.includes('rate limit');
+
+        if (isRateLimit) {
+          setPedidoPendingState(normalizedId, false);
+          debugPedidos('action_marchar_cocina_rate_limit', { pedidoId: normalizedId });
+          return { success: false, reason: 'rate-limit', error: rawMessage };
+        }
+
+        console.error('Error al marcar pedido a cocina:', response.error);
+
+        // Caso 1: capacidad máxima de cocina alcanzada
+        if (
+          msg.includes('capacidad') ||
+          msg.includes('llena') ||
+          msg.includes('lleno') ||
+          msg.includes('maxima') ||
+          msg.includes('máxima')
+        ) {
+          patchPedido(
+            normalizedId,
+            {
+              estado: pedidoPrevio.estado,
+              transicionAutomatica: pedidoPrevio.transicionAutomatica,
+              horaInicioPreparacion: pedidoPrevio.horaInicioPreparacion,
+              horaEsperadaFinalizacion: pedidoPrevio.horaEsperadaFinalizacion,
+              version: pedidoPrevio.version ?? null,
+              updated_at: pedidoPrevio.updated_at ?? pedidoPrevio.updatedAt ?? null,
+              updatedAt: pedidoPrevio.updated_at ?? pedidoPrevio.updatedAt ?? null,
+            },
+            'local'
+          );
+          setPedidoPendingState(normalizedId, false);
+          toast.error('No se puede adelantar el pedido. La cocina ya alcanzó la capacidad máxima.');
+          debugPedidos('action_marchar_cocina_blocked_capacity', { pedidoId: normalizedId });
+          return { success: false, reason: 'capacity', error: rawMessage };
+        }
+
+        // Caso 2: pedido ya fue procesado / ya no está en RECIBIDO
+        if (
+          msg.includes('ya fue actualizado') ||
+          msg.includes('ya fue procesado') ||
+          msg.includes('ya no se encuentra en estado') ||
+          msg.includes('no está en estado') ||
+          msg.includes('ya está en preparación') ||
+          msg.includes('ya esta en preparacion') ||
+          msg.includes('pedido_ya_procesado')
+        ) {
+          setPedidoPendingState(normalizedId, false);
+          toast.error('El pedido ya fue actualizado.');
+          debugPedidos('action_marchar_cocina_already_updated', { pedidoId: normalizedId });
+          return { success: false, reason: 'already-updated', error: rawMessage };
+        }
+
+        toast.error('No se pudo adelantar el pedido', {
+          description: rawMessage || 'Ocurrió un error al mover el pedido a preparación.',
         });
-      } catch (err) {
-        response = {
-          success: false,
-          error: err?.message || 'Error inesperado al marchar a cocina',
-        };
-      }
 
-      if (response.success) {
-        setPedidoPendingState(normalizedId, false);
-        debugPedidos('action_marchar_cocina_success', { pedidoId: normalizedId });
-        return { success: true };
-      }
-
-      console.error('Error al marcar pedido a cocina:', response.error);
-
-      const rawMessage = (response.error || '').toString();
-      const msg = rawMessage.toLowerCase();
-
-      // Caso 1: capacidad máxima de cocina alcanzada
-      if (
-        msg.includes('capacidad') ||
-        msg.includes('llena') ||
-        msg.includes('lleno') ||
-        msg.includes('maxima') ||
-        msg.includes('máxima')
-      ) {
         patchPedido(
           normalizedId,
           {
             estado: pedidoPrevio.estado,
             transicionAutomatica: pedidoPrevio.transicionAutomatica,
             horaInicioPreparacion: pedidoPrevio.horaInicioPreparacion,
+            horaEsperadaFinalizacion: pedidoPrevio.horaEsperadaFinalizacion,
             version: pedidoPrevio.version ?? null,
             updated_at: pedidoPrevio.updated_at ?? pedidoPrevio.updatedAt ?? null,
             updatedAt: pedidoPrevio.updated_at ?? pedidoPrevio.updatedAt ?? null,
@@ -764,50 +870,15 @@ export const usePedidos = () => {
           'local'
         );
         setPedidoPendingState(normalizedId, false);
-        toast.error('No se puede adelantar el pedido. La cocina ya alcanzó la capacidad máxima.');
-        debugPedidos('action_marchar_cocina_blocked_capacity', { pedidoId: normalizedId });
-        return { success: false, reason: 'capacity', error: rawMessage };
+        debugPedidos('action_marchar_cocina_failed', {
+          pedidoId: normalizedId,
+          reason: 'unknown',
+          error: rawMessage,
+        });
+        return { success: false, reason: 'unknown', error: rawMessage };
+      } finally {
+        inFlightPedidosRef.current.delete(normalizedId);
       }
-
-      // Caso 2: pedido ya fue procesado / ya no está en RECIBIDO
-      if (
-        msg.includes('ya fue actualizado') ||
-        msg.includes('ya fue procesado') ||
-        msg.includes('ya no se encuentra en estado') ||
-        msg.includes('no está en estado') ||
-        msg.includes('ya está en preparación') ||
-        msg.includes('ya esta en preparacion')
-      ) {
-        setPedidoPendingState(normalizedId, false);
-        toast.error('El pedido ya fue actualizado.');
-        debugPedidos('action_marchar_cocina_already_updated', { pedidoId: normalizedId });
-        return { success: false, reason: 'already-updated', error: rawMessage };
-      }
-
-      // Caso genérico: error inesperado
-      toast.error('No se pudo adelantar el pedido', {
-        description: 'Ocurrió un error inesperado al intentar mover el pedido a preparación.',
-      });
-
-      patchPedido(
-        normalizedId,
-        {
-          estado: pedidoPrevio.estado,
-          transicionAutomatica: pedidoPrevio.transicionAutomatica,
-          horaInicioPreparacion: pedidoPrevio.horaInicioPreparacion,
-          version: pedidoPrevio.version ?? null,
-          updated_at: pedidoPrevio.updated_at ?? pedidoPrevio.updatedAt ?? null,
-          updatedAt: pedidoPrevio.updated_at ?? pedidoPrevio.updatedAt ?? null,
-        },
-        'local'
-      );
-      setPedidoPendingState(normalizedId, false);
-      debugPedidos('action_marchar_cocina_failed', {
-        pedidoId: normalizedId,
-        reason: 'unknown',
-        error: rawMessage,
-      });
-      return { success: false, reason: 'unknown', error: rawMessage };
     },
     [patchPedido, setPedidoPendingState]
   );
@@ -820,6 +891,14 @@ export const usePedidos = () => {
       console.error('Pedido no encontrado:', pedidoId);
       return;
     }
+
+    if (inFlightPedidosRef.current.has(normalizedId)) {
+      toast.warning('Procesando...', {
+        description: 'Este pedido ya está siendo actualizado.',
+      });
+      return;
+    }
+    inFlightPedidosRef.current.add(normalizedId);
 
     setPedidoPendingState(normalizedId, true);
     // Actualización optimista: actualizar la UI inmediatamente a LISTO (no ENTREGADO)
@@ -893,6 +972,7 @@ export const usePedidos = () => {
       );
     } finally {
       setPedidoPendingState(normalizedId, false);
+      inFlightPedidosRef.current.delete(normalizedId);
     }
   }, [patchPedido, setPedidoPendingState]);
 
@@ -904,6 +984,14 @@ export const usePedidos = () => {
       console.error('Pedido no encontrado:', pedidoId);
       return;
     }
+
+    if (inFlightPedidosRef.current.has(normalizedId)) {
+      toast.warning('Procesando...', {
+        description: 'Este pedido ya está siendo actualizado.',
+      });
+      return;
+    }
+    inFlightPedidosRef.current.add(normalizedId);
 
     setPedidoPendingState(normalizedId, true);
     // Actualización optimista: actualizar la UI inmediatamente a ENTREGADO
@@ -976,6 +1064,7 @@ export const usePedidos = () => {
       );
     } finally {
       setPedidoPendingState(normalizedId, false);
+      inFlightPedidosRef.current.delete(normalizedId);
     }
   }, [patchPedido, setPedidoPendingState]);
 

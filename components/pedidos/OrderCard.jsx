@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { motion } from 'framer-motion';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useDraggable } from '@dnd-kit/core';
@@ -81,10 +81,11 @@ function OrderCardComponent({
   const showHighlight = isHighlighted || isActualizadoRecientemente;
   const isPaid = isPedidoPaid(pedido);
   const isMercadoPagoPendiente = isPedidoMercadoPagoPendiente(pedido);
+  const isPendingUpdate = Boolean(pedido.uiPendingStateUpdate);
   const cardStateClassName = showHighlight
     ? 'bg-amber-100 border-amber-500 ring-1 ring-amber-300 animate-breathe'
     : 'border-slate-300';
-  const cardClassName = `group mb-2 shadow-sm hover:shadow-md transition-all border rounded-lg overflow-hidden flex flex-col h-full min-h-[210px] sm:min-h-[220px] ${
+  const cardClassName = `group relative mb-2 shadow-sm hover:shadow-md transition-all border rounded-lg overflow-hidden flex flex-col h-full min-h-[210px] sm:min-h-[220px] ${
     isDragging ? 'select-none' : ''
   } ${cardStateClassName}`;
 
@@ -106,6 +107,18 @@ function OrderCardComponent({
       className={cardClassName}
       data-pedido-id={pedido.id}
     >
+      {isPendingUpdate && (
+        <div
+          className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-white/75 backdrop-blur-[1px]"
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-slate-600" />
+            <span>Procesando…</span>
+          </div>
+        </div>
+      )}
       <CardHeader className="pb-2 pt-3 px-3 flex-shrink-0 bg-slate-200">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -183,20 +196,31 @@ function OrderCardComponent({
               inline-flex flex-col items-end justify-center flex-shrink-0
                 px-2.5 py-1 rounded-md border text-xs leading-tight
                 ${
-                  estadoTemporal.isLate
-                    ? 'bg-red-50 border-red-300 text-red-700'
-                    : (estadoTemporal.isNearLimit || estadoTemporal.isNearScheduled)
-                      ? 'bg-amber-50 border-amber-300 text-amber-700'
-                      : 'bg-slate-50 border-slate-300 text-slate-700'
+                  isPendingUpdate
+                    ? 'border-slate-200 bg-slate-100 text-slate-500'
+                    : estadoTemporal.isLate
+                      ? 'bg-red-50 border-red-300 text-red-700'
+                      : (estadoTemporal.isNearLimit || estadoTemporal.isNearScheduled)
+                        ? 'bg-amber-50 border-amber-300 text-amber-700'
+                        : 'bg-slate-50 border-slate-300 text-slate-700'
                 }
               `}
             >
-              <span className="font-semibold">
-                {estadoTemporal.subLabel}
-              </span>
-              <span className="text-xs font-semibold">
-                {mainTimeText}
-              </span>
+              {isPendingUpdate ? (
+                <>
+                  <span className="h-3 w-14 animate-pulse rounded bg-slate-200" />
+                  <span className="mt-1 h-3 w-10 animate-pulse rounded bg-slate-200" />
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold">
+                    {estadoTemporal.subLabel}
+                  </span>
+                  <span className="text-xs font-semibold">
+                    {mainTimeText}
+                  </span>
+                </>
+              )}
             </div>
           )}
         </div>
