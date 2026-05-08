@@ -127,8 +127,11 @@ export const AuthProvider = ({ children }) => {
 
   // Verificar autenticación al cargar
   useEffect(() => {
+    let mounted = true;
+
     const initializeAuth = async () => {
       if (!authService.isAuthenticated()) {
+        if (!mounted) return;
         dispatch({
           type: AUTH_ACTIONS.VERIFY_ERROR,
           payload: { error: 'No autenticado' }
@@ -142,19 +145,35 @@ export const AuthProvider = ({ children }) => {
         const result = await authService.verifyToken();
 
         if (result.success && result.user) {
+          if (!mounted) return;
           dispatch({
             type: AUTH_ACTIONS.VERIFY_SUCCESS,
             payload: { user: result.user }
           });
+
+          // Enriquecer con datos completos de perfil (avatar_key, ultima_conexion).
+          const profileResult = await authService.getProfile();
+          if (mounted && profileResult.success && profileResult.user) {
+            dispatch({
+              type: AUTH_ACTIONS.UPDATE_USER,
+              payload: { user: profileResult.user }
+            });
+          }
         } else {
-          authService.logout();
+          if (result.error?.response?.status === 401) {
+            authService.logout();
+          }
+          if (!mounted) return;
           dispatch({
             type: AUTH_ACTIONS.VERIFY_ERROR,
             payload: { error: 'Token inválido' }
           });
         }
       } catch (error) {
-        authService.logout();
+        if (error?.response?.status === 401) {
+          authService.logout();
+        }
+        if (!mounted) return;
         dispatch({
           type: AUTH_ACTIONS.VERIFY_ERROR,
           payload: { error: 'Error de verificación' }
@@ -163,6 +182,10 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Login
@@ -200,10 +223,22 @@ export const AuthProvider = ({ children }) => {
 
   // Actualizar usuario
   const updateUser = useCallback((userData) => {
+    authService.setCurrentUser({ ...state.user, ...userData });
     dispatch({
       type: AUTH_ACTIONS.UPDATE_USER,
       payload: { user: userData }
     });
+  }, [state.user]);
+
+  const refreshProfile = useCallback(async () => {
+    const result = await authService.getProfile();
+    if (result.success && result.user) {
+      dispatch({
+        type: AUTH_ACTIONS.UPDATE_USER,
+        payload: { user: result.user }
+      });
+    }
+    return result;
   }, []);
 
   // Limpiar errores
@@ -237,6 +272,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     updateUser,
+    refreshProfile,
     clearError,
     hasRole,
     hasMinimumRole,

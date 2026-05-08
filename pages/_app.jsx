@@ -1,12 +1,46 @@
 import '../styles/globals.css';
+import { useEffect } from 'react';
 import { AuthProvider } from '../contexts/AuthContext';
 import { NotificationProvider } from '../contexts/NotificationContext';
 import { ConnectionStatusProvider } from '../contexts/ConnectionStatusContext';
 import { WebOrderAlertsProvider } from '../contexts/WebOrderAlertsContext';
 import { Toaster } from '@/components/ui/toaster';
 import Head from 'next/head';
+import { tokenManager } from '@/services/api';
+import { configuracionService } from '@/services/configuracionService';
+import {
+  applyThemePreference,
+  extractThemeFromGeneralConfig,
+  getStoredThemePreference,
+  persistThemePreference,
+} from '@/lib/theme';
 
 function MyApp({ Component, pageProps }) {
+  useEffect(() => {
+    // Aplica cache local para evitar UI inconsistente durante bootstrap.
+    const storedTheme = getStoredThemePreference();
+    applyThemePreference(storedTheme);
+
+    const accessToken = tokenManager.getAccessToken();
+    if (!accessToken) return;
+
+    let isMounted = true;
+    const syncThemeFromBackend = async () => {
+      const result = await configuracionService.getConfiguracionGeneral();
+      if (!isMounted || !result.success) return;
+
+      const backendTheme = extractThemeFromGeneralConfig(result.data);
+      applyThemePreference(backendTheme);
+      persistThemePreference(backendTheme);
+    };
+
+    syncThemeFromBackend();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <>
       <Head>

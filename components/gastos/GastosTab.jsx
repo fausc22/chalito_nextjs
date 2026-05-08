@@ -520,7 +520,7 @@ export function GastosTab({
 
                 <Button 
                     onClick={() => setModalAgregar(true)} 
-                    className="gap-2 w-[200px] sm:w-auto bg-red-600 hover:bg-red-700"
+                    className="gap-2 w-[200px] sm:w-auto bg-green-600 hover:bg-green-700 text-white"
                 >
                     <Plus className="h-4 w-4" />
                     Nuevo Gasto
@@ -563,12 +563,12 @@ export function GastosTab({
                     <Card>
                         <CardContent className="p-4">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-amber-500 rounded-lg">
-                                    <DollarSign className="h-5 w-5 text-white" />
+                                <div className="p-2 bg-transparent rounded-lg">
+                                    <DollarSign className="h-5 w-5 text-slate-900" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-amber-700">Promedio</p>
-                                    <p className="text-xl font-bold text-amber-800">
+                                    <p className="text-sm text-slate-900">Promedio</p>
+                                    <p className="text-xl font-bold text-slate-900">
                                         {formatMonto(metaGastos.total_registros > 0 
                                             ? metaGastos.total_monto / metaGastos.total_registros 
                                             : 0)}

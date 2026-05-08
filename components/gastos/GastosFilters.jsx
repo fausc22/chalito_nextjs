@@ -194,7 +194,7 @@ export function GastosFilters({
                             <Button
                                 variant="default"
                                 onClick={onBuscar}
-                                className="gap-2 flex-1 sm:flex-initial bg-red-600 hover:bg-red-700"
+                                className="gap-2 flex-1 sm:flex-initial bg-blue-600 hover:bg-blue-700 text-white"
                             >
                                 <Filter className="h-4 w-4" />
                                 Filtrar

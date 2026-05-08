@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { CalendarDays, ChevronDown, Filter, SlidersHorizontal } from 'lucide-react';
+import { Calendar, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -10,179 +10,225 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const RANGE_BUTTONS = [
-  { key: 'hoy', label: 'Hoy' },
-  { key: 'semana', label: 'Esta semana' },
-  { key: 'mes', label: 'Este mes' },
+const MONTH_OPTIONS = [
+  { value: '1', label: 'Enero' },
+  { value: '2', label: 'Febrero' },
+  { value: '3', label: 'Marzo' },
+  { value: '4', label: 'Abril' },
+  { value: '5', label: 'Mayo' },
+  { value: '6', label: 'Junio' },
+  { value: '7', label: 'Julio' },
+  { value: '8', label: 'Agosto' },
+  { value: '9', label: 'Septiembre' },
+  { value: '10', label: 'Octubre' },
+  { value: '11', label: 'Noviembre' },
+  { value: '12', label: 'Diciembre' },
 ];
 
-const LIMIT_OPTIONS = [5, 10, 20, 50];
-const ADVANCED_PLACEHOLDER = 'proximamente';
+const LIMIT_OPTIONS = [5, 10, 20];
+const PAYMENT_METHOD_OPTIONS = [
+  { value: 'EFECTIVO', label: 'Efectivo' },
+  { value: 'TRANSFERENCIA', label: 'Transferencia' },
+  { value: 'DEBITO', label: 'Debito' },
+  { value: 'CREDITO', label: 'Credito' },
+  { value: 'MERCADOPAGO', label: 'MercadoPago' },
+];
+const ORIGIN_OPTIONS = [
+  { value: 'WEB', label: 'WEB' },
+  { value: 'LOCAL', label: 'LOCAL' },
+];
+
+const getAutoRange = (month, year) => {
+  if (month === 'all') {
+    return {
+      desde: `${year}-01-01`,
+      hasta: `${year}-12-31`,
+    };
+  }
+
+  const parsedMonth = Number(month);
+  const from = new Date(year, parsedMonth - 1, 1);
+  const to = new Date(year, parsedMonth, 0);
+  const fromValue = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-${String(from.getDate()).padStart(2, '0')}`;
+  const toValue = `${to.getFullYear()}-${String(to.getMonth() + 1).padStart(2, '0')}-${String(to.getDate()).padStart(2, '0')}`;
+
+  return {
+    desde: fromValue,
+    hasta: toValue,
+  };
+};
 
 export function ReportesFiltros({
   filtros,
-  loading = false,
-  activeQuickRange = null,
+  years = [],
+  showAdvanced = false,
   onChangeFiltro,
   onAplicar,
-  onQuickRange,
+  onLimpiar,
+  loading = false,
 }) {
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const autoRange = getAutoRange(filtros.month, Number(filtros.year));
+  const hasManualDateRange = filtros.desde !== autoRange.desde || filtros.hasta !== autoRange.hasta;
+  const hayFiltrosActivos =
+    filtros.month === 'all' ||
+    Number(filtros.month) !== new Date().getMonth() + 1 ||
+    Number(filtros.year) !== new Date().getFullYear() ||
+    hasManualDateRange ||
+    Number(filtros.limit) !== 10 ||
+    filtros.medioPago ||
+    filtros.origenPedido;
 
   return (
-    <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 md:p-5">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-5 w-5 text-slate-600" />
-          <h2 className="text-base sm:text-lg font-semibold text-slate-800">Filtros</h2>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsAdvancedOpen((prev) => !prev)}
-          className="h-8 px-2.5 text-slate-600"
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-          Avanzados
-          <ChevronDown className={`h-4 w-4 transition-transform ${isAdvancedOpen ? 'rotate-180' : ''}`} />
-        </Button>
-      </div>
+    <Card className="border-slate-200">
+      <CardContent className="p-4">
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pb-4 border-b border-slate-200">
+            <Select
+              value={filtros.month === 'all' ? 'all' : String(filtros.month || '')}
+              onValueChange={(value) => onChangeFiltro('month', value === 'all' ? 'all' : Number(value))}
+              disabled={loading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Mes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los meses</SelectItem>
+                {MONTH_OPTIONS.map((month) => (
+                  <SelectItem key={month.value} value={month.value}>
+                    {month.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-      <div className="grid gap-3 md:grid-cols-[minmax(170px,1fr)_minmax(170px,1fr)_minmax(170px,1fr)_auto] md:items-end">
-        <div>
-          <label htmlFor="filtro-desde" className="block text-sm font-medium text-slate-600 mb-1.5">
-            Fecha desde
-          </label>
-          <Input
-            id="filtro-desde"
-            type="date"
-            value={filtros.desde}
-            onChange={(event) => onChangeFiltro('desde', event.target.value)}
-            disabled={loading}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="filtro-hasta" className="block text-sm font-medium text-slate-600 mb-1.5">
-            Fecha hasta
-          </label>
-          <Input
-            id="filtro-hasta"
-            type="date"
-            value={filtros.hasta}
-            onChange={(event) => onChangeFiltro('hasta', event.target.value)}
-            disabled={loading}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1.5">
-            Ranking de productos
-          </label>
-          <Select
-            value={String(filtros.limit)}
-            onValueChange={(value) => onChangeFiltro('limit', Number(value))}
-            disabled={loading}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccioná límite" />
-            </SelectTrigger>
-            <SelectContent>
-              {LIMIT_OPTIONS.map((limit) => (
-                <SelectItem key={limit} value={String(limit)}>
-                  Top {limit}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Button
-          type="button"
-          onClick={onAplicar}
-          disabled={loading}
-          className="h-10 w-full px-5 bg-blue-700 text-white shadow-sm hover:bg-blue-800 md:w-auto"
-        >
-          <Filter className="h-4 w-4 mr-1.5" />
-          Aplicar filtros
-        </Button>
-      </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-        {RANGE_BUTTONS.map((button) => (
-          <Button
-            key={button.key}
-            type="button"
-            variant={activeQuickRange === button.key ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => onQuickRange(button.key)}
-            disabled={loading}
-            className={`w-full sm:w-auto ${
-              activeQuickRange === button.key ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''
-            }`}
-          >
-            {button.label}
-          </Button>
-        ))}
-      </div>
-
-      {isAdvancedOpen ? (
-        <div className="mt-4 border-t border-slate-200 pt-4">
-          <p className="mb-3 text-sm font-medium text-slate-700">Filtros avanzados</p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-600">Medio de pago</label>
-              <Select
-                value={filtros.medioPago || ADVANCED_PLACEHOLDER}
-                onValueChange={(value) => onChangeFiltro('medioPago', value)}
-                disabled
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Proximamente" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ADVANCED_PLACEHOLDER}>Proximamente</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-600">Origen del pedido</label>
-              <Select
-                value={filtros.origenPedido || ADVANCED_PLACEHOLDER}
-                onValueChange={(value) => onChangeFiltro('origenPedido', value)}
-                disabled
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Proximamente" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ADVANCED_PLACEHOLDER}>Proximamente</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-600">Modalidad</label>
-              <Select
-                value={filtros.modalidad || ADVANCED_PLACEHOLDER}
-                onValueChange={(value) => onChangeFiltro('modalidad', value)}
-                disabled
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Proximamente" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ADVANCED_PLACEHOLDER}>Proximamente</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Select
+              value={String(filtros.year || '')}
+              onValueChange={(value) => onChangeFiltro('year', Number(value))}
+              disabled={loading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Año" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={String(year)} value={String(year)}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <p className="mt-2 text-xs text-slate-500">
-            Esta seccion queda preparada para cuando backend habilite filtros avanzados.
-          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="filtro-desde"
+                type="date"
+                value={filtros.desde}
+                onChange={(event) => onChangeFiltro('desde', event.target.value)}
+                className="pl-9"
+                disabled={loading}
+              />
+            </div>
+
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="filtro-hasta"
+                type="date"
+                value={filtros.hasta}
+                onChange={(event) => onChangeFiltro('hasta', event.target.value)}
+                className="pl-9"
+                disabled={loading}
+              />
+            </div>
+
+            <Select
+              value={String(filtros.limit)}
+              onValueChange={(value) => onChangeFiltro('limit', Number(value))}
+              disabled={loading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Ranking de productos" />
+              </SelectTrigger>
+              <SelectContent>
+                {LIMIT_OPTIONS.map((limit) => (
+                  <SelectItem key={limit} value={String(limit)}>
+                    Top {limit}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {showAdvanced ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-200">
+              <Select
+                value={filtros.medioPago || 'all'}
+                onValueChange={(value) => onChangeFiltro('medioPago', value === 'all' ? '' : value)}
+                disabled={loading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Medio de pago" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los medios</SelectItem>
+                  {PAYMENT_METHOD_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={filtros.origenPedido || 'all'}
+                onValueChange={(value) => onChangeFiltro('origenPedido', value === 'all' ? '' : value)}
+                disabled={loading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Origen del pedido" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los origenes</SelectItem>
+                  {ORIGIN_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+
+          <div className="flex gap-2 w-full sm:w-auto sm:justify-end">
+            <Button
+              type="button"
+              onClick={onAplicar}
+              disabled={loading}
+              className="gap-2 flex-1 sm:flex-initial bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Filter className="h-4 w-4" />
+              Filtrar
+            </Button>
+
+            {hayFiltrosActivos ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onLimpiar}
+                disabled={loading}
+                className="gap-2 flex-1 sm:flex-initial"
+              >
+                <X className="h-4 w-4" />
+                Limpiar
+              </Button>
+            ) : null}
+          </div>
         </div>
-      ) : null}
-    </section>
+      </CardContent>
+    </Card>
   );
 }
 

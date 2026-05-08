@@ -1,5 +1,22 @@
-import { apiRequest, tokenManager } from './api';
+import { apiRequest, getApiErrorMessage, tokenManager } from './api';
 import { API_CONFIG } from '../config/api';
+
+const normalizeUserData = (rawUser = {}) => ({
+  id: rawUser.id ?? null,
+  nombre: rawUser.nombre ?? '',
+  email: rawUser.email ?? '',
+  usuario: rawUser.usuario ?? rawUser.username ?? '',
+  rol: rawUser.rol ?? '',
+  avatar_key: rawUser.avatar_key ?? null,
+  ultima_conexion: rawUser.ultima_conexion ?? null,
+});
+
+const isErrorResponse = (response) => response?.data?.error === true || response?.data?.success === false;
+
+const isEndpointMissing = (response) => {
+  const status = response?.status;
+  return status === 404 || status === 405;
+};
 
 export const authService = {
   // Login
@@ -26,7 +43,6 @@ export const authService = {
         };
       }
 
-      // El backend devuelve 'token' y 'usuario', no 'accessToken' y 'user'
       const { token, refreshToken, usuario } = response.data;
 
       // Validar que recibimos los datos necesarios
@@ -38,13 +54,14 @@ export const authService = {
         };
       }
 
-      // Guardar tokens y datos del usuario
+      const normalizedUser = normalizeUserData(usuario);
+
       tokenManager.setTokens(token, refreshToken);
-      tokenManager.setUserData(usuario);
+      tokenManager.setUserData(normalizedUser);
 
       return {
         success: true,
-        user: usuario,
+        user: normalizedUser,
         message: 'Login exitoso'
       };
     } catch (error) {
@@ -73,9 +90,8 @@ export const authService = {
     try {
       const response = await apiRequest.get(API_CONFIG.ENDPOINTS.AUTH.VERIFY);
 
-      // El backend devuelve 'usuario' no 'user'
       if (response.data.usuario || response.data.user) {
-        const userData = response.data.usuario || response.data.user;
+        const userData = normalizeUserData(response.data.usuario || response.data.user);
         tokenManager.setUserData(userData);
         return {
           success: true,
@@ -111,19 +127,62 @@ export const authService = {
     return tokenManager.getUserData();
   },
 
-  // Actualizar perfil
+  // Obtener perfil actualizado del backend (canonico: /usuarios/me)
+  getProfile: async () => {
+    try {
+      let response = await apiRequest.get(API_CONFIG.ENDPOINTS.USUARIOS.ME);
+      if (isErrorResponse(response) && isEndpointMissing(response)) {
+        response = await apiRequest.get(API_CONFIG.ENDPOINTS.AUTH.PROFILE);
+      }
+
+      if (isErrorResponse(response)) {
+        return {
+          success: false,
+          message: getApiErrorMessage(response, 'Error al obtener perfil')
+        };
+      }
+
+      const userData = normalizeUserData(response.data?.usuario || response.data?.user);
+      tokenManager.setUserData(userData);
+      return { success: true, user: userData };
+    } catch (error) {
+      console.error('Error obteniendo perfil:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Error al obtener perfil',
+        error
+      };
+    }
+  },
+
+  // Actualizar perfil (canonico: /usuarios/me)
   updateProfile: async (userData) => {
     try {
-      const response = await apiRequest.put(
-        API_CONFIG.ENDPOINTS.AUTH.PROFILE,
-        userData
-      );
+      const payload = {
+        nombre: userData.nombre,
+        email: userData.email,
+        usuario: userData.usuario,
+        avatar_key: userData.avatar_key ?? null,
+      };
 
-      if (response.data.user) {
-        tokenManager.setUserData(response.data.user);
+      let response = await apiRequest.put(API_CONFIG.ENDPOINTS.USUARIOS.ME, payload);
+      if (isErrorResponse(response) && isEndpointMissing(response)) {
+        response = await apiRequest.put(API_CONFIG.ENDPOINTS.AUTH.PROFILE, payload);
+      }
+
+      if (isErrorResponse(response)) {
+        return {
+          success: false,
+          message: getApiErrorMessage(response, 'Error al actualizar perfil')
+        };
+      }
+
+      if (response.data.user || response.data.usuario) {
+        const normalizedUser = normalizeUserData(response.data.user || response.data.usuario);
+        tokenManager.setUserData(normalizedUser);
         return {
           success: true,
-          user: response.data.user
+          user: normalizedUser
         };
       }
 
@@ -139,5 +198,51 @@ export const authService = {
         error
       };
     }
+  },
+
+  changePassword: async ({ password_actual, password_nueva, confirmar_password }) => {
+    try {
+      let response = await apiRequest.put(
+        API_CONFIG.ENDPOINTS.AUTH.CHANGE_PASSWORD,
+        {
+          currentPassword: password_actual,
+          newPassword: password_nueva,
+        }
+      );
+
+      if (isErrorResponse(response) && isEndpointMissing(response)) {
+        response = await apiRequest.put(
+          API_CONFIG.ENDPOINTS.USUARIOS.CHANGE_PASSWORD,
+          {
+            password_actual,
+            password_nueva,
+            confirmar_password,
+          }
+        );
+      }
+
+      if (isErrorResponse(response)) {
+        return {
+          success: false,
+          message: getApiErrorMessage(response, 'No se pudo cambiar la contraseña'),
+        };
+      }
+
+      return {
+        success: true,
+        message: response.data?.message || 'Contraseña actualizada exitosamente'
+      };
+    } catch (error) {
+      console.error('Error cambiando contraseña:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'No se pudo cambiar la contraseña',
+        error
+      };
+    }
+  },
+
+  setCurrentUser: (userData) => {
+    tokenManager.setUserData(normalizeUserData(userData));
   }
 };

@@ -64,14 +64,14 @@ function GastosContent() {
                     <TabsList className="flex flex-wrap justify-center gap-2 sm:gap-4 md:gap-6 mb-8 bg-transparent h-auto p-0">
                         <TabsTrigger
                             value="gastos"
-                            className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 bg-red-500 !text-white font-semibold rounded-lg shadow-md hover:bg-red-600 hover:shadow-lg hover:scale-105 data-[state=active]:bg-red-700 data-[state=active]:!text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 transition-all duration-200"
+                            className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 font-medium shadow-sm hover:bg-slate-200 hover:text-slate-800 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:border-slate-300 data-[state=active]:shadow-md max-[400px]:w-[calc(50%-0.25rem)]"
                         >
                             <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5" />
                             <span className="text-sm sm:text-base">Gastos</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="categorias"
-                            className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 bg-amber-500 !text-white font-semibold rounded-lg shadow-md hover:bg-amber-600 hover:shadow-lg hover:scale-105 data-[state=active]:bg-amber-700 data-[state=active]:!text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 transition-all duration-200"
+                            className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 font-medium shadow-sm hover:bg-slate-200 hover:text-slate-800 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:border-slate-300 data-[state=active]:shadow-md max-[400px]:w-[calc(50%-0.25rem)]"
                         >
                             <Tag className="h-4 w-4 sm:h-5 sm:w-5" />
                             <span className="text-sm sm:text-base">Categorías</span>
