@@ -58,6 +58,12 @@
   --primary-light: #93c5fd;
   --secondary-color: #22c55e;
   --danger-color: #ef4444;
+  --app-bg: #f8fafc;
+  --app-surface: #ffffff;
+  --app-surface-muted: #f1f5f9;
+  --app-text: #0f172a;
+  --app-text-muted: #64748b;
+  --app-border: #e2e8f0;
   --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -66,12 +72,23 @@
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.dark {
+  --app-bg: #020617;
+  --app-surface: #0f172a;
+  --app-surface-muted: #1e293b;
+  --app-text: #f8fafc;
+  --app-text-muted: #cbd5e1;
+  --app-border: #334155;
+}
+
 @layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+    background-color: var(--app-bg);
+    color: var(--app-text);
   }
 }
 
@@ -110,7 +127,8 @@ body {
 }
 
 body {
-  @apply bg-gray-50 text-gray-900;
+  background-color: var(--app-bg);
+  color: var(--app-text);
 }
 
 /* Sonner global hardening: base solida y variantes consistentes */
@@ -181,6 +199,73 @@ body {
 #__next {
   margin: 0;
   padding: 0;
+  background-color: var(--app-bg);
+  color: var(--app-text);
+}
+
+.page-layout,
+.app-main-bg {
+  background-color: var(--app-bg);
+  color: var(--app-text);
+}
+
+/* Tema global app: utilidades frecuentes en modo oscuro */
+.dark .bg-white {
+  background-color: var(--app-surface) !important;
+}
+
+.dark .bg-gray-50,
+.dark .bg-slate-50 {
+  background-color: var(--app-surface-muted) !important;
+}
+
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-slate-300,
+.dark .border-gray-200,
+.dark .border-gray-300 {
+  border-color: var(--app-border) !important;
+}
+
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-slate-700,
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+  color: var(--app-text) !important;
+}
+
+.dark .text-slate-600,
+.dark .text-slate-500,
+.dark .text-slate-400,
+.dark .text-gray-600,
+.dark .text-gray-500,
+.dark .text-gray-400 {
+  color: var(--app-text-muted) !important;
+}
+
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: var(--app-surface) !important;
+  color: var(--app-text) !important;
+  border-color: var(--app-border) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--app-text-muted) !important;
+}
+
+.dark table thead tr {
+  background-color: var(--app-surface-muted) !important;
+}
+
+.dark table th,
+.dark table td {
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
 }
 
 /* Headings */

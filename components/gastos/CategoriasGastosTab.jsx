@@ -207,7 +207,7 @@ export function CategoriasGastosTab({
 
                 <Button 
                     onClick={() => setModalAgregar(true)} 
-                    className="gap-2 w-[200px] sm:w-auto bg-amber-600 hover:bg-amber-700"
+                    className="gap-2 w-[200px] sm:w-auto bg-green-600 hover:bg-green-700 text-white"
                 >
                     <Plus className="h-4 w-4" />
                     Nueva Categoría
@@ -415,7 +415,7 @@ export function CategoriasGastosTab({
                             </Button>
                             <Button
                                 onClick={modalEditar ? handleActualizarCategoria : handleCrearCategoria}
-                                className="flex-1 bg-amber-600 hover:bg-amber-700"
+                                className={`flex-1 ${modalEditar ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700 text-white'}`}
                                 disabled={loadingCategorias}
                             >
                                 {loadingCategorias ? 'Guardando...' : (modalEditar ? 'Actualizar' : 'Crear')}

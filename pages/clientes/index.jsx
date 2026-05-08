@@ -46,7 +46,7 @@ function ClientesContent() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar por nombre o teléfono"
           />
-          <Button onClick={() => { setPage(1); cargar(); }}>
+          <Button onClick={() => { setPage(1); cargar(); }} className="bg-blue-600 hover:bg-blue-700 text-white">
             Buscar
           </Button>
         </div>

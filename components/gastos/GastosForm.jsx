@@ -233,7 +233,7 @@ export function GastosForm({
                         </Button>
                         <Button
                             type="submit"
-                            className="flex-1 bg-red-600 hover:bg-red-700"
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                             disabled={loading}
                         >
                             {loading ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Registrar Gasto')}

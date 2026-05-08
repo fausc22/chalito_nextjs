@@ -39,7 +39,14 @@ export const tokenManager = {
   getUserData: () => {
     if (typeof window !== 'undefined') {
       const userData = localStorage.getItem(API_CONFIG.TOKEN_CONFIG.USER_KEY);
-      return userData ? JSON.parse(userData) : null;
+      if (!userData) return null;
+      try {
+        return JSON.parse(userData);
+      } catch (error) {
+        console.warn('No se pudo parsear usuario en storage, se limpia cache local.');
+        localStorage.removeItem(API_CONFIG.TOKEN_CONFIG.USER_KEY);
+        return null;
+      }
     }
     return null;
   },
@@ -68,9 +75,31 @@ const addRefreshSubscriber = (callback) => {
   refreshSubscribers.push(callback);
 };
 
-const onRefreshComplete = (token) => {
-  refreshSubscribers.forEach(callback => callback(token));
+const onRefreshComplete = (token, refreshError = null) => {
+  refreshSubscribers.forEach((callback) => callback(token, refreshError));
   refreshSubscribers = [];
+};
+
+const shouldSkipRefreshForUrl = (url = '') =>
+  url.includes('/login') ||
+  url.includes('/refresh-token') ||
+  url.includes('/verify-token') ||
+  url.includes('/auth/verify');
+
+const shouldTryRefreshOn401 = (error, url = '') => {
+  if (shouldSkipRefreshForUrl(url)) return false;
+
+  const backendMessage =
+    error?.response?.data?.message ||
+    error?.response?.data?.mensaje ||
+    '';
+
+  // Evita logout forzado en 401 funcionales (ej. password actual incorrecta).
+  if (backendMessage && !/(token|autorizad|unauthorized|expired|expirad)/i.test(backendMessage)) {
+    return false;
+  }
+
+  return true;
 };
 
 // Interceptor de request
@@ -90,13 +119,14 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const requestUrl = String(originalRequest?.url || '');
+    const shouldTryRefresh = shouldTryRefreshOn401(error, requestUrl);
 
     // Si es error 401 y no es login/refresh/verify
     if (error.response?.status === 401 &&
+        shouldTryRefresh &&
         !originalRequest._retry &&
-        !originalRequest.url.includes('/login') &&
-        !originalRequest.url.includes('/refresh-token') &&
-        !originalRequest.url.includes('/verify-token')) {
+        !shouldSkipRefreshForUrl(requestUrl)) {
 
       const refreshToken = tokenManager.getRefreshToken();
 
@@ -109,8 +139,12 @@ apiClient.interceptors.response.use(
       }
 
       if (isRefreshing) {
-        return new Promise((resolve) => {
-          addRefreshSubscriber((token) => {
+        return new Promise((resolve, reject) => {
+          addRefreshSubscriber((token, refreshError) => {
+            if (refreshError || !token) {
+              reject(refreshError || error);
+              return;
+            }
             originalRequest.headers.Authorization = `Bearer ${token}`;
             resolve(apiClient(originalRequest));
           });
@@ -126,17 +160,22 @@ apiClient.interceptors.response.use(
           { refreshToken }
         );
 
-        const { accessToken } = response.data;
-        tokenManager.setTokens(accessToken);
+        const refreshedAccessToken = response.data?.accessToken || response.data?.token;
+        if (!refreshedAccessToken) {
+          throw new Error('Respuesta inválida de refresh token');
+        }
 
-        onRefreshComplete(accessToken);
+        tokenManager.setTokens(refreshedAccessToken);
+
+        onRefreshComplete(refreshedAccessToken);
         isRefreshing = false;
 
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        originalRequest.headers.Authorization = `Bearer ${refreshedAccessToken}`;
         return apiClient(originalRequest);
 
       } catch (refreshError) {
         isRefreshing = false;
+        onRefreshComplete(null, refreshError);
         tokenManager.clearTokens();
 
         toast.error('Sesión expirada. Por favor inicia sesión nuevamente.');

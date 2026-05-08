@@ -90,7 +90,9 @@ export function ClienteDetalleDrawer({ isOpen, onClose, clienteId, onClienteUpda
               </ul>
             </div>
 
-            <Button onClick={handleGuardar}>Guardar cambios</Button>
+            <Button onClick={handleGuardar} className="bg-blue-600 hover:bg-blue-700 text-white">
+              Guardar cambios
+            </Button>
           </div>
         ) : (
           <p className="mt-4 text-sm text-muted-foreground">No se encontró el cliente.</p>

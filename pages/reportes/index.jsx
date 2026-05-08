@@ -24,39 +24,43 @@ const getDateOnly = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-const getTodayRange = () => {
-  const today = new Date();
-  const day = getDateOnly(today);
-  return { desde: day, hasta: day };
+const getMonthRange = (year, month) => {
+  const from = new Date(year, month - 1, 1);
+  const to = new Date(year, month, 0);
+  return { desde: getDateOnly(from), hasta: getDateOnly(to) };
 };
 
-const getThisMonthRange = () => {
-  const today = new Date();
-  const from = new Date(today.getFullYear(), today.getMonth(), 1);
-  return { desde: getDateOnly(from), hasta: getDateOnly(today) };
-};
+const getYearRange = (year) => ({
+  desde: `${year}-01-01`,
+  hasta: `${year}-12-31`,
+});
 
-const getThisWeekRange = () => {
+const getDefaultFilters = () => {
   const today = new Date();
-  const start = new Date(today);
-  const day = start.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  start.setDate(start.getDate() + diffToMonday);
-  return { desde: getDateOnly(start), hasta: getDateOnly(today) };
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1;
+  const monthRange = getMonthRange(year, month);
+
+  return {
+    month,
+    year,
+    ...monthRange,
+    limit: 10,
+    medioPago: '',
+    origenPedido: '',
+  };
 };
 
 function ReportesContent() {
   const { dashboard, loading, error, hasLoaded, cargarDashboard } = useReportes();
   const hasFetchedOnceRef = useRef(false);
-  const [filtros, setFiltros] = useState(() => ({
-    ...getThisMonthRange(),
-    limit: 10,
-    medioPago: '',
-    origenPedido: '',
-    modalidad: '',
-  }));
-  const [activeQuickRange, setActiveQuickRange] = useState('mes');
+  const [filtros, setFiltros] = useState(() => getDefaultFilters());
+  const [manualDateOverride, setManualDateOverride] = useState(false);
   const [activeTab, setActiveTab] = useState('ventas');
+  const years = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return Array.from({ length: 8 }, (_, index) => currentYear - 3 + index);
+  }, []);
 
   const dashboardSafe = useMemo(
     () => ({
@@ -100,52 +104,150 @@ function ReportesContent() {
     );
   }, [dashboardSafe]);
 
-  const aplicarFiltros = useCallback(async (nextFilters) => {
-    if (!nextFilters.desde || !nextFilters.hasta) {
-      toast.error('Seleccioná ambas fechas para continuar.');
-      return;
-    }
+  const resolveDateRange = useCallback(
+    (nextFilters, preferManual = manualDateOverride) => {
+      const hasManualDates = Boolean(nextFilters.desde && nextFilters.hasta);
 
-    if (nextFilters.desde > nextFilters.hasta) {
-      toast.error('La fecha "desde" no puede ser mayor que "hasta".');
-      return;
-    }
+      if (preferManual && hasManualDates) {
+        return {
+          desde: nextFilters.desde,
+          hasta: nextFilters.hasta,
+          isManual: true,
+        };
+      }
 
-    const response = await cargarDashboard(nextFilters);
-    if (!response.success) {
-      toast.error(response.error || 'No pudimos cargar los reportes.');
-    }
-  }, [cargarDashboard]);
+      if (nextFilters.month === 'all') {
+        return {
+          ...getYearRange(Number(nextFilters.year)),
+          isManual: false,
+        };
+      }
+
+      return {
+        ...getMonthRange(Number(nextFilters.year), Number(nextFilters.month)),
+        isManual: false,
+      };
+    },
+    [manualDateOverride]
+  );
+
+  const aplicarFiltros = useCallback(
+    async (nextFilters, preferManual = manualDateOverride) => {
+      const resolvedRange = resolveDateRange(nextFilters, preferManual);
+      const normalizedFilters = {
+        ...nextFilters,
+        ...resolvedRange,
+      };
+
+      if (!normalizedFilters.desde || !normalizedFilters.hasta) {
+        toast.error('Seleccioná ambas fechas para continuar.');
+        return;
+      }
+
+      if (normalizedFilters.desde > normalizedFilters.hasta) {
+        toast.error('La fecha "desde" no puede ser mayor que "hasta".');
+        return;
+      }
+
+      setFiltros((prev) => ({
+        ...prev,
+        ...normalizedFilters,
+      }));
+
+      const payload = {
+        month:
+          resolvedRange.isManual || normalizedFilters.month === 'all'
+            ? undefined
+            : Number(normalizedFilters.month),
+        year: normalizedFilters.year ? Number(normalizedFilters.year) : undefined,
+        date_from: normalizedFilters.desde,
+        date_to: normalizedFilters.hasta,
+        ranking_limit: Number(normalizedFilters.limit) || 10,
+        payment_method: normalizedFilters.medioPago || undefined,
+        origin: normalizedFilters.origenPedido || undefined,
+        // Mantener compatibilidad mientras backend migra.
+        desde: normalizedFilters.desde,
+        hasta: normalizedFilters.hasta,
+        limit: Number(normalizedFilters.limit) || 10,
+        medioPago: normalizedFilters.medioPago || undefined,
+        origenPedido: normalizedFilters.origenPedido || undefined,
+      };
+
+      Object.keys(payload).forEach((key) => {
+        if (payload[key] === undefined || payload[key] === '') {
+          delete payload[key];
+        }
+      });
+
+      const response = await cargarDashboard(payload);
+      if (!response.success) {
+        toast.error(response.error || 'No pudimos cargar los reportes.');
+      }
+    },
+    [cargarDashboard, manualDateOverride, resolveDateRange]
+  );
 
   const handleChangeFiltro = useCallback((key, value) => {
-    setFiltros((prev) => ({ ...prev, [key]: value }));
     if (key === 'desde' || key === 'hasta') {
-      setActiveQuickRange(null);
+      setManualDateOverride(true);
+      setFiltros((prev) => ({ ...prev, [key]: value }));
+      return;
     }
+
+    if (key === 'month') {
+      setManualDateOverride(false);
+      setFiltros((prev) => {
+        const nextMonth = value;
+        const autoRange =
+          nextMonth === 'all'
+            ? getYearRange(Number(prev.year))
+            : getMonthRange(Number(prev.year), Number(nextMonth));
+
+        return {
+          ...prev,
+          month: nextMonth,
+          ...autoRange,
+        };
+      });
+      return;
+    }
+
+    if (key === 'year') {
+      setManualDateOverride(false);
+      setFiltros((prev) => {
+        const nextYear = Number(value);
+        const autoRange =
+          prev.month === 'all'
+            ? getYearRange(nextYear)
+            : getMonthRange(nextYear, Number(prev.month));
+
+        return {
+          ...prev,
+          year: nextYear,
+          ...autoRange,
+        };
+      });
+      return;
+    }
+
+    setFiltros((prev) => ({ ...prev, [key]: value }));
   }, []);
 
   const handleAplicarClick = useCallback(() => {
     aplicarFiltros(filtros);
   }, [aplicarFiltros, filtros]);
 
-  const handleQuickRange = useCallback((type) => {
-    const ranges = {
-      hoy: getTodayRange(),
-      semana: getThisWeekRange(),
-      mes: getThisMonthRange(),
-    };
-
-    const selectedRange = ranges[type] || getThisMonthRange();
-    const nextFilters = { ...filtros, ...selectedRange };
-    setFiltros(nextFilters);
-    setActiveQuickRange(type);
-    aplicarFiltros(nextFilters);
-  }, [aplicarFiltros, filtros]);
+  const handleLimpiar = useCallback(() => {
+    const nextDefaultFilters = getDefaultFilters();
+    setManualDateOverride(false);
+    setFiltros(nextDefaultFilters);
+    aplicarFiltros(nextDefaultFilters, false);
+  }, [aplicarFiltros]);
 
   useEffect(() => {
     if (hasFetchedOnceRef.current) return;
     hasFetchedOnceRef.current = true;
-    aplicarFiltros(filtros);
+    aplicarFiltros(filtros, false);
   }, [aplicarFiltros, filtros]);
 
   return (
@@ -175,11 +277,12 @@ function ReportesContent() {
         <div className="space-y-5">
           <ReportesFiltros
             filtros={filtros}
+            years={years}
+            showAdvanced
             loading={loading}
-            activeQuickRange={activeQuickRange}
             onChangeFiltro={handleChangeFiltro}
             onAplicar={handleAplicarClick}
-            onQuickRange={handleQuickRange}
+            onLimpiar={handleLimpiar}
           />
 
           {!hasLoaded && loading ? <ReportesDashboardSkeleton /> : null}

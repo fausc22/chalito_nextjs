@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, DragOverlay, defaultDropAnimationSideEffects } from '@dnd-kit/core';
 import { ProtectedRoute } from '../../components/auth/ProtectedRoute';
 import { NavBar } from '../../components/layout/NavBar';
-import { Footer } from '../../components/layout/Footer';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
 import { PedidosSidebar } from '../../components/pedidos/PedidosSidebar';
 import { PedidosColumn } from '../../components/pedidos/PedidosColumn';
@@ -503,10 +502,11 @@ function VentasContent() {
             showSidebarToggle={isMobileOrTablet}
             sidebarOpen={sidebarOpen}
             onSidebarToggle={() => setSidebarOpen((prev) => !prev)}
+            compactMode
           />
         </div>
 
-        <main className="flex-1 bg-gray-50 flex flex-row min-h-0 overflow-hidden relative">
+        <main className="flex-1 bg-slate-100 flex flex-row min-h-0 overflow-hidden relative">
           {/* Sidebar desktop - dentro del flujo del documento */}
           <div className="hidden xl:block flex-shrink-0">
             <PedidosSidebar
@@ -635,8 +635,6 @@ function VentasContent() {
             </DndContext>
           </div>
         </main>
-
-        <Footer />
       </div>
 
       {/* Modales */}
