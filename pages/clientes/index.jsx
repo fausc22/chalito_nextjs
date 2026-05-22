@@ -35,9 +35,9 @@ function ClientesContent() {
 
   return (
     <Layout title="Clientes">
-      <main className="main-content space-y-4">
+      <div className="main-content space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold text-[#315e92]">Clientes</h1>
+          <h1 className="text-2xl font-semibold admin-page-heading">Clientes</h1>
         </div>
 
         <div className="flex gap-2">
@@ -83,7 +83,7 @@ function ClientesContent() {
           clienteId={selectedClienteId}
           onClienteUpdated={cargar}
         />
-      </main>
+      </div>
     </Layout>
   );
 }
@@ -91,7 +91,7 @@ function ClientesContent() {
 export default function ClientesPage() {
   return (
     <ErrorBoundary>
-      <ProtectedRoute requiredRole="GERENTE">
+      <ProtectedRoute module="clientes">
         <ClientesContent />
       </ProtectedRoute>
     </ErrorBoundary>

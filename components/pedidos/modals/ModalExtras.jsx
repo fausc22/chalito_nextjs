@@ -76,7 +76,7 @@ export function ModalExtras({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[calc(100vw-0.75rem)] sm:w-full max-w-2xl h-[90dvh] sm:h-[85vh] flex flex-col p-3 sm:p-6">
         <DialogHeader className="flex-shrink-0 pb-2">
-          <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
             <Package className="h-5 w-5" />
             {isEditarProductoTitulo
               ? 'Editar Producto'
@@ -104,11 +104,11 @@ export function ModalExtras({
         <div className="flex-1 overflow-y-auto space-y-4 pt-3 sm:pt-4 pr-0 sm:pr-3">
           {/* Mensaje informativo para múltiples unidades */}
           {!editandoItemCarrito && totalUnidades > 1 && (
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-              <p className="text-sm text-slate-700">
+            <div className="bg-muted border border-border rounded-lg p-3">
+              <p className="text-sm text-foreground">
                 Estás agregando {totalUnidades} unidades. Configura los extras para cada una individualmente.
                 {unidadesConfiguradas.length > 0 && (
-                  <span className="block mt-1 text-xs text-slate-600">
+                  <span className="block mt-1 text-xs text-muted-foreground">
                     Unidades ya configuradas: {unidadesConfiguradas.length}
                   </span>
                 )}
@@ -117,13 +117,13 @@ export function ModalExtras({
           )}
 
           {/* Info del producto */}
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+          <div className="bg-muted border border-border rounded-lg p-4">
             <div className="flex items-start sm:items-center gap-3 sm:gap-4">
               <div className="text-4xl">{producto.imagen}</div>
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-slate-800">{producto.nombre}</h3>
-                <p className="text-sm text-slate-600">Precio base: ${producto.precio.toLocaleString('es-AR')}</p>
-                <p className="text-sm text-slate-600">
+                <h3 className="text-lg font-bold text-foreground">{producto.nombre}</h3>
+                <p className="text-sm text-muted-foreground">Precio base: ${producto.precio.toLocaleString('es-AR')}</p>
+                <p className="text-sm text-muted-foreground">
                   {editandoItemCarrito
                     ? `Cantidad: ${cantidadProducto} ${cantidadProducto > 1 ? 'unidades' : 'unidad'}`
                     : totalUnidades > 1
@@ -141,7 +141,7 @@ export function ModalExtras({
               {/* Presentación (radio) - Hacela doble / Hacela triple / Hacela cuadruple */}
               {(dobleExtra || tripleExtra || cuadrupleExtra) && (
                 <div className="space-y-2">
-                  <h4 className="font-semibold text-slate-800 mb-2">Presentación:</h4>
+                  <h4 className="font-semibold text-foreground mb-2">Presentación:</h4>
                   <div className="flex flex-wrap gap-4 pl-3">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -149,9 +149,9 @@ export function ModalExtras({
                         name="presentacion"
                         checked={presentacionSeleccionada === 'simple'}
                         onChange={() => setPresentacion('simple')}
-                        className="w-4 h-4 border-2 border-slate-300 text-blue-600"
+                        className="w-4 h-4 border-2 border-border text-blue-600"
                       />
-                      <span className="text-sm font-medium text-slate-800">Simple</span>
+                      <span className="text-sm font-medium text-foreground">Simple</span>
                     </label>
                     {dobleExtra && (
                       <label className="flex items-center gap-2 cursor-pointer">
@@ -160,10 +160,10 @@ export function ModalExtras({
                           name="presentacion"
                           checked={presentacionSeleccionada === 'doble'}
                           onChange={() => setPresentacion('doble')}
-                          className="w-4 h-4 border-2 border-slate-300 text-blue-600"
+                          className="w-4 h-4 border-2 border-border text-blue-600"
                         />
-                        <span className="text-sm font-medium text-slate-800">Doble</span>
-                        <span className="text-xs text-slate-600">+${dobleExtra.precio?.toLocaleString('es-AR')}</span>
+                        <span className="text-sm font-medium text-foreground">Doble</span>
+                        <span className="text-xs text-muted-foreground">+${dobleExtra.precio?.toLocaleString('es-AR')}</span>
                       </label>
                     )}
                     {tripleExtra && (
@@ -173,10 +173,10 @@ export function ModalExtras({
                           name="presentacion"
                           checked={presentacionSeleccionada === 'triple'}
                           onChange={() => setPresentacion('triple')}
-                          className="w-4 h-4 border-2 border-slate-300 text-blue-600"
+                          className="w-4 h-4 border-2 border-border text-blue-600"
                         />
-                        <span className="text-sm font-medium text-slate-800">Triple</span>
-                        <span className="text-xs text-slate-600">+${tripleExtra.precio?.toLocaleString('es-AR')}</span>
+                        <span className="text-sm font-medium text-foreground">Triple</span>
+                        <span className="text-xs text-muted-foreground">+${tripleExtra.precio?.toLocaleString('es-AR')}</span>
                       </label>
                     )}
                     {cuadrupleExtra && (
@@ -186,10 +186,10 @@ export function ModalExtras({
                           name="presentacion"
                           checked={presentacionSeleccionada === 'cuadruple'}
                           onChange={() => setPresentacion('cuadruple')}
-                          className="w-4 h-4 border-2 border-slate-300 text-blue-600"
+                          className="w-4 h-4 border-2 border-border text-blue-600"
                         />
-                        <span className="text-sm font-medium text-slate-800">Cuádruple</span>
-                        <span className="text-xs text-slate-600">+${cuadrupleExtra.precio?.toLocaleString('es-AR')}</span>
+                        <span className="text-sm font-medium text-foreground">Cuádruple</span>
+                        <span className="text-xs text-muted-foreground">+${cuadrupleExtra.precio?.toLocaleString('es-AR')}</span>
                       </label>
                     )}
                   </div>
@@ -199,7 +199,7 @@ export function ModalExtras({
               {/* Extras (checkboxes) - resto de adicionales */}
               {extrasNormales.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="font-semibold text-slate-800 mb-2">Extras:</h4>
+                  <h4 className="font-semibold text-foreground mb-2">Extras:</h4>
                   <div className="space-y-2">
                     {extrasNormales.map((extra) => {
                       const isSelected = extrasSeleccionados.find((e) => e.id === extra.id);
@@ -207,7 +207,7 @@ export function ModalExtras({
                         <div
                           key={extra.id}
                           className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                            isSelected ? 'bg-blue-50 border-blue-300' : 'bg-white border-slate-200 hover:border-slate-300'
+                            isSelected ? 'bg-primary/10 border-blue-300' : 'bg-card border-border hover:border-border'
                           }`}
                           onClick={() => toggleExtra(extra)}
                         >
@@ -217,8 +217,8 @@ export function ModalExtras({
                             className="border-2"
                           />
                           <div className="flex-1">
-                            <p className="font-semibold text-slate-800">{extra.nombre}</p>
-                            <p className="text-sm text-slate-600">+${(extra.precio || 0).toLocaleString('es-AR')}</p>
+                            <p className="font-semibold text-foreground">{extra.nombre}</p>
+                            <p className="text-sm text-muted-foreground">+${(extra.precio || 0).toLocaleString('es-AR')}</p>
                           </div>
                           {isSelected && <Badge className="bg-green-600 text-white">Seleccionado</Badge>}
                         </div>
@@ -229,8 +229,8 @@ export function ModalExtras({
               )}
             </div>
           ) : (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-slate-700">
+            <div className="bg-primary/10 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-foreground">
                 <span className="font-semibold">ℹ️ Este producto no tiene extras disponibles.</span>
                 <br />
                 Puedes agregar una observación específica para este item.
@@ -239,8 +239,8 @@ export function ModalExtras({
           )}
 
           {/* Campo de observación */}
-          <div className="mt-4 bg-slate-50 border border-slate-200 rounded-lg p-4">
-            <Label className="text-sm font-semibold text-slate-800 mb-2 block">
+          <div className="mt-4 bg-muted border border-border rounded-lg p-4">
+            <Label className="text-sm font-semibold text-foreground mb-2 block">
               Observación (opcional)
             </Label>
             <Textarea
@@ -250,18 +250,18 @@ export function ModalExtras({
               rows={3}
               className="text-sm"
             />
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Agrega una observación específica para este item
             </p>
           </div>
 
           {/* Resumen de precio */}
-          <div className="mt-4 bg-slate-50 border border-slate-200 rounded-lg p-4">
-            <h4 className="font-semibold text-slate-800 mb-2">Resumen:</h4>
+          <div className="mt-4 bg-muted border border-border rounded-lg p-4">
+            <h4 className="font-semibold text-foreground mb-2">Resumen:</h4>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-600">Precio base {editandoItemCarrito ? `x ${cantidadProducto}` : 'x 1'}:</span>
-                <span className="font-semibold text-slate-800">
+                <span className="text-muted-foreground">Precio base {editandoItemCarrito ? `x ${cantidadProducto}` : 'x 1'}:</span>
+                <span className="font-semibold text-foreground">
                   ${editandoItemCarrito
                     ? (producto.precio * cantidadProducto).toLocaleString('es-AR')
                     : producto.precio.toLocaleString('es-AR')
@@ -270,12 +270,12 @@ export function ModalExtras({
               </div>
               {extrasSeleccionados.length > 0 && (
                 <>
-                  <div className="border-t border-slate-200 pt-1 mt-1">
-                    <p className="font-medium text-slate-700 mb-1">Extras seleccionados:</p>
+                  <div className="border-t border-border pt-1 mt-1">
+                    <p className="font-medium text-foreground mb-1">Extras seleccionados:</p>
                     {extrasSeleccionados.map(extra => (
                       <div key={extra.id} className="flex justify-between text-xs ml-2">
-                        <span className="text-slate-600">+ {extra.nombre} {editandoItemCarrito ? `x ${cantidadProducto}` : 'x 1'}:</span>
-                        <span className="text-slate-800">
+                        <span className="text-muted-foreground">+ {extra.nombre} {editandoItemCarrito ? `x ${cantidadProducto}` : 'x 1'}:</span>
+                        <span className="text-foreground">
                           ${editandoItemCarrito
                             ? (extra.precio * cantidadProducto).toLocaleString('es-AR')
                             : extra.precio.toLocaleString('es-AR')
@@ -287,7 +287,7 @@ export function ModalExtras({
                 </>
               )}
               <Separator className="my-2" />
-              <div className="flex justify-between text-base font-bold text-slate-900">
+              <div className="flex justify-between text-base font-bold text-foreground">
                 <span>TOTAL {totalUnidades > 1 && !editandoItemCarrito ? '(esta unidad)' : ''}:</span>
                 <span>${calcularTotalUnidad().toLocaleString('es-AR')}</span>
               </div>

@@ -19,7 +19,7 @@ export function ArticuloImagenTable({ imagen_url, nombre }) {
       )}
       {(!imagen_url || imgError) && (
         <div className="w-full h-full min-h-[56px] flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-          <span className="text-[10px] text-slate-400 font-medium text-center">SIN IMAGEN</span>
+          <span className="text-[10px] text-muted-foreground font-medium text-center">SIN IMAGEN</span>
         </div>
       )}
     </div>

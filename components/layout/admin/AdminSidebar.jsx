@@ -2,12 +2,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import { useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getMainNavItems } from './navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 
-export function AdminSidebar({ collapsed, mobileOpen, onMobileClose }) {
+export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobileClose }) {
   const router = useRouter();
   const { userRole } = useAuth();
   const [collapsedLogoError, setCollapsedLogoError] = useState(false);
@@ -22,11 +22,23 @@ export function AdminSidebar({ collapsed, mobileOpen, onMobileClose }) {
         <aside className="flex h-full w-full overflow-x-hidden border-r border-blue-900/50 bg-gradient-to-b from-blue-950 via-blue-900 to-blue-900 text-white">
           <div className="flex h-full w-full min-w-0 flex-col overflow-x-hidden">
             <div
-              className={`border-b border-blue-800/70 transition-all duration-300 ${
+              className={`relative border-b border-blue-800/70 transition-all duration-300 ${
                 collapsed ? 'px-2 py-4' : 'px-4 py-5'
               }`}
             >
-              <div className={`flex min-w-0 ${collapsed ? 'justify-center' : 'justify-start'}`}>
+              {!collapsed ? (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={onToggleCollapse}
+                  aria-label="Colapsar sidebar"
+                  className="absolute right-2 top-3 h-8 w-8 text-blue-100 hover:bg-blue-800/60"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              ) : null}
+              <div className={`flex min-w-0 ${collapsed ? 'flex-col items-center gap-2' : 'justify-start'}`}>
                 <Link
                   href="/"
                   className={`relative block overflow-hidden transition-all duration-300 ${
@@ -66,6 +78,18 @@ export function AdminSidebar({ collapsed, mobileOpen, onMobileClose }) {
                     </span>
                   )}
                 </Link>
+                {collapsed ? (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={onToggleCollapse}
+                    aria-label="Expandir sidebar"
+                    className="h-8 w-8 text-blue-100 hover:bg-blue-800/60"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                ) : null}
               </div>
             </div>
 
@@ -128,7 +152,6 @@ export function AdminSidebar({ collapsed, mobileOpen, onMobileClose }) {
             </div>
           </div>
         </aside>
-
       </div>
 
       <div
@@ -176,18 +199,18 @@ export function AdminSidebar({ collapsed, mobileOpen, onMobileClose }) {
                   active
                     ? 'bg-white text-blue-900 shadow-[0_2px_10px_rgba(15,23,42,0.2)]'
                     : 'text-blue-100 hover:bg-white/15 hover:text-white'
+                }`}
+              >
+                <Icon
+                  className={`h-4 w-4 shrink-0 transition-all duration-200 ${
+                    active ? 'text-blue-900' : 'text-blue-200 group-hover:translate-x-[1px] group-hover:text-white'
                   }`}
-                >
-                  <Icon
-                    className={`h-4 w-4 shrink-0 transition-all duration-200 ${
-                      active ? 'text-blue-900' : 'text-blue-200 group-hover:translate-x-[1px] group-hover:text-white'
-                    }`}
-                  />
-                  <span className="truncate">{label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+                />
+                <span className="truncate">{label}</span>
+              </Link>
+            );
+          })}
+        </nav>
       </aside>
     </>
   );

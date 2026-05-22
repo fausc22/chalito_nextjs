@@ -23,6 +23,7 @@ function PedidosColumnComponent({
   onListo,
   onEntregar,
   onEditar,
+  onCambiarHorario,
   onCobrar,
   onCancelar,
   onImprimir,
@@ -135,13 +136,13 @@ function PedidosColumnComponent({
       return {
         header: 'bg-green-600 text-white',
         border: 'border-green-400',
-        bg: 'bg-green-50'
+        bg: 'bg-emerald-500/100/10'
       };
     }
     return {
       header: 'bg-slate-700 text-white',
-      border: 'border-slate-300',
-      bg: 'bg-slate-100'
+      border: 'border-border',
+      bg: 'bg-muted'
     };
   };
 
@@ -189,7 +190,7 @@ function PedidosColumnComponent({
         }`}
       >
         {pedidos.length === 0 ? (
-          <div className="text-center text-slate-400 py-6">
+          <div className="text-center text-muted-foreground py-6">
             <Package className="h-10 w-10 mx-auto mb-2 opacity-50" />
             <p className="text-xs font-medium">No hay pedidos</p>
           </div>
@@ -214,6 +215,7 @@ function PedidosColumnComponent({
                     onListo={onListo}
                     onEntregar={onEntregar}
                     onEditar={onEditar}
+                    onCambiarHorario={onCambiarHorario}
                     onCancelar={onCancelar}
                     onCobrar={onCobrar}
                     onImprimir={onImprimir}
@@ -248,6 +250,7 @@ function PedidosColumnComponent({
                     onListo={onListo}
                     onEntregar={onEntregar}
                     onEditar={onEditar}
+                    onCambiarHorario={onCambiarHorario}
                     onCancelar={onCancelar}
                     onCobrar={onCobrar}
                     onImprimir={onImprimir}
@@ -265,7 +268,7 @@ function PedidosColumnComponent({
       </div>
 
       {/* Paginación - siempre visible en el pie */}
-      <div className="bg-slate-200 border-t border-slate-300 px-2 sm:px-3 py-2 flex items-center justify-center flex-shrink-0 overflow-x-auto">
+      <div className="bg-accent border-t border-border px-2 sm:px-3 py-2 flex items-center justify-center flex-shrink-0 overflow-x-auto">
         {totalPaginas > 1 && (
           <Pagination>
             <PaginationContent className="gap-1 flex-nowrap">

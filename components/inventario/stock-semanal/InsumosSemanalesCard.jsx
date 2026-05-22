@@ -8,7 +8,7 @@ export function InsumosSemanalesCard({ insumo, onEditar, onEliminar }) {
   const activo = isInsumoSemanalActivo(insumo);
 
   return (
-    <Card className="border-slate-200 shadow-sm">
+    <Card className="border-border shadow-sm">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-base font-semibold leading-tight">{insumo.nombre}</CardTitle>
@@ -28,7 +28,7 @@ export function InsumosSemanalesCard({ insumo, onEditar, onEliminar }) {
           {insumo.descripcion?.trim() ? insumo.descripcion : 'Sin descripción'}
         </p>
       </CardContent>
-      <CardFooter className="flex flex-wrap gap-2 border-t bg-slate-50/50 pt-3">
+      <CardFooter className="flex flex-wrap gap-2 border-t bg-muted/50 pt-3">
         <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => onEditar(insumo)}>
           <Pencil className="h-4 w-4" />
           Editar

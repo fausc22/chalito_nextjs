@@ -34,8 +34,8 @@ export function InsumosSemanalesFormModal({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0 pb-2">
-          <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-[#315e92]" />
+          <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+            <ClipboardList className="h-5 w-5 text-blue-700" />
             {isEditing ? 'Editar insumo semanal' : 'Nuevo insumo semanal'}
           </DialogTitle>
           <DialogDescription className="sr-only">
@@ -74,14 +74,14 @@ export function InsumosSemanalesFormModal({
             />
           </div>
 
-          <div className="flex items-center gap-3 p-4 bg-slate-50 border-2 border-slate-300 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+          <div className="flex items-center gap-3 p-4 bg-muted border-2 border-border rounded-lg cursor-pointer hover:bg-muted transition-colors">
             <Checkbox
               id="insumo-activo"
               checked={formulario.activo !== 0 && formulario.activo !== false}
               onCheckedChange={(checked) => onFieldChange('activo', checked ? 1 : 0)}
               className="w-5 h-5 border-2"
             />
-            <Label htmlFor="insumo-activo" className="cursor-pointer text-slate-800 font-medium">
+            <Label htmlFor="insumo-activo" className="cursor-pointer text-foreground font-medium">
               Insumo activo
             </Label>
           </div>

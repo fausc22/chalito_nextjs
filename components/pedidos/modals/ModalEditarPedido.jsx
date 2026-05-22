@@ -13,6 +13,14 @@ import { ProductCard } from '../ProductCard';
 import ClienteAutocomplete from '../ClienteAutocomplete';
 import { getItemExtras, getSufijoPresentacion, getExtrasSinPresentacion } from '@/lib/extrasUtils';
 import { clearFieldError as clearErrorByPath, getInputErrorProps } from '@/lib/form-errors';
+import { formatDireccionEntrega } from '@/lib/formatters';
+import {
+  sanitizeNombre,
+  sanitizeTelefono,
+  sanitizeDireccion,
+  sanitizeNumeroAltura,
+  sanitizedDireccionFieldsFromStored,
+} from '@/lib/pedidoFormDireccion';
 import { toast } from '@/hooks/use-toast';
 
 // Mapear estado del pedido a texto legible
@@ -26,16 +34,6 @@ const getEstadoTexto = (estado) => {
   };
   return estados[estado] || estado.toUpperCase();
 };
-
-const sanitizeNombre = (v) => (v || '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, '');
-const sanitizeTelefono = (v) => {
-  const s = (v || '').trim();
-  const hasPlus = s.startsWith('+');
-  const rest = (hasPlus ? s.slice(1) : s).replace(/[^\d\s\-()]/g, '');
-  return (hasPlus ? '+' : '') + rest;
-};
-const sanitizeDireccion = (v) => (v || '').replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.,'\-/°]/g, '');
-const sanitizeNumeroAltura = (v) => (v || '').replace(/[^a-zA-Z0-9\s\-°]/g, '');
 
 const CartSummaryMobile = ({
   carrito,
@@ -54,26 +52,26 @@ const CartSummaryMobile = ({
 
   return (
     <div className="lg:hidden">
-      <div className="bg-slate-50 border-t border-slate-200 rounded-t-xl px-3 pt-2 pb-3 shadow-[0_-6px_14px_rgba(15,23,42,0.06)]">
+      <div className="bg-muted border-t border-border rounded-t-xl px-3 pt-2 pb-3 shadow-[0_-6px_14px_rgba(15,23,42,0.06)]">
         <button
           type="button"
           onClick={() => setCarritoExpandidoMobile((prev) => !prev)}
           className="w-full flex items-center justify-between gap-2"
         >
           <div className="flex items-center gap-2">
-            <ShoppingCart className="h-4 w-4 text-slate-700" />
-            <span className="text-sm font-semibold text-slate-900">
+            <ShoppingCart className="h-4 w-4 text-foreground" />
+            <span className="text-sm font-semibold text-foreground">
               Carrito ({carrito.length})
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-slate-900">
+            <span className="text-sm font-semibold text-foreground">
               ${total.toLocaleString('es-AR')}
             </span>
             {carritoExpandidoMobile ? (
-              <ChevronDown className="h-4 w-4 text-slate-500" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
             ) : (
-              <ChevronUp className="h-4 w-4 text-slate-500" />
+              <ChevronUp className="h-4 w-4 text-muted-foreground" />
             )}
           </div>
         </button>
@@ -83,16 +81,16 @@ const CartSummaryMobile = ({
             carritoExpandidoMobile ? 'max-h-[260px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
           }`}
         >
-          <div className="bg-white rounded-lg border border-slate-200 px-2 pt-2 pb-2">
+          <div className="bg-card rounded-lg border border-border px-2 pt-2 pb-2">
             <div className="flex-1 min-h-0 max-h-[170px] overflow-y-auto space-y-2 pr-1">
               {carrito.map((item) => (
                 <div
                   key={item.carritoId}
-                  className="bg-white border border-slate-200 rounded-md px-2 py-1.5"
+                  className="bg-card border border-border rounded-md px-2 py-1.5"
                 >
                   <div className="flex justify-between items-start gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-xs leading-tight uppercase truncate text-slate-900">
+                      <p className="font-semibold text-xs leading-tight uppercase truncate text-foreground">
                         {item.nombre}
                         {getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [])}
                       </p>
@@ -118,7 +116,7 @@ const CartSummaryMobile = ({
                       <Button
                         size="icon"
                         variant="outline"
-                          className="h-6 w-6 border-slate-300 bg-white text-xs text-slate-900"
+                          className="h-6 w-6 border-border bg-card text-xs text-foreground"
                         onClick={() =>
                           modificarCantidad(item.carritoId, (item.quantity ?? item.cantidad ?? 1) - 1)
                         }
@@ -131,7 +129,7 @@ const CartSummaryMobile = ({
                       <Button
                         size="icon"
                         variant="outline"
-                          className="h-6 w-6 border-slate-300 bg-white text-xs text-slate-900"
+                          className="h-6 w-6 border-border bg-card text-xs text-foreground"
                         onClick={() =>
                           modificarCantidad(item.carritoId, (item.quantity ?? item.cantidad ?? 1) + 1)
                         }
@@ -139,7 +137,7 @@ const CartSummaryMobile = ({
                         +
                       </Button>
                     </div>
-                    <p className="text-xs font-bold text-slate-900">
+                    <p className="text-xs font-bold text-foreground">
                       ${(() => {
                         const quantity = item.quantity ?? item.cantidad ?? 1;
                         const price = item.price ?? item.precio ?? 0;
@@ -154,8 +152,8 @@ const CartSummaryMobile = ({
               ))}
             </div>
 
-            <div className="mt-2 border-t border-slate-200 pt-1.5">
-              <div className="flex justify-between text-sm font-semibold text-slate-900">
+            <div className="mt-2 border-t border-border pt-1.5">
+              <div className="flex justify-between text-sm font-semibold text-foreground">
                 <span>Total</span>
                 <span>${total.toLocaleString('es-AR')}</span>
               </div>
@@ -246,6 +244,22 @@ export function ModalEditarPedido({
     clearInlineError(fieldPath);
   };
 
+  const applyDireccionGuardada = (stored) => {
+    if (!stored) return;
+    const fields = sanitizedDireccionFieldsFromStored(stored);
+    setCliente((prev) => ({
+      ...prev,
+      direccion: {
+        ...prev.direccion,
+        ...fields,
+      },
+    }));
+    clearInlineError('direccion.calle');
+    clearInlineError('direccion.numero');
+    clearInlineError('direccion.edificio');
+    clearInlineError('direccion.piso');
+  };
+
   const handleClose = (open) => {
     if (!open) {
       resetearModal();
@@ -256,15 +270,26 @@ export function ModalEditarPedido({
   const handleSelectCliente = (clienteData) => {
     setClienteSeleccionado(clienteData || null);
     if (!clienteData) return;
-    setCliente((prev) => ({
-      ...prev,
-      nombre: sanitizeNombre(clienteData.nombre || ''),
-      telefono: sanitizeTelefono(clienteData.telefono || ''),
-      email: (clienteData.email || '').trim(),
-    }));
+    setCliente((prev) => {
+      const next = {
+        ...prev,
+        nombre: sanitizeNombre(clienteData.nombre || ''),
+        telefono: sanitizeTelefono(clienteData.telefono || ''),
+        email: (clienteData.email || '').trim(),
+      };
+      if (tipoEntrega === 'delivery' && clienteData.ultima_direccion) {
+        const fields = sanitizedDireccionFieldsFromStored(clienteData.ultima_direccion);
+        next.direccion = { ...prev.direccion, ...fields };
+      }
+      return next;
+    });
     clearInlineError('nombre');
     clearInlineError('telefono');
     clearInlineError('email');
+    if (tipoEntrega === 'delivery' && clienteData.ultima_direccion) {
+      clearInlineError('direccion.calle');
+      clearInlineError('direccion.numero');
+    }
   };
 
   const handleActualizarPedido = async () => {
@@ -299,9 +324,9 @@ export function ModalEditarPedido({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-[calc(100vw-0.75rem)] sm:w-full max-w-6xl h-[92dvh] sm:h-[90vh] flex flex-col bg-slate-100 p-3 sm:p-6">
+      <DialogContent className="w-[calc(100vw-0.75rem)] sm:w-full max-w-6xl h-[92dvh] sm:h-[90vh] flex flex-col bg-muted p-3 sm:p-6">
         <DialogHeader className="flex-shrink-0 pb-3">
-          <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
             <Edit className="h-5 w-5" />
             {getTitulo()}
             {pedidoOriginal && (
@@ -316,7 +341,7 @@ export function ModalEditarPedido({
           
           {/* Aviso si el pedido está en cocina o listo */}
           {estaEnCocina && (
-            <Alert className="mt-3 bg-yellow-50 border-yellow-400">
+            <Alert className="mt-3 bg-amber-500/10 border-yellow-400">
               <AlertCircle className="h-4 w-4 text-yellow-600" />
               <AlertDescription className="text-sm text-yellow-800">
                 Este pedido ya está en cocina. Los cambios se reflejarán en tiempo real.
@@ -328,21 +353,21 @@ export function ModalEditarPedido({
         {loadingPedido ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <Package className="h-12 w-12 mx-auto mb-3 opacity-50 text-slate-400 animate-pulse" />
-              <p className="text-sm text-slate-500">Cargando pedido...</p>
+              <Package className="h-12 w-12 mx-auto mb-3 opacity-50 text-muted-foreground animate-pulse" />
+              <p className="text-sm text-muted-foreground">Cargando pedido...</p>
             </div>
           </div>
         ) : pasoModal === 1 ? (
           // PASO 1: Armar Pedido - Mismo diseño que ModalNuevoPedido
-          <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0 bg-slate-100">
+          <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0 bg-muted">
             {/* Columna principal: Categorías y Productos */}
             <div className="w-full lg:w-[60%] flex flex-col min-h-0">
               {/* Categorías como tabs */}
               <div className="flex gap-1.5 mb-3 border-b-2 border-slate-400 pb-1.5 flex-shrink-0 overflow-x-auto">
                 {loadingCategorias ? (
-                  <div className="text-xs text-slate-500">Cargando categorías...</div>
+                  <div className="text-xs text-muted-foreground">Cargando categorías...</div>
                 ) : !Array.isArray(categorias) || categorias.length === 0 ? (
-                  <div className="text-xs text-slate-500">No hay categorías disponibles</div>
+                  <div className="text-xs text-muted-foreground">No hay categorías disponibles</div>
                 ) : (
                   categorias.map(cat => {
                     const categoriaId = cat.id || cat.categoria_id || cat;
@@ -356,7 +381,7 @@ export function ModalEditarPedido({
                           px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all whitespace-nowrap flex-shrink-0
                           ${categoriaSeleccionada === categoriaId
                             ? 'bg-blue-600 text-white border-b-2 border-blue-600'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            : 'bg-muted text-muted-foreground hover:bg-accent'
                           }
                         `}
                       >
@@ -369,7 +394,7 @@ export function ModalEditarPedido({
 
               {/* Buscador de productos */}
               <div className="relative mb-3 flex-shrink-0">
-                <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   placeholder="Buscar producto..."
                   value={busquedaProducto}
@@ -381,7 +406,7 @@ export function ModalEditarPedido({
               {/* Grid de productos con scroll */}
               <div className="flex-1 overflow-y-auto min-h-0 pr-0 sm:pr-3 pb-[150px] lg:pb-0">
                 {productosFiltrados.length === 0 ? (
-                  <div className="text-center py-8 text-slate-400">
+                  <div className="text-center py-8 text-muted-foreground">
                     <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     <p className="text-sm">No se encontraron productos</p>
                   </div>
@@ -400,12 +425,12 @@ export function ModalEditarPedido({
             </div>
 
             {/* Sidebar derecha: Carrito - solo desktop */}
-            <div className="hidden lg:flex lg:w-[40%] flex-col lg:border-l border-slate-300 lg:pl-4 h-full mt-4 lg:mt-0">
+            <div className="hidden lg:flex lg:w-[40%] flex-col lg:border-l border-border lg:pl-4 h-full mt-4 lg:mt-0">
               {/* Bloque superior fijo con título y toggle mobile */}
               <div className="flex flex-col mb-2 flex-shrink-0 min-h-[56px] lg:min-h-0">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-slate-900">Carrito</h3>
-                  <Badge variant="outline" className="bg-slate-100 text-sm font-semibold">
+                  <h3 className="text-lg font-bold text-foreground">Carrito</h3>
+                  <Badge variant="outline" className="bg-muted text-sm font-semibold">
                     {carrito.length}
                   </Badge>
                 </div>
@@ -413,7 +438,7 @@ export function ModalEditarPedido({
               </div>
 
               {carrito.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center text-slate-400">
+                <div className="flex-1 flex items-center justify-center text-muted-foreground">
                   <div className="text-center">
                     <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">Carrito vacío</p>
@@ -431,17 +456,17 @@ export function ModalEditarPedido({
                       {/* Lista del carrito con scroll */}
                       <div className="flex-1 overflow-y-auto space-y-3 mb-3 min-h-0 pr-2">
                         {carrito.map(item => (
-                          <div key={item.carritoId} className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
+                          <div key={item.carritoId} className="bg-card border border-border rounded-lg p-3 shadow-sm">
                             <div className="flex justify-between items-start mb-2">
                               <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-sm text-slate-900 truncate leading-tight uppercase">
+                                <p className="font-semibold text-sm text-foreground truncate leading-tight uppercase">
                                   {item.nombre}{getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [])}
                                 </p>
                                 {(() => {
                                   const { extras } = getItemExtras(item);
                                   const extrasVisibles = getExtrasSinPresentacion(extras);
                                   return extrasVisibles.length > 0 && (
-                                    <Badge variant="outline" className="text-xs mt-1 bg-yellow-50 text-yellow-700 border-yellow-300 px-1.5 py-0.5">
+                                    <Badge variant="outline" className="text-xs mt-1 bg-amber-500/10 text-yellow-700 border-yellow-300 px-1.5 py-0.5">
                                       {extrasVisibles.length} extras
                                     </Badge>
                                   );
@@ -470,7 +495,7 @@ export function ModalEditarPedido({
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="h-7 w-7 p-0 border border-slate-300 hover:bg-slate-200 text-sm font-semibold"
+                                  className="h-7 w-7 p-0 border border-border hover:bg-accent text-sm font-semibold"
                                   onClick={() => modificarCantidad(item.carritoId, (item.quantity ?? item.cantidad ?? 1) - 1)}
                                 >
                                   -
@@ -479,13 +504,13 @@ export function ModalEditarPedido({
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="h-7 w-7 p-0 border border-slate-300 hover:bg-slate-200 text-sm font-semibold"
+                                  className="h-7 w-7 p-0 border border-border hover:bg-accent text-sm font-semibold"
                                   onClick={() => modificarCantidad(item.carritoId, (item.quantity ?? item.cantidad ?? 1) + 1)}
                                 >
                                   +
                                 </Button>
                               </div>
-                              <p className="font-bold text-sm text-slate-900">
+                              <p className="font-bold text-sm text-foreground">
                                 ${(() => {
                                   const quantity = item.quantity ?? item.cantidad ?? 1;
                                   const price = item.price ?? item.precio ?? 0;
@@ -502,18 +527,18 @@ export function ModalEditarPedido({
                               const extrasLista = getExtrasSinPresentacion(item.extras ?? item.extrasSeleccionados ?? []);
                               const qty = item.quantity ?? item.cantidad ?? 1;
                               return extras.length > 0 && (
-                                <div className="mt-2 pt-2 border-t border-slate-200 text-xs text-slate-700 space-y-0.5">
+                                <div className="mt-2 pt-2 border-t border-border text-xs text-foreground space-y-0.5">
                                   {extrasLista.map((extra, idx) => (
                                     <p key={idx} className="font-medium">• {extra.nombre}  +${((extra.precio ?? extra.precio_extra ?? 0) * qty).toLocaleString('es-AR')}</p>
                                   ))}
-                                  <p className="font-medium text-slate-600 mt-1">Extras: ${(extrasTotal * qty).toLocaleString('es-AR')}</p>
+                                  <p className="font-medium text-muted-foreground mt-1">Extras: ${(extrasTotal * qty).toLocaleString('es-AR')}</p>
                                 </div>
                               );
                             })()}
 
                             {(item.observaciones || item.observacion) && (
-                              <div className="mt-2 pt-2 border-t border-slate-200">
-                                <p className="text-xs text-slate-600 italic">
+                              <div className="mt-2 pt-2 border-t border-border">
+                                <p className="text-xs text-muted-foreground italic">
                                   <span className="font-semibold">Obs:</span> {item.observaciones || item.observacion}
                                 </p>
                               </div>
@@ -523,9 +548,9 @@ export function ModalEditarPedido({
                       </div>
 
                       {/* Resumen del carrito fijo en la parte inferior del detalle */}
-                      <div className="border-t border-slate-200 pt-2 mt-1 flex-shrink-0">
-                        <div className="bg-white border border-slate-200 rounded-md p-2">
-                          <div className="flex justify-between text-base font-bold text-slate-900">
+                      <div className="border-t border-border pt-2 mt-1 flex-shrink-0">
+                        <div className="bg-card border border-border rounded-md p-2">
+                          <div className="flex justify-between text-base font-bold text-foreground">
                             <span>Total:</span>
                             <span>${calcularTotal().toLocaleString('es-AR')}</span>
                           </div>
@@ -541,12 +566,13 @@ export function ModalEditarPedido({
           // PASO 2: Datos del Cliente - Mismo diseño que ModalNuevoPedido
           <div className="py-2 sm:py-3 pr-0 sm:pr-3 space-y-4 overflow-y-auto flex-1 min-h-0">
             {/* Datos Básicos del Cliente */}
-            <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
-              <h3 className="text-base font-semibold text-slate-800 mb-3">👤 Datos del Cliente</h3>
+            <div className="bg-card border border-border rounded-lg p-3 shadow-sm">
+              <h3 className="text-base font-semibold text-foreground mb-3">👤 Datos del Cliente</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs font-medium">Nombre del Cliente *</Label>
                   <ClienteAutocomplete
+                    key={`cliente-ac-editar-${isOpen}`}
                     value={cliente.nombre}
                     onInputChange={(nextValue) => updateClienteField('nombre', sanitizeNombre(nextValue))}
                     onSelectCliente={handleSelectCliente}
@@ -583,8 +609,8 @@ export function ModalEditarPedido({
             </div>
 
             {/* Tipo de Entrega */}
-            <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
-              <h3 className="text-base font-semibold text-slate-800 mb-3 flex items-center gap-2">
+            <div className="bg-card border border-border rounded-lg p-3 shadow-sm">
+              <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
                 <Truck className="h-4 w-4" />
                 Tipo de Entrega
               </h3>
@@ -610,8 +636,8 @@ export function ModalEditarPedido({
 
             {/* Campos de Dirección (solo si es Delivery) */}
             {tipoEntrega === 'delivery' && (
-              <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
-                <h3 className="text-base font-semibold text-slate-800 mb-3 flex items-center gap-2">
+              <div className="bg-card border border-border rounded-lg p-3 shadow-sm">
+                <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
                   <Package className="h-4 w-4" />
                   Dirección de Entrega
                 </h3>
@@ -622,7 +648,7 @@ export function ModalEditarPedido({
                         type="button"
                         variant="outline"
                         className="h-8 text-xs"
-                        onClick={() => updateClienteField('direccion.calle', clienteSeleccionado.ultima_direccion)}
+                        onClick={() => applyDireccionGuardada(clienteSeleccionado.ultima_direccion)}
                       >
                         Usar dirección guardada: {clienteSeleccionado.ultima_direccion}
                       </Button>
@@ -641,7 +667,7 @@ export function ModalEditarPedido({
                   </div>
 
                   <div>
-                    <Label className="text-xs font-medium">Número/Altura *</Label>
+                    <Label className="text-xs font-medium">Número/Altura</Label>
                     <Input
                       value={cliente.direccion.numero}
                       onChange={(e) => updateClienteField('direccion.numero', sanitizeNumeroAltura(e.target.value).slice(0, 30))}
@@ -687,8 +713,8 @@ export function ModalEditarPedido({
             )}
 
             {/* Configuración Adicional */}
-            <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
-              <h3 className="text-base font-semibold text-slate-800 mb-3 flex items-center gap-2">
+            <div className="bg-card border border-border rounded-lg p-3 shadow-sm">
+              <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
                 <Settings className="h-4 w-4" />
                 Configuración del Pedido
               </h3>
@@ -837,24 +863,24 @@ export function ModalEditarPedido({
         ) : (
           // PASO 3: Resumen - Mismo diseño que ModalNuevoPedido
           <div className="py-2 sm:py-3 space-y-4 overflow-y-auto flex-1 min-h-0 pr-0 sm:pr-2">
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4">📋 Resumen del Pedido</h3>
+            <div className="bg-muted border border-border rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-foreground mb-4">📋 Resumen del Pedido</h3>
               
               {/* Items del pedido */}
               <div className="space-y-2 mb-4 max-h-[40vh] md:max-h-none overflow-y-auto pr-1">
-                <h4 className="font-medium text-sm text-slate-700 mb-2">Items:</h4>
+                <h4 className="font-medium text-sm text-foreground mb-2">Items:</h4>
                 {carrito.map((item) => (
-                  <div key={item.carritoId} className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
+                  <div key={item.carritoId} className="bg-card border border-border rounded-lg p-3 shadow-sm">
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm text-slate-900 leading-tight uppercase">
+                        <p className="font-semibold text-sm text-foreground leading-tight uppercase">
                           {item.nombre}{getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [])}
                         </p>
                         {(() => {
                           const { extras } = getItemExtras(item);
                           const extrasVisibles = getExtrasSinPresentacion(extras);
                           return extrasVisibles.length > 0 && (
-                            <Badge variant="outline" className="text-xs mt-1 bg-yellow-50 text-yellow-700 border-yellow-300 px-1.5 py-0.5">
+                            <Badge variant="outline" className="text-xs mt-1 bg-amber-500/10 text-yellow-700 border-yellow-300 px-1.5 py-0.5">
                               {extrasVisibles.length} extras
                             </Badge>
                           );
@@ -883,26 +909,26 @@ export function ModalEditarPedido({
                       const extrasLista = getExtrasSinPresentacion(item.extras ?? item.extrasSeleccionados ?? []);
                       const quantity = item.quantity ?? item.cantidad ?? 1;
                       return extras.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-slate-200 text-xs text-slate-700 space-y-0.5">
+                        <div className="mt-2 pt-2 border-t border-border text-xs text-foreground space-y-0.5">
                           {extrasLista.map((extra, eIdx) => (
                             <p key={eIdx} className="font-medium">• {extra.nombre}  +${((extra.precio ?? extra.precio_extra ?? 0) * quantity).toLocaleString('es-AR')}</p>
                           ))}
-                          <p className="font-medium text-slate-600 mt-1">Extras: ${(extrasTotal * quantity).toLocaleString('es-AR')}</p>
+                          <p className="font-medium text-muted-foreground mt-1">Extras: ${(extrasTotal * quantity).toLocaleString('es-AR')}</p>
                         </div>
                       );
                     })()}
 
                     {(item.observaciones || item.observacion) && (
-                      <div className="mt-2 pt-2 border-t border-slate-200">
-                        <p className="text-xs text-slate-600 italic">
+                      <div className="mt-2 pt-2 border-t border-border">
+                        <p className="text-xs text-muted-foreground italic">
                           <span className="font-semibold">Obs:</span> {item.observaciones || item.observacion}
                         </p>
                       </div>
                     )}
 
-                    <div className="mt-2 pt-2 border-t border-slate-200 flex justify-between items-center">
-                      <span className="text-xs text-slate-600 font-medium">Total item:</span>
-                      <p className="font-bold text-sm text-slate-900">
+                    <div className="mt-2 pt-2 border-t border-border flex justify-between items-center">
+                      <span className="text-xs text-muted-foreground font-medium">Total item:</span>
+                      <p className="font-bold text-sm text-foreground">
                         ${(() => {
                           const quantity = item.quantity ?? item.cantidad ?? 1;
                           const price = item.price ?? item.precio ?? 0;
@@ -918,21 +944,26 @@ export function ModalEditarPedido({
               </div>
 
               {/* Datos del cliente */}
-              <div className="mb-4 pb-4 border-b border-slate-200">
-                <h4 className="font-medium text-sm text-slate-700 mb-1.5">Cliente:</h4>
-                <p className="text-xs text-slate-600">{cliente.nombre}</p>
-                <p className="text-xs text-slate-600">{cliente.telefono}</p>
+              <div className="mb-4 pb-4 border-b border-border">
+                <h4 className="font-medium text-sm text-foreground mb-1.5">Cliente:</h4>
+                <p className="text-xs text-muted-foreground">{cliente.nombre}</p>
+                <p className="text-xs text-muted-foreground">{cliente.telefono}</p>
                 {tipoEntrega === 'delivery' && cliente.direccion.calle && (
-                  <p className="text-xs text-slate-600 mt-1">
-                    {cliente.direccion.calle} {cliente.direccion.numero}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatDireccionEntrega({
+                      calle: cliente.direccion.calle,
+                      numero: cliente.direccion.numero,
+                      edificio: cliente.direccion.edificio,
+                      piso: cliente.direccion.piso,
+                    })}
                   </p>
                 )}
               </div>
 
               {isWebOrder && (
                 <div className="mb-4 pb-4 border-b-2 border-slate-400">
-                  <h4 className="font-medium text-sm text-slate-700 mb-2">Datos WEB:</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-700">
+                  <h4 className="font-medium text-sm text-foreground mb-2">Datos WEB:</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-foreground">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">Medio de pago:</span>
                       <Badge variant="outline" className="bg-indigo-100 text-indigo-800 border-indigo-300">
@@ -950,7 +981,7 @@ export function ModalEditarPedido({
                       {estadoPago === 'paid' ? (
                         <Badge className="bg-green-600 text-white">Pagado</Badge>
                       ) : (
-                        <Badge className="bg-amber-500 text-white">Pago pendiente</Badge>
+                        <Badge className="bg-amber-500/100 text-white">Pago pendiente</Badge>
                       )}
                     </div>
                     {medioPago === 'efectivo' && Number.isFinite(Number(pedidoOriginal?.monto_con_cuanto_abona)) && Number(pedidoOriginal?.monto_con_cuanto_abona) > 0 && (
@@ -977,7 +1008,7 @@ export function ModalEditarPedido({
 
               {/* Resumen financiero */}
               <div className="space-y-2">
-                <div className="flex justify-between text-lg font-bold text-slate-800">
+                <div className="flex justify-between text-lg font-bold text-foreground">
                   <span>TOTAL:</span>
                   <span>${calcularTotal().toLocaleString('es-AR')}</span>
                 </div>
@@ -1056,6 +1087,7 @@ export function ModalEditarPedido({
               </Button>
               <Button
                 onClick={handleActualizarPedido}
+                disabled={carrito.length === 0}
                 className="bg-green-600 hover:bg-green-700 text-white gap-2 w-full sm:w-auto"
               >
                 <Check className="h-5 w-5" />

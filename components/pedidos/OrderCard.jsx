@@ -14,6 +14,7 @@ function OrderCardComponent({
   onMarcharACocina,
   onListo,
   onEditar,
+  onCambiarHorario,
   onCancelar,
   onCobrar,
   onImprimir,
@@ -84,7 +85,7 @@ function OrderCardComponent({
   const isPendingUpdate = Boolean(pedido.uiPendingStateUpdate);
   const cardStateClassName = showHighlight
     ? 'bg-amber-100 border-amber-500 ring-1 ring-amber-300 animate-breathe'
-    : 'border-slate-300';
+    : 'border-border';
   const cardClassName = `group relative mb-2 shadow-sm hover:shadow-md transition-all border rounded-lg overflow-hidden flex flex-col h-full min-h-[210px] sm:min-h-[220px] ${
     isDragging ? 'select-none' : ''
   } ${cardStateClassName}`;
@@ -109,17 +110,17 @@ function OrderCardComponent({
     >
       {isPendingUpdate && (
         <div
-          className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-white/75 backdrop-blur-[1px]"
+          className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-card/75 backdrop-blur-[1px]"
           aria-busy="true"
           aria-live="polite"
         >
-          <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
-            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-slate-600" />
+          <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground shadow-sm">
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
             <span>Procesando…</span>
           </div>
         </div>
       )}
-      <CardHeader className="pb-2 pt-3 px-3 flex-shrink-0 bg-slate-200">
+      <CardHeader className="pb-2 pt-3 px-3 flex-shrink-0 bg-accent">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
             {isDraggable && pedido.estado === 'recibido' && (
@@ -129,19 +130,19 @@ function OrderCardComponent({
                 className="cursor-grab active:cursor-grabbing touch-none flex-shrink-0"
               >
                 <div
-                  className="flex items-center justify-center w-6 h-6 rounded-md border border-slate-300/70 bg-white/80 
+                  className="flex items-center justify-center w-6 h-6 rounded-md border border-border/70 bg-card/80 
                              shadow-[0_0_0_1px_rgba(148,163,184,0.25)] 
-                             group-hover:border-slate-400 group-hover:bg-slate-50
+                             group-hover:border-slate-400 group-hover:bg-muted
                              transition-colors"
                   title="Arrastrar para adelantar a preparación"
                 >
-                  <GripVertical className="h-3 w-3 text-slate-500 group-hover:text-slate-700" />
+                  <GripVertical className="h-3 w-3 text-muted-foreground group-hover:text-foreground" />
                 </div>
               </div>
             )}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1 mb-1 flex-wrap">
-                <span className="text-xs font-bold text-slate-900">#{pedido.id}</span>
+                <span className="text-xs font-bold text-foreground">#{pedido.id}</span>
                 {pedido.tipoEntrega === 'delivery' && (
                   <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-400 text-[10px] px-1 py-0.5 font-semibold">
                     DELIVERY
@@ -158,19 +159,19 @@ function OrderCardComponent({
                     className={`text-[10px] px-1.5 py-0.5 font-semibold ${
                       origenLabel === 'WEB'
                         ? 'bg-sky-100 text-sky-800 border-sky-300'
-                        : 'bg-slate-100 text-slate-800 border-slate-300'
+                        : 'bg-muted text-foreground border-border'
                     }`}
                   >
                     {origenLabel}
                   </Badge>
                 )}
                 {isActualizadoRecientemente && (
-                  <Badge className="bg-yellow-500 text-white text-[10px] px-1.5 py-0.5 font-semibold animate-pulse">
+                  <Badge className="bg-amber-500/100 text-white text-[10px] px-1.5 py-0.5 font-semibold animate-pulse">
                     Actualizado
                   </Badge>
                 )}
               </div>
-              <p className="text-xs font-bold text-slate-900 truncate flex-1">{pedido.clienteNombre}</p>
+              <p className="text-xs font-bold text-foreground truncate flex-1">{pedido.clienteNombre}</p>
               {showWebDetailBadges && (
                 <div className="mt-1 flex flex-wrap gap-1">
                   <Badge
@@ -197,19 +198,19 @@ function OrderCardComponent({
                 px-2.5 py-1 rounded-md border text-xs leading-tight
                 ${
                   isPendingUpdate
-                    ? 'border-slate-200 bg-slate-100 text-slate-500'
+                    ? 'border-border bg-muted text-muted-foreground'
                     : estadoTemporal.isLate
-                      ? 'bg-red-50 border-red-300 text-red-700'
+                      ? 'bg-destructive/10 border-red-300 text-red-700'
                       : (estadoTemporal.isNearLimit || estadoTemporal.isNearScheduled)
-                        ? 'bg-amber-50 border-amber-300 text-amber-700'
-                        : 'bg-slate-50 border-slate-300 text-slate-700'
+                        ? 'bg-amber-500/10 border-amber-300 text-amber-700'
+                        : 'bg-muted border-border text-foreground'
                 }
               `}
             >
               {isPendingUpdate ? (
                 <>
-                  <span className="h-3 w-14 animate-pulse rounded bg-slate-200" />
-                  <span className="mt-1 h-3 w-10 animate-pulse rounded bg-slate-200" />
+                  <span className="h-3 w-14 animate-pulse rounded bg-accent" />
+                  <span className="mt-1 h-3 w-10 animate-pulse rounded bg-accent" />
                 </>
               ) : (
                 <>
@@ -227,16 +228,16 @@ function OrderCardComponent({
       </CardHeader>
 
       <CardContent className="pt-2 px-3 pb-3 flex flex-col flex-grow">
-        <div className="mb-2 bg-white rounded p-2 border border-slate-200">
-          <ul className="space-y-1 text-slate-900">
+        <div className="mb-2 bg-card rounded p-2 border border-border">
+          <ul className="space-y-1 text-foreground">
             {pedido.items.slice(0, 2).map((item, idx) => (
               <li key={idx} className="truncate" title={`${item.cantidad}x ${item.nombre}`}>
-                <span className="text-xs font-bold text-slate-900">{item.cantidad}x</span>{' '}
+                <span className="text-xs font-bold text-foreground">{item.cantidad}x</span>{' '}
                 <span className="text-sm truncate">{item.nombre}</span>
               </li>
             ))}
             {pedido.items.length > 2 && (
-              <li className="text-xs text-slate-600 font-semibold">
+              <li className="text-xs text-muted-foreground font-semibold">
                 +{pedido.items.length - 2} más...
               </li>
             )}
@@ -252,7 +253,7 @@ function OrderCardComponent({
               ✓ PAGADO
             </Badge>
           ) : isMercadoPagoPendiente ? (
-            <Badge className="bg-amber-500 text-white font-semibold text-xs px-2 py-0.5 pointer-events-none">
+            <Badge className="bg-amber-500/100 text-white font-semibold text-xs px-2 py-0.5 pointer-events-none">
               PENDIENTE MP
             </Badge>
           ) : (
@@ -262,7 +263,7 @@ function OrderCardComponent({
           )}
           {isMercadoPagoPendiente && (
             <p className="mt-1 text-[11px] font-semibold text-amber-700">
-              Esperando pago Mercado Pago
+              Esperando pago Mercado Pago (web) o usá COBRAR si cobraste con Postnet
             </p>
           )}
         </div>
@@ -273,6 +274,7 @@ function OrderCardComponent({
             onMarcharACocina={onMarcharACocina}
             onListo={onListo}
             onEditar={onEditar}
+            onCambiarHorario={onCambiarHorario}
             onCancelar={onCancelar}
             onCobrar={onCobrar}
             onImprimir={onImprimir}
@@ -317,15 +319,15 @@ export function OrderCardGhost({ pedido }) {
 
   return (
     <Card className="mb-2 shadow-lg border-2 border-blue-400 rounded-lg overflow-hidden flex flex-col pointer-events-none select-none min-h-[220px]">
-      <CardHeader className="pb-2 pt-3 px-3 bg-slate-200 flex-shrink-0">
+      <CardHeader className="pb-2 pt-3 px-3 bg-accent flex-shrink-0">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
             <div className="cursor-grab active:cursor-grabbing touch-none flex-shrink-0">
-              <GripVertical className="h-4 w-4 text-slate-600" />
+              <GripVertical className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1 mb-1 flex-wrap">
-                <span className="text-xs font-bold text-slate-900">#{pedido.id}</span>
+                <span className="text-xs font-bold text-foreground">#{pedido.id}</span>
                 {pedido.tipoEntrega === 'delivery' && (
                   <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-400 text-[10px] px-1 py-0.5 font-semibold">
                     DELIVERY
@@ -342,14 +344,14 @@ export function OrderCardGhost({ pedido }) {
                     className={`text-[10px] px-1.5 py-0.5 font-semibold ${
                       origenLabel === 'WEB'
                         ? 'bg-sky-100 text-sky-800 border-sky-300'
-                        : 'bg-slate-100 text-slate-800 border-slate-300'
+                        : 'bg-muted text-foreground border-border'
                     }`}
                   >
                     {origenLabel}
                   </Badge>
                 )}
               </div>
-              <p className="text-xs font-bold text-slate-900 truncate flex-1">{pedido.clienteNombre}</p>
+              <p className="text-xs font-bold text-foreground truncate flex-1">{pedido.clienteNombre}</p>
             </div>
           </div>
 
@@ -359,7 +361,7 @@ export function OrderCardGhost({ pedido }) {
               ? 'bg-red-200 border-2 border-red-500 animate-pulse' 
               : estadoTemporal.isNearLimit 
                 ? 'bg-yellow-200 border-2 border-yellow-500'
-                : 'bg-slate-200 border border-slate-400'}
+                : 'bg-accent border border-slate-400'}
           `}>
             <div>
               <p className={`text-[10px] font-medium ${
@@ -367,7 +369,7 @@ export function OrderCardGhost({ pedido }) {
                   ? 'text-red-700' 
                   : estadoTemporal.isNearLimit 
                     ? 'text-yellow-700'
-                    : 'text-slate-700'
+                    : 'text-foreground'
               }`}>
                 {estadoTemporal.subLabel}
               </p>
@@ -376,7 +378,7 @@ export function OrderCardGhost({ pedido }) {
                   ? 'text-red-900' 
                   : estadoTemporal.isNearLimit 
                     ? 'text-yellow-900'
-                    : 'text-slate-900'
+                    : 'text-foreground'
               }`}>
                 {estadoTemporal.isLate || pedido.estado === 'en_cocina' 
                   ? estadoTemporal.label.replace(/^(En prep\.|Atrasado)\s/, '')
@@ -388,15 +390,15 @@ export function OrderCardGhost({ pedido }) {
       </CardHeader>
 
       <CardContent className="pt-2 px-3 pb-3 flex flex-col flex-grow">
-        <div className="mb-2 bg-white rounded p-2 border border-slate-200">
+        <div className="mb-2 bg-card rounded p-2 border border-border">
           <ul className="space-y-1">
             {pedido.items.slice(0, 2).map((item, idx) => (
-              <li key={idx} className="text-xs text-slate-800">
-                <span className="font-bold text-slate-900">{item.cantidad}x</span> <span className="font-semibold">{item.nombre}</span>
+              <li key={idx} className="text-xs text-foreground">
+                <span className="font-bold text-foreground">{item.cantidad}x</span> <span className="font-semibold">{item.nombre}</span>
               </li>
             ))}
             {pedido.items.length > 2 && (
-              <li className="text-xs text-slate-600 font-semibold">
+              <li className="text-xs text-muted-foreground font-semibold">
                 +{pedido.items.length - 2} más...
               </li>
             )}

@@ -16,43 +16,9 @@ const OPERATION_CONFIG_KEYS = {
   },
 };
 
-const GENERAL_CONFIG_KEYS = {
-  NOMBRE_NEGOCIO: {
-    label: 'Nombre del negocio',
-    description: 'Nombre visible en la interfaz principal.',
-    defaultValue: '',
-  },
-  LOGO_URL: {
-    label: 'Logo URL',
-    description: 'URL publica del logo del negocio.',
-    defaultValue: '',
-  },
-  COLOR_PRIMARIO: {
-    label: 'Color primario',
-    description: 'Color principal de la interfaz en formato HEX.',
-    defaultValue: '#1D4ED8',
-  },
-  MODO_OSCURO: {
-    label: 'Modo oscuro',
-    description: 'Activa colores oscuros si la interfaz lo soporta.',
-    defaultValue: false,
-  },
-};
-
 const toInteger = (value) => {
   const parsed = Number(value);
   return Number.isInteger(parsed) ? parsed : null;
-};
-
-const toBoolean = (value) => {
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'number') return value === 1;
-  if (typeof value === 'string') {
-    const normalized = value.trim().toLowerCase();
-    if (['1', 'true', 'si', 'sí', 'on'].includes(normalized)) return true;
-    if (['0', 'false', 'no', 'off', ''].includes(normalized)) return false;
-  }
-  return false;
 };
 
 const getRawValueByKey = (responseData, key) => {
@@ -83,38 +49,30 @@ const normalizeConfig = (responseData) => {
     return acc;
   }, {});
 
-  const generalData = Object.entries(GENERAL_CONFIG_KEYS).reduce((acc, [key, meta]) => {
-    const rawValue = getRawValueByKey(responseData, key);
-    let parsedValue = meta.defaultValue;
-
-    if (key === 'MODO_OSCURO') {
-      parsedValue = toBoolean(rawValue);
-    } else if (rawValue != null) {
-      parsedValue = String(rawValue);
-    }
-
-    acc[key] = {
-      key,
-      value: parsedValue,
-      label: meta.label,
-      description: meta.description,
-    };
-    return acc;
-  }, {});
-
-  return { operationData, generalData, warnings };
+  return { operationData, warnings };
 };
 
-const normalizeGeneralPayloadValue = (key, value) => {
-  if (key === 'MODO_OSCURO') return toBoolean(value);
-  if (key === 'COLOR_PRIMARIO') return String(value ?? '').trim().toUpperCase();
-  return String(value ?? '').trim();
+/** Lee MODO_OSCURO de la API solo para migración one-shot al localStorage del tema. */
+export const readLegacyDarkModeFromApi = async () => {
+  try {
+    const response = await apiRequest.get(API_CONFIG.ENDPOINTS.CONFIGURACION.LIST);
+    if (response.data?.error === true || response.data?.success === false) {
+      return null;
+    }
+    const raw = getRawValueByKey(response.data, 'MODO_OSCURO');
+    if (raw == null) return null;
+    if (typeof raw === 'boolean') return raw;
+    if (typeof raw === 'number') return raw === 1;
+    const normalized = String(raw).trim().toLowerCase();
+    return ['1', 'true', 'si', 'sí', 'on'].includes(normalized);
+  } catch {
+    return null;
+  }
 };
 
 export const configuracionService = {
   configKeys: OPERATION_CONFIG_KEYS,
   operationConfigKeys: OPERATION_CONFIG_KEYS,
-  generalConfigKeys: GENERAL_CONFIG_KEYS,
 
   getConfiguracionSistema: async () => {
     try {
@@ -123,7 +81,7 @@ export const configuracionService = {
       if (response.data?.error === true || response.data?.success === false) {
         return {
           success: false,
-          message: getApiErrorMessage(response, 'Error al obtener configuracion')
+          message: getApiErrorMessage(response, 'Error al obtener configuracion'),
         };
       }
 
@@ -131,7 +89,6 @@ export const configuracionService = {
       return {
         success: true,
         operationData: normalized.operationData,
-        generalData: normalized.generalData,
         warnings: normalized.warnings,
       };
     } catch (error) {
@@ -139,7 +96,7 @@ export const configuracionService = {
       return {
         success: false,
         message: error.response?.data?.message || 'Error al obtener configuracion',
-        error
+        error,
       };
     }
   },
@@ -155,59 +112,6 @@ export const configuracionService = {
     };
   },
 
-  getConfiguracionGeneral: async () => {
-    const result = await configuracionService.getConfiguracionSistema();
-    if (!result.success) return result;
-
-    return {
-      success: true,
-      data: result.generalData,
-      warnings: result.warnings,
-    };
-  },
-
-  updateConfiguracionGeneral: async (values) => {
-    try {
-      const allowedEntries = Object.entries(values || {}).filter(([key]) =>
-        Object.hasOwn(GENERAL_CONFIG_KEYS, key)
-      );
-
-      if (!allowedEntries.length) {
-        return {
-          success: false,
-          message: 'No hay valores generales para guardar',
-        };
-      }
-
-      for (const [key, value] of allowedEntries) {
-        const payloadValue = normalizeGeneralPayloadValue(key, value);
-        const response = await apiRequest.put(
-          API_CONFIG.ENDPOINTS.CONFIGURACION.BY_KEY(key),
-          { valor: payloadValue }
-        );
-
-        if (response.data?.error === true || response.data?.success === false) {
-          return {
-            success: false,
-            message: getApiErrorMessage(response, `Error al guardar ${GENERAL_CONFIG_KEYS[key].label}`),
-          };
-        }
-      }
-
-      return {
-        success: true,
-        message: 'Configuracion general actualizada correctamente',
-      };
-    } catch (error) {
-      console.error('Error actualizando configuracion general:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Error al guardar configuracion general',
-        error,
-      };
-    }
-  },
-
   updateConfiguracionOperativa: async (values) => {
     try {
       const payload = Object.entries(values).reduce((acc, [key, value]) => {
@@ -221,21 +125,21 @@ export const configuracionService = {
       if (response.data?.error === true || response.data?.success === false) {
         return {
           success: false,
-          message: getApiErrorMessage(response, 'Error al guardar configuracion')
+          message: getApiErrorMessage(response, 'Error al guardar configuracion'),
         };
       }
 
       return {
         success: true,
-        message: response.data?.message || 'Configuracion actualizada correctamente'
+        message: response.data?.message || 'Configuracion actualizada correctamente',
       };
     } catch (error) {
       console.error('Error actualizando configuracion operativa:', error);
       return {
         success: false,
         message: error.response?.data?.message || 'Error al guardar configuracion',
-        error
+        error,
       };
     }
-  }
+  },
 };

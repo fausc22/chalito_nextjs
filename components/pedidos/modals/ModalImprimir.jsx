@@ -1,194 +1,248 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Printer, Receipt } from 'lucide-react';
-import { pedidosService } from '@/services/pedidosService';
+import { Printer, Receipt, Loader2, AlertTriangle, Copy, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { imprimirComanda, imprimirTicket } from '@/lib/printUtils';
+import {
+  printPedido,
+  getAgentErrorMessage,
+  checkPrintAgentHealth
+} from '@/services/printAgentService';
+import { printPayloadBrowser } from '@/lib/printUtilsBrowser';
+import { isBrowserPrintFallbackEnabled } from '@/lib/printConfig';
+import { buildPrintIncidentReport, copyPrintIncidentReport, openSupportEmail } from '@/lib/printIncidentReport';
 
-const PRINT_REQUEST_TIMEOUT_MS = 15000;
-const isPedidosDebugEnabled = () => {
-  if (typeof window === 'undefined') return false;
-  return window.__PEDIDOS_DEBUG__ === true || window.localStorage?.getItem('pedidos_debug') === '1';
-};
-
-const debugPrint = (event, payload = {}) => {
-  if (!isPedidosDebugEnabled()) return;
-  // eslint-disable-next-line no-console
-  console.debug(`[PedidosDebug][ModalImprimir] ${event}`, payload);
-};
+const PRINT_REQUEST_TIMEOUT_MS = 20000;
 
 export function ModalImprimir({ pedido, open, onOpenChange }) {
-  const [loading, setLoading] = useState(false);
-  const isMountedRef = useRef(false);
+  const [phase, setPhase] = useState('idle');
+  const [errorInfo, setErrorInfo] = useState(null);
+  const [lastPayload, setLastPayload] = useState(null);
+  const [lastKind, setLastKind] = useState(null);
+  const isMountedRef = useRef(true);
   const activeRequestIdRef = useRef(0);
 
   useEffect(() => {
     isMountedRef.current = true;
-    debugPrint('mount');
     return () => {
       isMountedRef.current = false;
-      debugPrint('unmount');
     };
   }, []);
 
   useEffect(() => {
-    debugPrint('open_state_change', {
-      open,
-      pedidoId: pedido?.id ?? null,
-      loading,
-    });
-  }, [open, pedido?.id, loading]);
+    if (!open) {
+      setPhase('idle');
+      setErrorInfo(null);
+      setLastPayload(null);
+      setLastKind(null);
+    }
+  }, [open]);
 
-  const canPrintTicket = useMemo(() => pedido?.paymentStatus === 'paid', [pedido?.paymentStatus]);
+  const canPrintTicket = useMemo(
+    () => pedido?.paymentStatus === 'paid' || pedido?.estado_pago === 'PAGADO',
+    [pedido?.paymentStatus, pedido?.estado_pago]
+  );
+
+  const phaseLabel = useMemo(() => {
+    if (phase === 'fetching') return 'Obteniendo datos del pedido…';
+    if (phase === 'printing') return 'Imprimiendo en ticketera…';
+    if (phase === 'success') return 'Impresión enviada';
+    return null;
+  }, [phase]);
 
   const closeModal = () => {
-    if (loading) {
-      debugPrint('close_blocked_loading', { pedidoId: pedido?.id ?? null });
-      return;
-    }
-    debugPrint('close_requested', { pedidoId: pedido?.id ?? null });
+    if (phase === 'fetching' || phase === 'printing') return;
     onOpenChange(false);
   };
 
-  const runPrint = async ({ type, fetchData, executePrint, invalidMessage }) => {
+  const runThermalPrint = async (kind) => {
     if (!pedido) return;
 
-    if (invalidMessage) {
+    if (kind === 'customer' && !canPrintTicket) {
       toast.error('No se puede imprimir el ticket', {
-        description: invalidMessage,
+        description: 'El pedido debe estar cobrado para imprimir el ticket.'
       });
       return;
     }
 
     const requestId = Date.now();
     activeRequestIdRef.current = requestId;
-    setLoading(true);
-    debugPrint('print_start', {
-      requestId,
-      type,
-      pedidoId: pedido.id,
-    });
+    setPhase('fetching');
+    setErrorInfo(null);
+    setLastKind(kind);
 
     try {
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error(`Timeout al obtener datos para ${type}`));
-        }, PRINT_REQUEST_TIMEOUT_MS);
+        setTimeout(() => reject(new Error('Tiempo de espera agotado')), PRINT_REQUEST_TIMEOUT_MS);
       });
-      const response = await Promise.race([fetchData(pedido.id), timeoutPromise]);
 
-      if (!response.success) {
-        debugPrint('print_fetch_failed', {
-          requestId,
-          type,
-          pedidoId: pedido.id,
-          error: response.error || null,
+      setPhase('printing');
+      const result = await Promise.race([printPedido(kind, pedido.id), timeoutPromise]);
+
+      if (!isMountedRef.current || activeRequestIdRef.current !== requestId) return;
+
+      if (result.success) {
+        setPhase('success');
+        setLastPayload(result.payload);
+        toast.success(kind === 'kitchen' ? 'Comanda impresa' : 'Ticket impreso', {
+          description: 'Enviado a la ticketera'
         });
-        toast.error(`Error al imprimir ${type}`, {
-          description: response.error || `No se pudo obtener los datos de ${type}`,
-        });
+        setTimeout(() => onOpenChange(false), 600);
         return;
       }
 
-      debugPrint('print_execute', {
-        requestId,
-        type,
-        pedidoId: pedido.id,
+      setLastPayload(result.payload || null);
+      const agentHealth = await checkPrintAgentHealth({ force: true });
+      setErrorInfo({
+        code: result.code || 'UNKNOWN',
+        message: result.message || getAgentErrorMessage(result.code),
+        kind,
+        agentHealth
       });
-      executePrint(response.data);
-      onOpenChange(false);
+      setPhase('error');
     } catch (error) {
-      debugPrint('print_exception', {
-        requestId,
-        type,
-        pedidoId: pedido.id,
-        error: error?.message || String(error),
+      if (!isMountedRef.current || activeRequestIdRef.current !== requestId) return;
+      const agentHealth = await checkPrintAgentHealth({ force: true }).catch(() => null);
+      setErrorInfo({
+        code: 'UNKNOWN',
+        message: error?.message || 'Error inesperado al imprimir',
+        kind,
+        agentHealth
       });
-      console.error(`Error al imprimir ${type}:`, error);
-      toast.error(`Error al imprimir ${type}`, {
-        description: error?.message || 'Ocurrió un error inesperado',
+      setPhase('error');
+    }
+  };
+
+  const handleBrowserFallback = () => {
+    if (!lastPayload) {
+      toast.error('Sin datos para imprimir', {
+        description: 'Reintentá la impresión primero.'
       });
-    } finally {
-      if (!isMountedRef.current || activeRequestIdRef.current !== requestId) {
-        return;
-      }
-      setLoading(false);
-      debugPrint('print_end', {
-        requestId,
-        type,
-        pedidoId: pedido.id,
+      return;
+    }
+    const ok = printPayloadBrowser(lastPayload);
+    if (ok) {
+      toast.info('Impresión por navegador', {
+        description: 'Elegí la ticketera en el diálogo del sistema.'
+      });
+      onOpenChange(false);
+    } else {
+      toast.error('No se pudo abrir la ventana de impresión', {
+        description: 'Habilitá popups en el navegador.'
       });
     }
   };
 
-  const handleImprimirComanda = async () => {
-    await runPrint({
-      type: 'comanda',
-      fetchData: pedidosService.obtenerComandaParaImprimir,
-      executePrint: imprimirComanda,
+  const handleCopyReport = async () => {
+    const report = buildPrintIncidentReport({
+      pedidoId: pedido?.id,
+      kind: lastKind || errorInfo?.kind,
+      errorCode: errorInfo?.code,
+      errorMessage: errorInfo?.message,
+      agentHealth: errorInfo?.agentHealth,
+      phase
     });
-  };
-
-  const handleImprimirTicket = async () => {
-    await runPrint({
-      type: 'ticket',
-      fetchData: pedidosService.obtenerTicketParaImprimir,
-      executePrint: imprimirTicket,
-      invalidMessage: canPrintTicket ? null : 'El pedido debe estar cobrado para imprimir el ticket/factura',
-    });
+    const copied = await copyPrintIncidentReport(report);
+    if (copied.success) {
+      toast.success('Reporte copiado', {
+        description: 'Envialo por WhatsApp a soporte para recibir ayuda.'
+      });
+      openSupportEmail(report);
+    } else {
+      toast.error('No se pudo copiar', { description: copied.error });
+    }
   };
 
   if (!pedido) return null;
 
+  const isBusy = phase === 'fetching' || phase === 'printing';
+  const showErrorPanel = phase === 'error' && errorInfo;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="w-[calc(100vw-0.75rem)] sm:w-full sm:max-w-md"
-        onCloseAutoFocus={() => {
-          debugPrint('close_auto_focus');
-        }}
-      >
+      <DialogContent className="w-[calc(100vw-0.75rem)] sm:w-full sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Imprimir Pedido #{pedido.id}</DialogTitle>
           <DialogDescription>
-            Elegi el tipo de impresion para este pedido. Al cerrar, la pantalla de pedidos debe seguir disponible inmediatamente.
+            Impresión automática en ticketera 58mm. Si falla, podés reintentar o usar el navegador.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-3 py-4">
+        {phaseLabel && (
+          <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-primary/10 px-3 py-2 text-sm text-blue-800">
+            <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+            {phaseLabel}
+          </div>
+        )}
+
+        {showErrorPanel && (
+          <div className="rounded-md border border-amber-300 bg-amber-500/10 px-3 py-3 text-sm text-amber-900 space-y-2">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold">No se pudo imprimir</p>
+                <p className="mt-1">{errorInfo.message}</p>
+                {errorInfo.code && (
+                  <p className="text-xs text-amber-700 mt-1">Código: {errorInfo.code}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={() => runThermalPrint(errorInfo.kind || lastKind || 'kitchen')}
+              >
+                <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                Reintentar
+              </Button>
+              {isBrowserPrintFallbackEnabled() && lastPayload && (
+                <Button type="button" size="sm" variant="outline" className="h-8" onClick={handleBrowserFallback}>
+                  Imprimir con navegador
+                </Button>
+              )}
+              <Button type="button" size="sm" variant="outline" className="h-8" onClick={handleCopyReport}>
+                <Copy className="h-3.5 w-3.5 mr-1" />
+                Copiar reporte
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3 py-2">
           <Button
-            onClick={handleImprimirComanda}
-            disabled={loading}
+            onClick={() => runThermalPrint('kitchen')}
+            disabled={isBusy}
             className="w-full justify-start gap-3 h-auto py-4"
             variant="outline"
           >
-            <Printer className="h-5 w-5" />
-            <div className="flex flex-col items-start">
-              <span className="font-semibold">Imprimir Comanda</span>
+            <Printer className="h-5 w-5 shrink-0" />
+            <div className="flex flex-col items-start text-left">
+              <span className="font-semibold">Imprimir Comanda (cocina)</span>
+              <span className="text-xs text-muted-foreground">Sin precios — para preparación</span>
             </div>
           </Button>
 
           <Button
-            onClick={handleImprimirTicket}
-            disabled={loading || !canPrintTicket}
+            onClick={() => runThermalPrint('customer')}
+            disabled={isBusy || !canPrintTicket}
             className="w-full justify-start gap-3 h-auto py-4"
             variant="outline"
           >
-            <Receipt className="h-5 w-5" />
-            <div className="flex flex-col items-start">
+            <Receipt className="h-5 w-5 shrink-0" />
+            <div className="flex flex-col items-start text-left">
               <span className="font-semibold">Imprimir Ticket / Factura</span>
-              <span className="text-xs text-slate-500">
-                {canPrintTicket
-                  ? 'Solo disponible si está cobrado' 
-                  : 'El pedido debe estar cobrado'}
+              <span className="text-xs text-muted-foreground">
+                {canPrintTicket ? 'Con precios — pedido cobrado' : 'El pedido debe estar cobrado'}
               </span>
             </div>
           </Button>
         </div>
 
         <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
-          <Button variant="outline" onClick={closeModal} disabled={loading} className="w-full sm:w-auto">
+          <Button variant="outline" onClick={closeModal} disabled={isBusy} className="w-full sm:w-auto">
             Cancelar
           </Button>
         </DialogFooter>
@@ -196,4 +250,3 @@ export function ModalImprimir({ pedido, open, onOpenChange }) {
     </Dialog>
   );
 }
-

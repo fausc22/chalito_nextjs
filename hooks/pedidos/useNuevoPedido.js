@@ -8,12 +8,7 @@ import { crearItemCarrito, mergeItemEnCarrito, reagruparCarrito } from './cartUt
 import { formatDireccionEntrega } from '../../lib/formatters';
 import { calculateCartSubtotal } from '../../lib/pedidoTotals';
 import { setFieldError, zodIssuesToErrors } from '@/lib/form-errors';
-
-// Patrones para validación: sin símbolos raros (email se valida aparte)
-const SOLO_LETRAS_ESPACIOS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-']*$/; // nombre: letras, espacios, guión, apóstrofe
-const SOLO_NUMEROS_TELEFONO = /^\+?[\d\s\-()]*$/; // teléfono: + opcional, luego solo dígitos, espacios, guiones, paréntesis
-const DIRECCION_SEGURA = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.,\-'/°]*$/; // calle, edificio, piso, observaciones (guión al final = literal)
-const NUMERO_ALTURA = /^[a-zA-Z0-9\s\-°]*$/; // número/altura (ej. "1234" o "1234 B")
+import { clienteSchema, carritoSchema, pedidoSchema } from './pedidoFormSchemas';
 
 // Normalización para comparar nombres de categorías (ignora tildes y mayúsculas/minúsculas)
 const normalizarCategoria = (value) =>
@@ -23,63 +18,6 @@ const normalizarCategoria = (value) =>
     .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase()
     .trim();
-
-// Esquema de validación para el cliente
-const clienteSchema = z.object({
-  nombre: z
-    .string()
-    .min(2, 'El nombre debe tener al menos 2 caracteres')
-    .max(100, 'El nombre es demasiado largo')
-    .regex(SOLO_LETRAS_ESPACIOS, 'El nombre solo puede contener letras, espacios, guiones o apóstrofes'),
-  telefono: z
-    .string()
-    .min(1, 'El teléfono es requerido')
-    .max(20, 'El teléfono es demasiado largo')
-    .regex(SOLO_NUMEROS_TELEFONO, 'El teléfono solo puede contener números, espacios, guiones o paréntesis')
-    .refine((v) => (v.replace(/\D/g, '').length >= 6), 'El teléfono debe tener al menos 6 dígitos'),
-  email: z.preprocess(
-    (val) => {
-      if (!val || (typeof val === 'string' && val.trim() === '')) {
-        return undefined;
-      }
-      return val;
-    },
-    z.string().email('Email inválido').optional()
-  ),
-  direccion: z
-    .object({
-      calle: z.string().max(200).regex(DIRECCION_SEGURA, 'Caracteres no permitidos en calle').optional().or(z.literal('')),
-      numero: z.string().max(30).regex(NUMERO_ALTURA, 'Caracteres no permitidos en número').optional().or(z.literal('')),
-      edificio: z.string().max(100).regex(DIRECCION_SEGURA, 'Caracteres no permitidos').optional().or(z.literal('')),
-      piso: z.string().max(50).regex(DIRECCION_SEGURA, 'Caracteres no permitidos').optional().or(z.literal('')),
-      observaciones: z.string().max(300).regex(DIRECCION_SEGURA, 'Caracteres no permitidos').optional().or(z.literal('')),
-    })
-    .optional(),
-});
-
-// Esquema de validación para el carrito
-const carritoSchema = z.array(
-  z.object({
-    id: z.number().or(z.string()),
-    nombre: z.string(),
-    precio: z.number().min(0),
-    cantidad: z.number().int().min(1),
-    extrasSeleccionados: z.array(z.any()).optional(),
-    observacion: z.string().optional().nullable(),
-  })
-).min(1, 'Debe agregar al menos un producto al carrito');
-
-// Esquema de validación para el pedido completo
-const pedidoSchema = z.object({
-  cliente: clienteSchema,
-  carrito: carritoSchema,
-  tipoEntrega: z.enum(['delivery', 'retiro']),
-  origen: z.string().min(1),
-  tipoPedido: z.string().min(1),
-  horaProgramada: z.string().optional().nullable(),
-  medioPago: z.string().optional(),
-  estadoPago: z.string(),
-});
 
 export const useNuevoPedido = () => {
   // Estados del modal
@@ -710,13 +648,6 @@ export const useNuevoPedido = () => {
       medioPago: medioPago ? medioPago : (estadoPago === 'paid' ? 'efectivo' : null),
       observaciones: tipoEntrega === 'delivery' ? (cliente.direccion?.observaciones || '') : ''
     };
-
-    // Log para depuración
-    console.log('📦 Creando pedido con datos:', {
-      medioPago: pedidoData.medioPago,
-      estadoPago: pedidoData.paymentStatus,
-      medioPagoOriginal: medioPago
-    });
 
     try {
       // Crear pedido en el backend

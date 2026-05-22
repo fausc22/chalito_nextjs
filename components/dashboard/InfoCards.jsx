@@ -34,22 +34,22 @@ export const DateTimeCard = () => {
   };
 
   return (
-    <Card className="bg-white border-l-4 border-l-blue-500 shadow-md hover:shadow-lg transition-shadow">
+    <Card className="bg-card border-l-4 border-l-blue-500 shadow-md hover:shadow-lg transition-shadow">
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-3">
               <Clock className="h-5 w-5 text-blue-500" />
-              <p className="text-gray-600 text-sm font-medium">Fecha y Hora</p>
+              <p className="text-muted-foreground text-sm font-medium">Fecha y Hora</p>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+            <h3 className="text-2xl font-bold text-foreground mb-2">
               {formatTime(currentTime)}
             </h3>
-            <p className="text-gray-500 text-sm capitalize">
+            <p className="text-muted-foreground text-sm capitalize">
               {formatDate(currentTime)}
             </p>
           </div>
-          <div className="bg-blue-50 p-3 rounded-lg">
+          <div className="bg-primary/10 p-3 rounded-lg">
             <Clock className="h-6 w-6 text-blue-500" />
           </div>
         </div>
@@ -63,22 +63,22 @@ export const DateTimeCard = () => {
  */
 export const SalesCard = ({ salesData = { total: 0, count: 0 } }) => {
   return (
-    <Card className="bg-white border-l-4 border-l-green-500 shadow-md hover:shadow-lg transition-shadow">
+    <Card className="bg-card border-l-4 border-l-green-500 shadow-md hover:shadow-lg transition-shadow">
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-3">
               <TrendingUp className="h-5 w-5 text-green-500" />
-              <p className="text-gray-600 text-sm font-medium">Ventas del Día</p>
+              <p className="text-muted-foreground text-sm font-medium">Ventas del Día</p>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+            <h3 className="text-2xl font-bold text-foreground mb-2">
               ${salesData.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
             </h3>
-            <p className="text-gray-500 text-sm">
+            <p className="text-muted-foreground text-sm">
               {salesData.count} {salesData.count === 1 ? 'venta' : 'ventas'} realizadas
             </p>
           </div>
-          <div className="bg-green-50 p-3 rounded-lg">
+          <div className="bg-emerald-500/100/10 p-3 rounded-lg">
             <TrendingUp className="h-6 w-6 text-green-500" />
           </div>
         </div>
@@ -94,18 +94,18 @@ export const OrdersCard = ({ ordersData = { pending: 0, inProgress: 0 } }) => {
   const total = ordersData.pending + ordersData.inProgress;
 
   return (
-    <Card className="bg-white border-l-4 border-l-orange-500 shadow-md hover:shadow-lg transition-shadow">
+    <Card className="bg-card border-l-4 border-l-orange-500 shadow-md hover:shadow-lg transition-shadow">
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-3">
               <ShoppingBag className="h-5 w-5 text-orange-500" />
-              <p className="text-gray-600 text-sm font-medium">Pedidos Activos</p>
+              <p className="text-muted-foreground text-sm font-medium">Pedidos Activos</p>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+            <h3 className="text-2xl font-bold text-foreground mb-2">
               {total}
             </h3>
-            <div className="flex gap-4 text-gray-500 text-sm">
+            <div className="flex gap-4 text-muted-foreground text-sm">
               <span>{ordersData.pending} pendientes</span>
               <span>•</span>
               <span>{ordersData.inProgress} en curso</span>
@@ -142,18 +142,18 @@ export const UserInfoCard = ({ user, roleDisplayName, roleIcon }) => {
   };
 
   return (
-    <Card className="bg-white border-l-4 border-l-red-500 shadow-md hover:shadow-lg transition-shadow">
+    <Card className="bg-card border-l-4 border-l-red-500 shadow-md hover:shadow-lg transition-shadow">
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-3">
               <User className="h-5 w-5 text-red-500" />
-              <p className="text-gray-600 text-sm font-medium">{getGreeting()}</p>
+              <p className="text-muted-foreground text-sm font-medium">{getGreeting()}</p>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+            <h3 className="text-2xl font-bold text-foreground mb-2">
               {user?.nombre || user?.usuario || 'Usuario'}
             </h3>
-            <div className="flex flex-col gap-1 text-gray-500 text-sm">
+            <div className="flex flex-col gap-1 text-muted-foreground text-sm">
               <span className="flex items-center gap-1">
                 <span>{roleIcon}</span>
                 <span>{roleDisplayName}</span>
@@ -163,7 +163,7 @@ export const UserInfoCard = ({ user, roleDisplayName, roleIcon }) => {
               </span>
             </div>
           </div>
-          <div className="bg-red-50 p-3 rounded-lg">
+          <div className="bg-destructive/10 p-3 rounded-lg">
             <User className="h-6 w-6 text-red-500" />
           </div>
         </div>

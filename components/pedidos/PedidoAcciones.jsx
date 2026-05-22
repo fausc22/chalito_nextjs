@@ -1,14 +1,20 @@
 import { memo } from 'react';
-import { Check, Package, Printer, Edit, Trash2, Banknote } from 'lucide-react';
+import { Check, Package, Printer, Edit, Trash2, Banknote, Clock, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { isPedidoMercadoPagoPendiente, isPedidoPaid } from '@/lib/pedidoPaymentUtils';
+import {
+  isPedidoMercadoPagoPendiente,
+  isPedidoPaid,
+  shouldShowPrepararYa,
+  shouldShowCambiarHorario,
+} from '@/lib/pedidoPaymentUtils';
+import { getMinutosHastaVentanaPreparacion } from '@/lib/pedidoTimeUtils';
 
 /**
  * Reglas de UI unificadas para botones (OrderCard, OrderRow, ghost).
  * LISTO: visible solo en EN PREPARACION (en_cocina).
- * COBRAR: visible si el pedido aun no esta pago (independiente del estado).
+ * COBRAR: visible si el pedido aun no esta pago (incluye MP pendiente: Postnet / cobro manual).
  * ENTREGAR: visible solo en LISTO y PAGADO.
- * Si es MERCADOPAGO y no esta PAGADO, se bloquean acciones operativas.
+ * Si es MERCADOPAGO y no esta PAGADO, se bloquean cocina/listo/entregar/programado; COBRAR sigue disponible.
  */
 export function shouldShowListo(pedido) {
   const e = pedido?.estado;
@@ -38,6 +44,7 @@ function PedidoAccionesComponent({
   onCancelar,
   onCobrar,
   onImprimir,
+  onCambiarHorario,
   isGhost = false,
   variant = 'card',
   cobrandoPedidoId = null,
@@ -49,8 +56,22 @@ function PedidoAccionesComponent({
 
   const showListo = !isOperativamenteBloqueado && shouldShowListo(pedido);
   const showEntregar = !isOperativamenteBloqueado && shouldShowEntregar(pedido);
-  const showCobrar = !isOperativamenteBloqueado && shouldShowCobrar(pedido);
+  const showCobrar = shouldShowCobrar(pedido);
+  const showPrepararYa = !isOperativamenteBloqueado && shouldShowPrepararYa(pedido);
+  const showCambiarHorario = !isOperativamenteBloqueado && shouldShowCambiarHorario(pedido);
   const isCobrandoEste = cobrandoPedidoId != null && String(pedido.id) === String(cobrandoPedidoId);
+
+  const handlePrepararYa = () => {
+    if (isGhost || !onMarcharACocina) return;
+    const minutos = getMinutosHastaVentanaPreparacion(pedido);
+    if (minutos != null && minutos > 15) {
+      const ok = window.confirm(
+        `Este pedido está programado. Faltan aproximadamente ${minutos} minutos para la ventana de preparación automática. ¿Marchar a cocina igual?`
+      );
+      if (!ok) return;
+    }
+    onMarcharACocina(pedido.id);
+  };
 
   const handleListo = () => {
     if (isGhost) return;
@@ -105,6 +126,34 @@ function PedidoAccionesComponent({
         </Button>
       )}
 
+      {showPrepararYa && (
+        <Button
+          disabled={isGhost || isUpdatingState}
+          onClick={handlePrepararYa}
+          className={`flex-1 min-w-0 bg-amber-600 hover:bg-amber-700 text-white ${btnClassBase}`}
+          size="sm"
+          title="Iniciar preparación ahora"
+        >
+          <Clock className={`${btnClassIcon} mr-1 shrink-0`} />
+          <span className="hidden sm:inline">Preparar ya</span>
+          <span className="sm:hidden">Ya</span>
+        </Button>
+      )}
+
+      {showCambiarHorario && (
+        <Button
+          disabled={isGhost || isUpdatingState}
+          onClick={isGhost ? undefined : () => onCambiarHorario?.(pedido)}
+          variant="outline"
+          className={`border border-amber-300 text-amber-800 hover:bg-amber-500/10 ${btnIconOnlyClass}`}
+          size="sm"
+          title="Cambiar horario programado"
+          style={btnIconOnlyStyle}
+        >
+          <CalendarClock className={btnClassIcon} />
+        </Button>
+      )}
+
       {/* COBRAR: solo cuando DEBE (no pagado); deshabilitado si el modal de cobro está abierto para este pedido */}
       {showCobrar && (
         <Button
@@ -112,7 +161,13 @@ function PedidoAccionesComponent({
           onClick={isGhost || isCobrandoEste ? undefined : () => onCobrar?.(pedido)}
           className={`flex-1 min-w-0 bg-green-600 hover:bg-green-700 text-white ${btnClassBase}`}
           size="sm"
-          title={isCobrandoEste ? 'Cobrando...' : 'Cobrar pedido'}
+          title={
+            isCobrandoEste
+              ? 'Cobrando...'
+              : isOperativamenteBloqueado
+                ? 'Registrar cobro (Postnet / MP manual)'
+                : 'Cobrar pedido'
+          }
         >
           <Banknote className={`${btnClassIcon} mr-1`} />
           COBRAR
@@ -124,7 +179,7 @@ function PedidoAccionesComponent({
           disabled={isGhost || isUpdatingState}
         onClick={isGhost ? undefined : () => onImprimir?.(pedido)}
         variant="outline"
-        className={`border border-slate-300 hover:bg-slate-100 ${btnIconOnlyClass}`}
+        className={`border border-border hover:bg-muted ${btnIconOnlyClass}`}
         size="sm"
         title="Imprimir"
         style={btnIconOnlyStyle}
@@ -137,7 +192,7 @@ function PedidoAccionesComponent({
           disabled={isGhost || isUpdatingState || estado === 'entregado' || estado === 'cancelado'}
         onClick={isGhost ? undefined : () => onEditar(pedido)}
         variant="outline"
-        className={`border border-slate-300 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed ${btnIconOnlyClass}`}
+        className={`border border-border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed ${btnIconOnlyClass}`}
         size="sm"
         title={estado === 'entregado' || estado === 'cancelado' ? 'No se puede editar' : 'Editar pedido'}
         style={btnIconOnlyStyle}
@@ -150,7 +205,7 @@ function PedidoAccionesComponent({
           disabled={isGhost || isUpdatingState}
         onClick={isGhost ? undefined : () => onCancelar(pedido)}
         variant="outline"
-        className={`border border-red-300 hover:bg-red-50 text-red-600 ${btnIconOnlyClass}`}
+        className={`border border-red-300 hover:bg-destructive/10 text-red-600 ${btnIconOnlyClass}`}
         size="sm"
         title="Cancelar pedido"
         style={btnIconOnlyStyle}

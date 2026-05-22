@@ -29,11 +29,11 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222.2 47% 6%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 217.2 33% 12%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 217.2 33% 12%;
     --popover-foreground: 210 40% 98%;
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
@@ -51,19 +51,19 @@
   }
 }
 
-/* Variables globales CSS El Chalito */
+/* Variables globales CSS El Chalito (alineadas a tokens shadcn) */
 :root {
   --primary-color: #3b82f6;
   --primary-dark: #1d4ed8;
   --primary-light: #93c5fd;
   --secondary-color: #22c55e;
   --danger-color: #ef4444;
-  --app-bg: #f8fafc;
-  --app-surface: #ffffff;
-  --app-surface-muted: #f1f5f9;
-  --app-text: #0f172a;
-  --app-text-muted: #64748b;
-  --app-border: #e2e8f0;
+  --app-bg: hsl(var(--background));
+  --app-surface: hsl(var(--card));
+  --app-surface-muted: hsl(var(--muted));
+  --app-text: hsl(var(--foreground));
+  --app-text-muted: hsl(var(--muted-foreground));
+  --app-border: hsl(var(--border));
   --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -73,12 +73,12 @@
 }
 
 .dark {
-  --app-bg: #020617;
-  --app-surface: #0f172a;
-  --app-surface-muted: #1e293b;
-  --app-text: #f8fafc;
-  --app-text-muted: #cbd5e1;
-  --app-border: #334155;
+  --app-bg: hsl(var(--background));
+  --app-surface: hsl(var(--card));
+  --app-surface-muted: hsl(var(--muted));
+  --app-text: hsl(var(--foreground));
+  --app-text-muted: hsl(var(--muted-foreground));
+  --app-border: hsl(var(--border));
 }
 
 @layer base {
@@ -196,6 +196,43 @@ body {
   z-index: 1 !important;
 }
 
+.dark .chalito-sonner[data-sonner-toaster] [data-sonner-toast].chalito-toast-shell {
+  background-color: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+  color: hsl(var(--card-foreground)) !important;
+  box-shadow: 0 20px 45px -24px rgba(0, 0, 0, 0.55) !important;
+}
+
+.dark .chalito-sonner[data-sonner-toaster] [data-sonner-toast].chalito-toast-shell--success {
+  background-color: #14532d !important;
+  border-color: #166534 !important;
+  color: #dcfce7 !important;
+}
+
+.dark .chalito-sonner[data-sonner-toaster] [data-sonner-toast].chalito-toast-shell--info {
+  background-color: #0c4a6e !important;
+  border-color: #075985 !important;
+  color: #e0f2fe !important;
+}
+
+.dark .chalito-sonner[data-sonner-toaster] [data-sonner-toast].chalito-toast-shell--error {
+  background-color: #881337 !important;
+  border-color: #9f1239 !important;
+  color: #ffe4e6 !important;
+}
+
+.dark .chalito-sonner[data-sonner-toaster] [data-sonner-toast].chalito-toast-shell--warning {
+  background-color: #78350f !important;
+  border-color: #92400e !important;
+  color: #fef3c7 !important;
+}
+
+.dark .chalito-sonner[data-sonner-toaster] [data-sonner-toast].chalito-toast-shell--loading {
+  background-color: hsl(var(--muted)) !important;
+  border-color: hsl(var(--border)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
 #__next {
   margin: 0;
   padding: 0;
@@ -209,63 +246,18 @@ body {
   color: var(--app-text);
 }
 
-/* Tema global app: utilidades frecuentes en modo oscuro */
-.dark .bg-white {
-  background-color: var(--app-surface) !important;
-}
+@layer components {
+  .page-title {
+    @apply text-2xl font-semibold text-foreground;
+  }
 
-.dark .bg-gray-50,
-.dark .bg-slate-50 {
-  background-color: var(--app-surface-muted) !important;
-}
+  .page-subtitle {
+    @apply text-sm text-muted-foreground;
+  }
 
-.dark .border-slate-100,
-.dark .border-slate-200,
-.dark .border-slate-300,
-.dark .border-gray-200,
-.dark .border-gray-300 {
-  border-color: var(--app-border) !important;
-}
-
-.dark .text-slate-900,
-.dark .text-slate-800,
-.dark .text-slate-700,
-.dark .text-gray-900,
-.dark .text-gray-800,
-.dark .text-gray-700 {
-  color: var(--app-text) !important;
-}
-
-.dark .text-slate-600,
-.dark .text-slate-500,
-.dark .text-slate-400,
-.dark .text-gray-600,
-.dark .text-gray-500,
-.dark .text-gray-400 {
-  color: var(--app-text-muted) !important;
-}
-
-.dark input,
-.dark select,
-.dark textarea {
-  background-color: var(--app-surface) !important;
-  color: var(--app-text) !important;
-  border-color: var(--app-border) !important;
-}
-
-.dark input::placeholder,
-.dark textarea::placeholder {
-  color: var(--app-text-muted) !important;
-}
-
-.dark table thead tr {
-  background-color: var(--app-surface-muted) !important;
-}
-
-.dark table th,
-.dark table td {
-  border-color: var(--app-border) !important;
-  color: var(--app-text) !important;
+  .admin-page-heading {
+    @apply text-[2rem] font-semibold text-foreground;
+  }
 }
 
 /* Headings */

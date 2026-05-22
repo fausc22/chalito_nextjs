@@ -37,7 +37,7 @@ export const CategoriasForm = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0 pb-2">
-          <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
             <Tag className="h-5 w-5" />
             {isEditing ? 'Editar Categoría' : 'Crear Nueva Categoría'}
           </DialogTitle>
@@ -82,7 +82,7 @@ export const CategoriasForm = ({
 
           {/* Checkbox activo */}
           {isEditing && (formulario.activo === 0 || formulario.activo === false) ? (
-            <div className="flex items-center gap-3 p-4 bg-amber-50 border-2 border-amber-500 rounded-lg cursor-pointer hover:bg-amber-100 transition-colors">
+            <div className="flex items-center gap-3 p-4 bg-amber-500/10 border-2 border-amber-500 rounded-lg cursor-pointer hover:bg-amber-100 transition-colors">
               <Checkbox
                 id="activo"
                 checked={formulario.activo !== 0 && formulario.activo !== false}
@@ -94,14 +94,14 @@ export const CategoriasForm = ({
               </Label>
             </div>
           ) : (
-            <div className="flex items-center gap-3 p-4 bg-slate-50 border-2 border-slate-300 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+            <div className="flex items-center gap-3 p-4 bg-muted border-2 border-border rounded-lg cursor-pointer hover:bg-muted transition-colors">
               <Checkbox
                 id="activo"
                 checked={formulario.activo !== 0 && formulario.activo !== false}
                 onCheckedChange={(checked) => onFieldChange('activo', checked ? 1 : 0)}
                 className="w-5 h-5 border-2"
               />
-              <Label htmlFor="activo" className="cursor-pointer font-medium text-slate-700">
+              <Label htmlFor="activo" className="cursor-pointer font-medium text-foreground">
                 Categoría activa
               </Label>
             </div>

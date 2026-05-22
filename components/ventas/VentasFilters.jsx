@@ -48,11 +48,11 @@ export function VentasFilters({
     const hayFiltrosActivos = Object.values(filtros).some(v => v && v !== '' && v !== 'all');
 
     return (
-        <Card className="border-slate-200">
+        <Card className="border-border">
             <CardContent className="p-4">
                 <div className="flex flex-col gap-4">
                     {/* Filtros maestros - Mes y Año */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pb-4 border-b border-slate-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pb-4 border-b border-border">
                         {/* Mes */}
                         <Select
                             value={filtros.month === 'all' ? 'all' : String(filtros.month || '')}

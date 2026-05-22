@@ -56,24 +56,24 @@ export function ProductosMasVendidosTable({ data = [], rankingLimit = 10 }) {
 
   if (sortedData.length === 0) {
     return (
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-        <h2 className="text-lg font-semibold text-slate-800">Productos más vendidos</h2>
-        <p className="mt-2 text-sm text-slate-600">No hay productos vendidos para este período.</p>
+      <section className="rounded-xl border border-border bg-card p-4 shadow-sm md:p-6">
+        <h2 className="text-lg font-semibold text-foreground">Productos más vendidos</h2>
+        <p className="mt-2 text-sm text-muted-foreground">No hay productos vendidos para este período.</p>
       </section>
     );
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+    <section className="rounded-xl border border-border bg-card p-4 shadow-sm md:p-6">
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-800">Productos más vendidos</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-lg font-semibold text-foreground">Productos más vendidos</h2>
+          <p className="text-sm text-muted-foreground">
             Ranking de productos por cantidad vendida y facturación generada.
           </p>
         </div>
         <div className="w-full md:w-[240px]">
-          <label className="mb-1.5 block text-sm font-medium text-slate-600">Orden visual</label>
+          <label className="mb-1.5 block text-sm font-medium text-muted-foreground">Orden visual</label>
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger>
               <SelectValue placeholder="Ordenar productos" />
@@ -103,7 +103,7 @@ export function ProductosMasVendidosTable({ data = [], rankingLimit = 10 }) {
               return (
                 <TableRow
                   key={`${item.articuloId ?? item.articuloNombre}-${globalIndex}`}
-                  className={globalIndex === 0 ? 'bg-emerald-50/70' : ''}
+                  className={globalIndex === 0 ? 'bg-emerald-500/10/70' : ''}
                 >
                   <TableCell>
                     <Badge variant={globalIndex === 0 ? 'default' : 'outline'}>#{globalIndex + 1}</Badge>
@@ -126,22 +126,22 @@ export function ProductosMasVendidosTable({ data = [], rankingLimit = 10 }) {
             <article
               key={`${item.articuloId ?? item.articuloNombre}-mobile-${globalIndex}`}
               className={`rounded-lg border p-3 ${
-                globalIndex === 0 ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-slate-50'
+                globalIndex === 0 ? 'border-emerald-300 bg-emerald-500/10' : 'border-border bg-muted'
               }`}
             >
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-800">{item.articuloNombre || 'Sin nombre'}</p>
+                <p className="text-sm font-semibold text-foreground">{item.articuloNombre || 'Sin nombre'}</p>
                 <Badge variant={globalIndex === 0 ? 'default' : 'outline'}>#{globalIndex + 1}</Badge>
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                <p className="text-slate-600">
-                  Cantidad: <span className="font-semibold text-slate-800">{formatCountAr(item.cantidadVendida)}</span>
+                <p className="text-muted-foreground">
+                  Cantidad: <span className="font-semibold text-foreground">{formatCountAr(item.cantidadVendida)}</span>
                 </p>
-                <p className="text-slate-600">
-                  Promedio: <span className="font-semibold text-slate-800">{formatCurrencyAr(item.precioPromedio)}</span>
+                <p className="text-muted-foreground">
+                  Promedio: <span className="font-semibold text-foreground">{formatCurrencyAr(item.precioPromedio)}</span>
                 </p>
-                <p className="col-span-2 text-slate-600">
-                  Total generado: <span className="font-semibold text-slate-800">{formatCurrencyAr(item.totalGenerado)}</span>
+                <p className="col-span-2 text-muted-foreground">
+                  Total generado: <span className="font-semibold text-foreground">{formatCurrencyAr(item.totalGenerado)}</span>
                 </p>
               </div>
             </article>

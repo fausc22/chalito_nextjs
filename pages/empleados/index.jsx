@@ -16,7 +16,7 @@ function EmpleadosIndexRedirect() {
 export default function EmpleadosIndexPage() {
   return (
     <ErrorBoundary>
-      <ProtectedRoute>
+      <ProtectedRoute module="empleados">
         <EmpleadosIndexRedirect />
       </ProtectedRoute>
     </ErrorBoundary>

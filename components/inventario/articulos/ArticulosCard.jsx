@@ -10,7 +10,7 @@ export function ArticulosCard({ articulo, onEditar, onEliminar, onVerCostos }) {
   const [imageError, setImageError] = useState(false);
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 h-full flex flex-col rounded-t-xl rounded-b-none overflow-hidden border border-slate-200 hover:border-slate-400">
+    <Card className="group hover:shadow-lg transition-all duration-300 h-full flex flex-col rounded-t-xl rounded-b-none overflow-hidden border border-border hover:border-slate-400">
       {/* 🖼️ IMAGEN - Aspect Ratio 16:9, max 180px mobile */}
       <div className="relative w-full aspect-video max-h-[160px] sm:max-h-[180px] bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 overflow-hidden">
         {articulo.imagen_url && !imageError ? (
@@ -26,7 +26,7 @@ export function ArticulosCard({ articulo, onEditar, onEliminar, onVerCostos }) {
         ) : (
           // ✨ Fallback unificado sin imagen
           <div className="w-full h-full flex items-center justify-center">
-            <Utensils className="h-10 w-10 text-slate-400" strokeWidth={1.5} />
+            <Utensils className="h-10 w-10 text-muted-foreground" strokeWidth={1.5} />
           </div>
         )}
       </div>
@@ -56,7 +56,7 @@ export function ArticulosCard({ articulo, onEditar, onEliminar, onVerCostos }) {
           </Badge>
 
           {/* Tipo (siempre visible) */}
-          <Badge className="text-[10px] sm:text-xs bg-blue-50 text-blue-700 border-blue-200">
+          <Badge className="text-[10px] sm:text-xs bg-primary/10 text-blue-700 border-blue-200">
             {articulo.tipo || 'OTRO'}
           </Badge>
 
@@ -64,10 +64,10 @@ export function ArticulosCard({ articulo, onEditar, onEliminar, onVerCostos }) {
           <Badge 
             className={`text-[10px] sm:text-xs ${
               isArticuloConControlStock(articulo) && (articulo.stock_bajo === 1 || isStockBajoArticulo(articulo))
-                ? 'bg-red-50 text-red-700 border-red-300'
+                ? 'bg-destructive/10 text-red-700 border-red-300'
                 : isArticuloConControlStock(articulo)
-                  ? 'bg-green-50 text-green-700 border-green-300 hidden sm:inline-flex'
-                  : 'bg-slate-100 text-slate-700 border-slate-300'
+                  ? 'bg-emerald-500/100/10 text-green-700 border-green-300 hidden sm:inline-flex'
+                  : 'bg-muted text-foreground border-border'
             }`}
           >
             {isArticuloConControlStock(articulo)
@@ -107,7 +107,7 @@ export function ArticulosCard({ articulo, onEditar, onEliminar, onVerCostos }) {
           <Button
             variant="outline"
             size="sm"
-            className="flex h-10 sm:h-11 text-xs sm:text-sm font-medium rounded-lg border-2 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 transition-all active:scale-98 shrink-0"
+            className="flex h-10 sm:h-11 text-xs sm:text-sm font-medium rounded-lg border-2 text-emerald-700 hover:bg-emerald-500/10 hover:border-emerald-400 transition-all active:scale-98 shrink-0"
             onClick={() => onVerCostos(articulo)}
             title="Ver costos"
           >
@@ -118,7 +118,7 @@ export function ArticulosCard({ articulo, onEditar, onEliminar, onVerCostos }) {
         <Button
           variant="outline"
           size="sm"
-          className="flex-1 h-10 sm:h-11 text-xs sm:text-sm font-medium rounded-lg border-2 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-98"
+          className="flex-1 h-10 sm:h-11 text-xs sm:text-sm font-medium rounded-lg border-2 hover:bg-muted hover:border-slate-400 transition-all active:scale-98"
           onClick={() => onEditar(articulo)}
         >
           <Edit className="h-4 w-4 mr-1.5" strokeWidth={2} />
@@ -127,7 +127,7 @@ export function ArticulosCard({ articulo, onEditar, onEliminar, onVerCostos }) {
         <Button
           variant="outline"
           size="sm"
-          className="flex-1 h-10 sm:h-11 text-xs sm:text-sm font-medium text-red-600 hover:bg-red-50 hover:border-red-400 hover:text-red-700 border-2 rounded-lg transition-all active:scale-98"
+          className="flex-1 h-10 sm:h-11 text-xs sm:text-sm font-medium text-red-600 hover:bg-destructive/10 hover:border-red-400 hover:text-red-700 border-2 rounded-lg transition-all active:scale-98"
           onClick={() => onEliminar(articulo)}
         >
           <Trash2 className="h-4 w-4 mr-1.5" strokeWidth={2} />

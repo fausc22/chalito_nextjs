@@ -18,13 +18,13 @@ export const ModuleCard = ({
     blue: {
       border: 'border-l-blue-500',
       icon: 'text-blue-500',
-      iconBg: 'bg-blue-50',
+      iconBg: 'bg-primary/10',
       hover: 'hover:border-l-blue-600',
     },
     green: {
       border: 'border-l-green-500',
       icon: 'text-green-500',
-      iconBg: 'bg-green-50',
+      iconBg: 'bg-emerald-500/100/10',
       hover: 'hover:border-l-green-600',
     },
     orange: {
@@ -36,7 +36,7 @@ export const ModuleCard = ({
     red: {
       border: 'border-l-red-500',
       icon: 'text-red-500',
-      iconBg: 'bg-red-50',
+      iconBg: 'bg-destructive/10',
       hover: 'hover:border-l-red-600',
     },
     purple: {
@@ -75,25 +75,25 @@ export const ModuleCard = ({
       </div>
 
       {/* Título */}
-      <h3 className={`text-base sm:text-lg font-bold mb-1 sm:mb-2 ${disabled ? 'text-gray-400' : 'text-gray-900'}`}>
+      <h3 className={`text-base sm:text-lg font-bold mb-1 sm:mb-2 ${disabled ? 'text-muted-foreground' : 'text-foreground'}`}>
         {title}
       </h3>
 
       {/* Descripción */}
-      <p className={`text-xs sm:text-sm line-clamp-2 ${disabled ? 'text-gray-400' : 'text-gray-600'}`}>
+      <p className={`text-xs sm:text-sm line-clamp-2 ${disabled ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
         {description}
       </p>
 
       {/* Badge de estado */}
       {disabled && (
-        <span className="mt-auto pt-2 sm:pt-3 text-xs text-gray-400 font-medium">
+        <span className="mt-auto pt-2 sm:pt-3 text-xs text-muted-foreground font-medium">
           Próximamente
         </span>
       )}
     </div>
   );
 
-  const baseClasses = `bg-white border-l-4 ${colors.border} shadow-md transition-all duration-200`;
+  const baseClasses = `bg-card border-l-4 ${colors.border} shadow-md transition-all duration-200`;
 
   if (disabled) {
     return (

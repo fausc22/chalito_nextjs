@@ -244,7 +244,7 @@ export const ConnectionStatusProvider = ({ children }) => {
       case CONNECTION_STATUS.WITH_DELAYS:
         return `Con retrasos (${pedidosAtrasadosCount} pedido${pedidosAtrasadosCount !== 1 ? 's' : ''})`;
       case CONNECTION_STATUS.INACTIVE:
-        return 'Worker inactivo';
+        return 'Automatizacion pausada';
       default:
         return 'Verificando estado...';
     }
@@ -258,7 +258,7 @@ export const ConnectionStatusProvider = ({ children }) => {
       case CONNECTION_STATUS.WITH_DELAYS:
         return 'Con retrasos';
       case CONNECTION_STATUS.INACTIVE:
-        return 'Worker inactivo';
+        return 'Sin conexion';
       default:
         return 'Verificando...';
     }

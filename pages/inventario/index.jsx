@@ -106,13 +106,13 @@ function InventarioContent() {
 
   return (
     <Layout title="Inventario">
-      <main className="main-content">
+      <div className="main-content">
         {/* Header */}
-        <div className="mb-8 pb-6 border-b-2 border-slate-200">
-          <h1 className="text-[2rem] font-semibold text-[#315e92] mb-2 flex items-center gap-2">
+        <div className="mb-8 pb-6 border-b-2 border-border">
+          <h1 className="text-[2rem] font-semibold admin-page-heading mb-2 flex items-center gap-2">
             📦Módulo Inventario
           </h1>
-          <p className="text-slate-500 text-base">
+          <p className="text-muted-foreground text-base">
             Administrá artículos, ingredientes, categorías, adicionales y stock semanal
           </p>
         </div>
@@ -122,21 +122,21 @@ function InventarioContent() {
           <TabsList className="flex flex-wrap justify-center gap-2 sm:gap-4 md:gap-6 mb-8 bg-transparent h-auto p-0">
             <TabsTrigger
               value="articulos"
-              className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 font-medium shadow-sm hover:bg-slate-200 hover:text-slate-800 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:border-slate-300 data-[state=active]:shadow-md max-[400px]:w-[calc(50%-0.25rem)]"
+              className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 rounded-lg border border-border bg-muted text-muted-foreground font-medium shadow-sm hover:bg-accent hover:text-foreground transition-all duration-200 focus-visible:ring-2 focus-visible:ring-slate-400 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:border-border data-[state=active]:shadow-md max-[400px]:w-[calc(50%-0.25rem)]"
             >
               <Box className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="text-sm sm:text-base">Artículos</span>
             </TabsTrigger>
             <TabsTrigger
               value="ingredientes"
-              className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 font-medium shadow-sm hover:bg-slate-200 hover:text-slate-800 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:border-slate-300 data-[state=active]:shadow-md max-[400px]:w-[calc(50%-0.25rem)]"
+              className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 rounded-lg border border-border bg-muted text-muted-foreground font-medium shadow-sm hover:bg-accent hover:text-foreground transition-all duration-200 focus-visible:ring-2 focus-visible:ring-slate-400 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:border-border data-[state=active]:shadow-md max-[400px]:w-[calc(50%-0.25rem)]"
             >
               <Carrot className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="text-sm sm:text-base">Ingredientes</span>
             </TabsTrigger>
             <TabsTrigger
               value="categorias"
-              className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 font-medium shadow-sm hover:bg-slate-200 hover:text-slate-800 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:border-slate-300 data-[state=active]:shadow-md max-[400px]:w-[calc(50%-0.25rem)]"
+              className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 rounded-lg border border-border bg-muted text-muted-foreground font-medium shadow-sm hover:bg-accent hover:text-foreground transition-all duration-200 focus-visible:ring-2 focus-visible:ring-slate-400 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:border-border data-[state=active]:shadow-md max-[400px]:w-[calc(50%-0.25rem)]"
             >
               <Tag className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="text-sm sm:text-base">Categorías</span>
@@ -144,21 +144,21 @@ function InventarioContent() {
 
             <TabsTrigger
               value="adicionales"
-              className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 font-medium shadow-sm hover:bg-slate-200 hover:text-slate-800 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:border-slate-300 data-[state=active]:shadow-md max-[400px]:w-[calc(50%-0.25rem)]"
+              className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 rounded-lg border border-border bg-muted text-muted-foreground font-medium shadow-sm hover:bg-accent hover:text-foreground transition-all duration-200 focus-visible:ring-2 focus-visible:ring-slate-400 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:border-border data-[state=active]:shadow-md max-[400px]:w-[calc(50%-0.25rem)]"
             >
               <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="text-sm sm:text-base">Adicionales</span>
             </TabsTrigger>
             <TabsTrigger
               value="stock-semanal"
-              className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 font-medium shadow-sm hover:bg-slate-200 hover:text-slate-800 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:border-[#315e92]/35 data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-[#315e92]/15 max-[400px]:w-[calc(50%-0.25rem)]"
+              className="flex items-center gap-2 px-4 sm:px-6 md:px-8 py-2.5 sm:py-2 rounded-lg border border-border bg-muted text-muted-foreground font-medium shadow-sm hover:bg-accent hover:text-foreground transition-all duration-200 focus-visible:ring-2 focus-visible:ring-ring data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:border-primary/35 data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-primary/15 max-[400px]:w-[calc(50%-0.25rem)]"
             >
               <CalendarRange className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="text-sm sm:text-base">Stock semanal</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="articulos" className="mt-0 bg-white rounded-xl p-8 shadow-sm border border-slate-200 min-h-[400px]">
+          <TabsContent value="articulos" className="mt-0 bg-card rounded-xl p-8 shadow-sm border border-border min-h-[400px]">
             <ArticulosTab
               articulos={articulos}
               loadingArticulos={loadingArticulos}
@@ -176,7 +176,7 @@ function InventarioContent() {
             />
           </TabsContent>
 
-          <TabsContent value="ingredientes" className="mt-0 bg-white rounded-xl p-8 shadow-sm border border-slate-200 min-h-[400px]">
+          <TabsContent value="ingredientes" className="mt-0 bg-card rounded-xl p-8 shadow-sm border border-border min-h-[400px]">
             <IngredientesTab
               ingredientes={ingredientes}
               loadingIngredientes={loadingIngredientes}
@@ -189,7 +189,7 @@ function InventarioContent() {
             />
           </TabsContent>
 
-          <TabsContent value="categorias" className="mt-0 bg-white rounded-xl p-8 shadow-sm border border-slate-200 min-h-[400px]">
+          <TabsContent value="categorias" className="mt-0 bg-card rounded-xl p-8 shadow-sm border border-border min-h-[400px]">
             <CategoriasTab
               categorias={categorias}
               loadingCategorias={loadingCategorias}
@@ -201,7 +201,7 @@ function InventarioContent() {
             />
           </TabsContent>
 
-          <TabsContent value="adicionales" className="mt-0 bg-white rounded-xl p-8 shadow-sm border border-slate-200 min-h-[400px]">
+          <TabsContent value="adicionales" className="mt-0 bg-card rounded-xl p-8 shadow-sm border border-border min-h-[400px]">
             <AdicionalesTab
               adicionales={adicionales}
               loadingAdicionales={loadingAdicionales}
@@ -219,7 +219,7 @@ function InventarioContent() {
 
           <TabsContent
             value="stock-semanal"
-            className="mt-0 bg-white rounded-xl p-5 sm:p-8 shadow-sm border border-slate-200 min-h-[min(520px,85vh)]"
+            className="mt-0 bg-card rounded-xl p-5 sm:p-8 shadow-sm border border-border min-h-[min(520px,85vh)]"
           >
             <StockSemanalTab
               semanaAbierta={semanaAbierta}
@@ -246,7 +246,7 @@ function InventarioContent() {
             />
           </TabsContent>
         </Tabs>
-      </main>
+      </div>
     </Layout>
   );
 }
@@ -254,7 +254,7 @@ function InventarioContent() {
 export default function InventarioPage() {
   return (
     <ErrorBoundary>
-      <ProtectedRoute>
+      <ProtectedRoute module="inventario">
         <InventarioContent />
       </ProtectedRoute>
     </ErrorBoundary>

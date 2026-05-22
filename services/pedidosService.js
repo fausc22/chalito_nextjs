@@ -67,28 +67,47 @@ const mapearModalidadBackendAFrontend = (modalidadBackend) => {
   return mapeo[modalidadBackend] || 'delivery';
 };
 
+/**
+ * Construye ISO datetime para horario_entrega a partir de HH:MM.
+ * Si la hora ya pasó hoy, usa el día siguiente.
+ */
+export const buildHorarioEntregaIso = (horaHHMM) => {
+  if (!horaHHMM || typeof horaHHMM !== 'string') return null;
+  const match = horaHHMM.trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+
+  const horas = parseInt(match[1], 10);
+  const minutos = parseInt(match[2], 10);
+  if (Number.isNaN(horas) || Number.isNaN(minutos)) return null;
+
+  const target = new Date();
+  target.setSeconds(0, 0);
+  target.setHours(horas, minutos, 0, 0);
+
+  if (target.getTime() <= Date.now()) {
+    target.setDate(target.getDate() + 1);
+  }
+
+  return target.toISOString();
+};
+
 // Mapear medio de pago del frontend al backend
 const mapearMedioPagoFrontendABackend = (medioPagoFrontend) => {
   if (!medioPagoFrontend) {
-    console.log('⚠️ Medio de pago vacío, retornando null');
     return null;
   }
-  
-  // Normalizar a minúsculas para el mapeo
+
   const medioPagoNormalizado = String(medioPagoFrontend).toLowerCase().trim();
-  console.log(`💳 Mapeando medio de pago: "${medioPagoFrontend}" -> "${medioPagoNormalizado}"`);
-  
+
   const mapeo = {
-    'efectivo': 'EFECTIVO',
-    'debito': 'DEBITO',
-    'credito': 'CREDITO',
-    'transferencia': 'TRANSFERENCIA',
-    'mercadopago': 'MERCADOPAGO'
+    efectivo: 'EFECTIVO',
+    debito: 'DEBITO',
+    credito: 'CREDITO',
+    transferencia: 'TRANSFERENCIA',
+    mercadopago: 'MERCADOPAGO',
   };
-  
-  const resultado = mapeo[medioPagoNormalizado] || medioPagoFrontend.toUpperCase();
-  console.log(`💳 Medio de pago mapeado a: "${resultado}"`);
-  return resultado;
+
+  return mapeo[medioPagoNormalizado] || medioPagoFrontend.toUpperCase();
 };
 
 // Transformar pedido del backend al formato del frontend
@@ -306,8 +325,8 @@ const transformarPedidoFrontendABackend = (pedidoFrontend) => {
       : null,
     estado_pago: pedidoFrontend.paymentStatus === 'paid' ? 'PAGADO' : 'DEBE',
     modalidad: mapearModalidadFrontendABackend(pedidoFrontend.tipoEntrega || pedidoFrontend.modalidad),
-    horario_entrega: pedidoFrontend.horaProgramada 
-      ? new Date(`${new Date().toISOString().split('T')[0]} ${pedidoFrontend.horaProgramada}`).toISOString()
+    horario_entrega: pedidoFrontend.horaProgramada
+      ? buildHorarioEntregaIso(pedidoFrontend.horaProgramada)
       : null,
     estado: mapearEstadoFrontendABackend(pedidoFrontend.estado || 'recibido'),
     observaciones: pedidoFrontend.observaciones || '',
@@ -416,6 +435,83 @@ export const pedidosService = {
         success: false,
         error: error.response?.data?.mensaje || error.message || 'Error al obtener pedidos',
         data: []
+      };
+    }
+  },
+
+  /**
+   * Historial de pedidos entregados y pagados (paginado, con artículos en una sola respuesta)
+   */
+  obtenerPedidosEntregados: async ({ page = 1, limit = 20 } = {}) => {
+    try {
+      const params = new URLSearchParams();
+      params.append('page', String(page));
+      params.append('limit', String(limit));
+
+      const url = `${API_CONFIG.ENDPOINTS.PEDIDOS.ENTREGADOS}?${params.toString()}`;
+      const response = await apiRequest.get(url);
+
+      if (response.data?.error === true) {
+        return {
+          success: false,
+          error: response.data.mensaje || 'Error al obtener pedidos entregados',
+          data: [],
+          pagination: null,
+        };
+      }
+
+      const pedidosBackend = response.data.data || [];
+      const pagination = response.data.pagination || null;
+
+      const pedidosTransformados = pedidosBackend.map((pedido) =>
+        transformarPedidoBackendAFrontend(pedido, pedido.articulos || [])
+      );
+
+      return {
+        success: true,
+        data: pedidosTransformados,
+        pagination,
+      };
+    } catch (error) {
+      console.error('Error al obtener pedidos entregados:', error);
+      return {
+        success: false,
+        error: error.response?.data?.mensaje || error.message || 'Error al obtener pedidos entregados',
+        data: [],
+        pagination: null,
+      };
+    }
+  },
+
+  /**
+   * Actualizar horario de entrega (programado o cuanto antes con null)
+   */
+  actualizarHorarioEntrega: async (id, horarioEntregaIso) => {
+    try {
+      const response = await apiRequest.put(API_CONFIG.ENDPOINTS.PEDIDOS.HORARIO_ENTREGA(id), {
+        horario_entrega: horarioEntregaIso,
+      });
+
+      if (response.data?.error === true || response.data?.success === false) {
+        return {
+          success: false,
+          error: response.data.message || response.data.mensaje || 'Error al actualizar horario',
+        };
+      }
+
+      const pedidoBackend = response.data.data;
+      const articulos = pedidoBackend?.articulos || [];
+      return {
+        success: true,
+        data: pedidoBackend
+          ? transformarPedidoBackendAFrontend(pedidoBackend, articulos)
+          : null,
+      };
+    } catch (error) {
+      console.error('Error al actualizar horario de entrega:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.response?.data?.mensaje || error.message || 'Error al actualizar horario',
       };
     }
   },
@@ -845,7 +941,7 @@ export const pedidosService = {
    */
   cobrarPedido: async (
     pedidoId,
-    { medioPago = 'efectivo', tipoFactura = null, cuentaId = null, descuentoPorcentaje = 0 } = {}
+    { medioPago = 'efectivo', descuentoPorcentaje = 0 } = {}
   ) => {
     try {
       const medioPagoBackend = mapearMedioPagoFrontendABackend(medioPago) || 'EFECTIVO';
@@ -855,8 +951,6 @@ export const pedidosService = {
         {
           pedido_id: Number.isFinite(pedidoIdNum) ? pedidoIdNum : null,
           medio_pago: medioPagoBackend,
-          tipo_factura: tipoFactura || null,
-          cuenta_id: cuentaId || null,
           descuento_porcentaje: Number(descuentoPorcentaje) || 0,
         }
       );
@@ -961,91 +1055,65 @@ export const pedidosService = {
   },
 
   /**
-   * Obtener datos de comanda para imprimir
+   * PrintPayload v1 — comanda de cocina
    */
   obtenerComandaParaImprimir: async (id) => {
     try {
-      // Fuente de verdad: detalle completo del pedido
-      // Mantiene compatibilidad con el endpoint dedicado de impresión.
-      const [responseComandaResult, responsePedidoResult] = await Promise.allSettled([
-        apiRequest.get(API_CONFIG.ENDPOINTS.PEDIDOS.COMANDA_PRINT(id)),
-        apiRequest.get(API_CONFIG.ENDPOINTS.PEDIDOS.BY_ID(id))
-      ]);
-
-      if (responseComandaResult.status !== 'fulfilled') {
-        throw responseComandaResult.reason;
-      }
-
-      const responseComanda = responseComandaResult.value;
-      if (responseComanda.data?.error === true) {
+      const response = await apiRequest.get(API_CONFIG.ENDPOINTS.PEDIDOS.COMANDA_PRINT(id));
+      if (response.data?.success === false || response.data?.error === true) {
         return {
           success: false,
-          error: responseComanda.data.mensaje || 'Error al obtener comanda'
+          code: response.data?.code || 'PRINT_DATA_ERROR',
+          error: response.data?.message || response.data?.mensaje || 'Error al obtener comanda'
         };
       }
-
-      const comandaData = responseComanda.data?.data || responseComanda.data || {};
-      const responsePedido =
-        responsePedidoResult.status === 'fulfilled' ? responsePedidoResult.value : null;
-      const pedidoDataRaw = responsePedido?.data?.data || responsePedido?.data || {};
-      const pedidoCompleto = pedidoDataRaw.pedido || pedidoDataRaw || {};
-
-      const pedidoImpresion = {
-        ...(comandaData.pedido || {}),
-        id: pedidoCompleto.id ?? comandaData?.pedido?.id ?? null,
-        numero: comandaData?.pedido?.numero ?? pedidoCompleto.id ?? id,
-        fecha: comandaData?.pedido?.fecha || pedidoCompleto.fecha || comandaData?.fecha || null,
-        horario_entrega: pedidoCompleto.horario_entrega ?? comandaData?.pedido?.horario_entrega ?? null,
-        hora_entrega: pedidoCompleto.hora_entrega ?? comandaData?.pedido?.hora_entrega ?? null,
-        hora_programada: pedidoCompleto.hora_programada ?? comandaData?.pedido?.hora_programada ?? null,
-        hora_esperada_finalizacion: pedidoCompleto.hora_esperada_finalizacion ?? comandaData?.pedido?.hora_esperada_finalizacion ?? null,
-        subtotal: pedidoCompleto.subtotal ?? comandaData?.pedido?.subtotal ?? null,
-        total: pedidoCompleto.total ?? comandaData?.pedido?.total ?? comandaData?.total ?? null,
-        total_final: pedidoCompleto.total ?? pedidoCompleto.total_final ?? comandaData?.pedido?.total_final ?? comandaData?.total ?? null
-      };
-
-      const data = {
-        ...comandaData,
-        pedido: pedidoImpresion,
-        total: pedidoImpresion.total ?? comandaData.total
-      };
-
       return {
         success: true,
-        data
+        data: response.data?.data || response.data
       };
     } catch (error) {
       console.error('Error al obtener comanda para imprimir:', error);
       return {
         success: false,
-        error: error.response?.data?.mensaje || error.message || 'Error al obtener comanda'
+        code: error.response?.data?.code || 'VPS_FETCH_FAILED',
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.mensaje ||
+          error.message ||
+          'Error al obtener comanda'
       };
     }
   },
 
   /**
-   * Obtener datos de ticket/factura para imprimir
+   * PrintPayload v1 — ticket de cliente
    */
   obtenerTicketParaImprimir: async (id) => {
     try {
       const response = await apiRequest.get(API_CONFIG.ENDPOINTS.PEDIDOS.TICKET_PRINT(id));
 
-      if (response.data?.error === true) {
+      if (response.data?.success === false || response.data?.error === true) {
         return {
           success: false,
-          error: response.data.mensaje || 'Error al obtener ticket'
+          code: response.data?.code || 'PRINT_DATA_ERROR',
+          error: response.data?.message || response.data?.mensaje || 'Error al obtener ticket'
         };
       }
 
       return {
         success: true,
-        data: response.data.data || response.data
+        data: response.data?.data || response.data
       };
     } catch (error) {
       console.error('Error al obtener ticket para imprimir:', error);
       return {
         success: false,
-        error: error.response?.data?.mensaje || error.message || 'Error al obtener ticket'
+        code: error.response?.data?.code || 'VPS_FETCH_FAILED',
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.mensaje ||
+          error.message ||
+          'Error al obtener ticket'
       };
     }
   },

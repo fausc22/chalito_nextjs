@@ -77,13 +77,13 @@ export function AsistenciaSection() {
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[1, 2, 3, 4].map((item) => (
-            <div key={item} className="h-24 animate-pulse rounded-xl border border-slate-200 bg-slate-100" />
+            <div key={item} className="h-24 animate-pulse rounded-xl border border-border bg-muted" />
           ))}
         </div>
-        <div className="h-12 animate-pulse rounded-xl border border-slate-200 bg-slate-100" />
+        <div className="h-12 animate-pulse rounded-xl border border-border bg-muted" />
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {[1, 2, 3, 4].map((item) => (
-            <div key={item} className="h-64 animate-pulse rounded-xl border border-slate-200 bg-slate-100" />
+            <div key={item} className="h-64 animate-pulse rounded-xl border border-border bg-muted" />
           ))}
         </div>
       </div>
@@ -97,32 +97,32 @@ export function AsistenciaSection() {
           label="Empleados activos hoy"
           value={metricas.activosHoy}
           hint="Con al menos una marca de ingreso"
-          accentClass="text-slate-900"
+          accentClass="text-foreground"
         />
         <AsistenciaMetricCard
           label="En turno ahora"
           value={metricas.enTurnoAhora}
           hint="Con turno abierto en este momento"
-          accentClass="text-slate-900"
+          accentClass="text-foreground"
         />
         <AsistenciaMetricCard
           label="Horas acumuladas hoy"
           value={formatHours(metricas.horasAcumuladasHoy)}
           hint="Suma total de horas trabajadas"
-          accentClass="text-slate-900"
+          accentClass="text-foreground"
         />
         <AsistenciaMetricCard
           label="Total estimado hoy"
           value={formatMoney(metricas.totalEstimadoHoy)}
           hint="Estimado por valor hora actual"
-          accentClass="text-slate-900"
+          accentClass="text-foreground"
         />
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="rounded-xl border border-border bg-card p-3 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row">
           <div className="relative lg:min-w-0 lg:flex-[1.6]">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
@@ -134,7 +134,7 @@ export function AsistenciaSection() {
           <select
             value={estadoFiltro}
             onChange={(event) => setEstadoFiltro(event.target.value)}
-            className="h-10 min-w-[220px] rounded-md border border-slate-300 bg-white px-3 pr-9 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 lg:flex-[0.9]"
+            className="h-10 min-w-[220px] rounded-md border border-border bg-card px-3 pr-9 text-sm text-foreground outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 lg:flex-[0.9]"
           >
             {ESTADO_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -148,7 +148,7 @@ export function AsistenciaSection() {
             variant="outline"
             onClick={() => cargarAsistencia({ silent: true })}
             disabled={loadingRefresh}
-            className="border-slate-300 text-slate-700"
+            className="border-border text-foreground"
           >
             <RefreshCw className={`h-4 w-4 ${loadingRefresh ? 'animate-spin' : ''}`} />
             Actualizar

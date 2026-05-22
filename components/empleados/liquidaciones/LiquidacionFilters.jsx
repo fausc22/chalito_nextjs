@@ -32,22 +32,22 @@ export function LiquidacionFilters({
   const isPorMes = filters.modo_calculo === 'mes';
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
       <div className="mb-4">
-        <p className="text-sm font-semibold text-slate-800">
+        <p className="text-sm font-semibold text-foreground">
           Seleccioná empleado y período por mes o rango para generar la liquidación
         </p>
       </div>
 
-      <div className="mb-4 inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1">
+      <div className="mb-4 inline-flex rounded-lg border border-border bg-muted p-1">
         <button
           type="button"
           onClick={() => onModeChange('mes')}
           className={cn(
             'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
             isPorMes
-              ? 'bg-white text-blue-700 shadow-sm'
-              : 'text-slate-600 hover:text-slate-800'
+              ? 'bg-card text-blue-700 shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           )}
         >
           Por mes
@@ -58,8 +58,8 @@ export function LiquidacionFilters({
           className={cn(
             'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
             !isPorMes
-              ? 'bg-white text-blue-700 shadow-sm'
-              : 'text-slate-600 hover:text-slate-800'
+              ? 'bg-card text-blue-700 shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           )}
         >
           Por rango
@@ -73,7 +73,7 @@ export function LiquidacionFilters({
             id="liquidacion-empleado"
             value={filters.empleado_id}
             onChange={(event) => onChange('empleado_id', event.target.value)}
-            className="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            className="mt-1 h-10 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
           >
             <option value="">Seleccionar empleado</option>
             {empleados.map((empleado) => (
@@ -92,7 +92,7 @@ export function LiquidacionFilters({
                 id="liquidacion-anio"
                 value={filters.anio}
                 onChange={(event) => onChange('anio', event.target.value)}
-                className="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                className="mt-1 h-10 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
               >
                 {yearOptions.map((year) => (
                   <option key={year} value={year}>
@@ -108,7 +108,7 @@ export function LiquidacionFilters({
                 id="liquidacion-mes"
                 value={filters.mes}
                 onChange={(event) => onChange('mes', event.target.value)}
-                className="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                className="mt-1 h-10 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
               >
                 {MESES.map((month) => (
                   <option key={month.value} value={month.value}>

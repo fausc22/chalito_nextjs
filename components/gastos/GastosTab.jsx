@@ -533,7 +533,7 @@ export function GastosTab({
                     <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
                         <CardContent className="p-4">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-red-500 rounded-lg">
+                                <div className="p-2 bg-destructive/100 rounded-lg">
                                     <DollarSign className="h-5 w-5 text-white" />
                                 </div>
                                 <div>
@@ -548,12 +548,12 @@ export function GastosTab({
                     <Card>
                         <CardContent className="p-4">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-slate-500 rounded-lg">
+                                <div className="p-2 bg-muted0 rounded-lg">
                                     <TrendingDown className="h-5 w-5 text-white" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-slate-600">Cantidad</p>
-                                    <p className="text-xl font-bold text-slate-800">
+                                    <p className="text-sm text-muted-foreground">Cantidad</p>
+                                    <p className="text-xl font-bold text-foreground">
                                         {metaGastos.total_registros} gastos
                                     </p>
                                 </div>
@@ -564,11 +564,11 @@ export function GastosTab({
                         <CardContent className="p-4">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-transparent rounded-lg">
-                                    <DollarSign className="h-5 w-5 text-slate-900" />
+                                    <DollarSign className="h-5 w-5 text-foreground" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-slate-900">Promedio</p>
-                                    <p className="text-xl font-bold text-slate-900">
+                                    <p className="text-sm text-foreground">Promedio</p>
+                                    <p className="text-xl font-bold text-foreground">
                                         {formatMonto(metaGastos.total_registros > 0 
                                             ? metaGastos.total_monto / metaGastos.total_registros 
                                             : 0)}

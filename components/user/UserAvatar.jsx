@@ -32,7 +32,7 @@ export function UserAvatar({
   const useImage = Boolean(avatarSrc) && !imageError;
 
   return (
-    <Avatar className={`${sizeClass} border border-slate-200 ${className}`}>
+    <Avatar className={`${sizeClass} border border-border ${className}`}>
       {useImage ? (
         <AvatarImage
           src={avatarSrc}
@@ -40,7 +40,7 @@ export function UserAvatar({
           onError={() => setImageError(true)}
         />
       ) : null}
-      <AvatarFallback className={`bg-slate-100 text-slate-700 font-semibold ${fallbackClassName}`}>
+      <AvatarFallback className={`bg-muted text-foreground font-semibold ${fallbackClassName}`}>
         {showIconFallback && initials === 'U' ? <User className="h-4 w-4" /> : initials}
       </AvatarFallback>
     </Avatar>

@@ -3,12 +3,13 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoginForm } from '../../components/auth/LoginForm';
 import { ROUTES } from '../../config/routes';
+import { getDefaultRouteForRole } from '../../config/permissions';
 import Head from 'next/head';
 import Image from 'next/image';
 import { ShoppingBag, DollarSign, TrendingUp } from 'lucide-react';
 
 export default function LoginPage() {
-  const { isAuthenticated, isLoading, clearError } = useAuth();
+  const { isAuthenticated, isLoading, clearError, userRole } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -17,7 +18,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.replace(ROUTES.DASHBOARD);
+      router.replace(getDefaultRouteForRole(userRole));
     }
   }, [isAuthenticated, isLoading, router]);
 
@@ -44,7 +45,7 @@ export default function LoginPage() {
         <div className="w-full max-w-7xl flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-16 xl:gap-24">
           {/* Formulario a la izquierda - Card blanca independiente */}
           <div className="w-full lg:w-auto lg:flex-shrink-0 order-2 lg:order-1 lg:ml-16 xl:ml-20">
-            <div className="bg-white rounded-2xl shadow-2xl p-8 lg:p-10 w-full lg:w-[480px] animate-fade-in">
+            <div className="bg-card rounded-2xl shadow-2xl p-8 lg:p-10 w-full lg:w-[480px] animate-fade-in">
               <LoginForm />
             </div>
           </div>

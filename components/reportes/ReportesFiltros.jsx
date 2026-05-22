@@ -79,10 +79,10 @@ export function ReportesFiltros({
     filtros.origenPedido;
 
   return (
-    <Card className="border-slate-200">
+    <Card className="border-border">
       <CardContent className="p-4">
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pb-4 border-b border-slate-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pb-4 border-b border-border">
             <Select
               value={filtros.month === 'all' ? 'all' : String(filtros.month || '')}
               onValueChange={(value) => onChangeFiltro('month', value === 'all' ? 'all' : Number(value))}
@@ -163,7 +163,7 @@ export function ReportesFiltros({
           </div>
 
           {showAdvanced ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-border">
               <Select
                 value={filtros.medioPago || 'all'}
                 onValueChange={(value) => onChangeFiltro('medioPago', value === 'all' ? '' : value)}

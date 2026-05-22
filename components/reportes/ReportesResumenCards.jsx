@@ -7,27 +7,27 @@ const SECONDARY_ITEMS = [
     label: 'Cantidad de ventas',
     icon: Receipt,
     formatter: formatCountAr,
-    iconWrapClass: 'rounded-lg bg-slate-500 p-2 text-white',
-    labelClass: 'text-sm text-slate-600',
-    valueClass: 'text-xl font-bold text-slate-800 mt-2',
+    iconWrapClass: 'rounded-lg bg-muted0 p-2 text-white',
+    labelClass: 'text-sm text-muted-foreground',
+    valueClass: 'text-xl font-bold text-foreground mt-2',
   },
   {
     key: 'ticketPromedio',
     label: 'Ticket promedio',
     icon: DollarSign,
     formatter: formatCurrencyAr,
-    iconWrapClass: 'inline-flex items-center justify-center rounded-lg bg-transparent p-2 text-slate-900',
-    labelClass: 'text-sm text-slate-900',
-    valueClass: 'text-xl font-bold text-slate-900 mt-2',
+    iconWrapClass: 'inline-flex items-center justify-center rounded-lg bg-transparent p-2 text-foreground',
+    labelClass: 'text-sm text-foreground',
+    valueClass: 'text-xl font-bold text-foreground mt-2',
   },
   {
     key: 'descuentoTotal',
     label: 'Dtos. aplicados',
     icon: Percent,
     formatter: formatCurrencyAr,
-    iconWrapClass: 'inline-flex items-center justify-center rounded-lg bg-slate-100 p-2 border border-slate-200 text-slate-600',
-    labelClass: 'text-sm text-slate-600 whitespace-nowrap',
-    valueClass: 'text-xl font-semibold text-slate-800 mt-2',
+    iconWrapClass: 'inline-flex items-center justify-center rounded-lg bg-muted p-2 border border-border text-muted-foreground',
+    labelClass: 'text-sm text-muted-foreground whitespace-nowrap',
+    valueClass: 'text-xl font-semibold text-foreground mt-2',
   },
 ];
 
@@ -36,7 +36,7 @@ export function ReportesResumenCards({ resumen = {} }) {
     <section className="grid gap-4 xl:grid-cols-12">
       <article className="xl:col-span-5 rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 text-white shadow-sm min-h-[92px]">
         <div className="flex items-center gap-3">
-          <span className="rounded-lg bg-emerald-500 p-2 border border-emerald-400">
+          <span className="rounded-lg bg-emerald-500/100 p-2 border border-emerald-400">
             <DollarSign className="h-5 w-5 text-white" />
           </span>
           <div>
@@ -54,16 +54,16 @@ export function ReportesResumenCards({ resumen = {} }) {
           const isCantidadVentas = item.key === 'cantidadVentas';
           const isLeftIconMetric = item.key === 'ticketPromedio' || item.key === 'descuentoTotal';
           return (
-            <article key={item.key} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm min-h-[92px]">
+            <article key={item.key} className="rounded-xl border border-border bg-card p-4 shadow-sm min-h-[92px]">
               <div className="flex items-start justify-between gap-2">
                 {isCantidadVentas ? (
                   <div className="flex items-center gap-3">
-                    <span className="rounded-lg bg-slate-500 p-2 text-white">
+                    <span className="rounded-lg bg-muted0 p-2 text-white">
                       <Icon className="h-5 w-5" />
                     </span>
                     <div>
-                      <p className="text-sm text-slate-600">Cantidad</p>
-                      <p className="text-xl font-bold text-slate-800 mt-1">
+                      <p className="text-sm text-muted-foreground">Cantidad</p>
+                      <p className="text-xl font-bold text-foreground mt-1">
                         {formatCountAr(resumen?.cantidadVentas)} ventas
                       </p>
                     </div>
@@ -108,14 +108,14 @@ export function ReportesResumenCards({ resumen = {} }) {
             label: 'Venta máxima',
             icon: TrendingUp,
             value: formatCurrencyAr(resumen?.ventaMaxima),
-            tone: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+            tone: 'text-emerald-700 bg-emerald-500/10 border-emerald-200',
           },
           {
             key: 'ventaMinima',
             label: 'Venta mínima',
             icon: TrendingDown,
             value: formatCurrencyAr(resumen?.ventaMinima),
-            tone: 'text-red-700 bg-red-50 border-red-200',
+            tone: 'text-red-700 bg-destructive/10 border-red-200',
           },
         ].map((item) => {
           const Icon = item.icon;

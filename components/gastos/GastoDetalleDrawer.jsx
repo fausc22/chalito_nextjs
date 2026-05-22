@@ -55,7 +55,7 @@ export function GastoDetalleDrawer({
                 ) : gasto ? (
                     <div className="mt-6 space-y-6">
                         {/* Header con número */}
-                        <div className="p-4 rounded-lg bg-red-50 border border-red-200">
+                        <div className="p-4 rounded-lg bg-destructive/10 border border-red-200">
                             <div className="flex justify-between items-center">
                                 <div>
                                     <p className="text-sm text-muted-foreground">Número de Gasto</p>
@@ -73,23 +73,23 @@ export function GastoDetalleDrawer({
                             <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">
                                 Información del Gasto
                             </h3>
-                            <div className="space-y-3 bg-slate-50 p-4 rounded-lg">
+                            <div className="space-y-3 bg-muted p-4 rounded-lg">
                                 <div className="flex items-center gap-3">
-                                    <Tag className="h-4 w-4 text-slate-400" />
+                                    <Tag className="h-4 w-4 text-muted-foreground" />
                                     <div className="flex-1">
                                         <p className="text-xs text-muted-foreground">Categoría</p>
                                         <p className="font-medium">{gasto.categoria_nombre}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
-                                    <FileText className="h-4 w-4 text-slate-400 mt-1" />
+                                    <FileText className="h-4 w-4 text-muted-foreground mt-1" />
                                     <div className="flex-1">
                                         <p className="text-xs text-muted-foreground">Descripción</p>
                                         <p className="font-medium">{gasto.descripcion}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <CreditCard className="h-4 w-4 text-slate-400" />
+                                    <CreditCard className="h-4 w-4 text-muted-foreground" />
                                     <div className="flex-1">
                                         <p className="text-xs text-muted-foreground">Forma de Pago</p>
                                         <p className="font-medium">{gasto.forma_pago || 'EFECTIVO'}</p>
@@ -97,7 +97,7 @@ export function GastoDetalleDrawer({
                                 </div>
                                 {gasto.cuenta_nombre && (
                                     <div className="flex items-center gap-3">
-                                        <Wallet className="h-4 w-4 text-slate-400" />
+                                        <Wallet className="h-4 w-4 text-muted-foreground" />
                                         <div className="flex-1">
                                             <p className="text-xs text-muted-foreground">Cuenta de Fondos</p>
                                             <p className="font-medium">{gasto.cuenta_nombre}</p>
@@ -106,7 +106,7 @@ export function GastoDetalleDrawer({
                                 )}
                                 {gasto.usuario_nombre && (
                                     <div className="flex items-center gap-3">
-                                        <User className="h-4 w-4 text-slate-400" />
+                                        <User className="h-4 w-4 text-muted-foreground" />
                                         <div className="flex-1">
                                             <p className="text-xs text-muted-foreground">Registrado por</p>
                                             <p className="font-medium">{gasto.usuario_nombre}</p>
@@ -119,7 +119,7 @@ export function GastoDetalleDrawer({
                         <Separator />
 
                         {/* Monto */}
-                        <div className="p-4 rounded-lg bg-red-50">
+                        <div className="p-4 rounded-lg bg-destructive/10">
                             <div className="flex justify-between items-center">
                                 <span className="text-lg font-semibold">Monto Total</span>
                                 <span className="text-2xl font-bold text-red-700">
@@ -134,7 +134,7 @@ export function GastoDetalleDrawer({
                                 <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-2">
                                     Observaciones
                                 </h3>
-                                <p className="text-sm bg-amber-50 p-3 rounded-lg border border-amber-200">
+                                <p className="text-sm bg-amber-500/10 p-3 rounded-lg border border-amber-200">
                                     {gasto.observaciones}
                                 </p>
                             </div>

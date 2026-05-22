@@ -37,18 +37,18 @@ export function VentasPorDiaTable({ data = [] }) {
 
   if (!Array.isArray(data) || data.length === 0) {
     return (
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-        <h2 className="text-lg font-semibold text-slate-800">Ventas por día</h2>
-        <p className="mt-2 text-sm text-slate-600">No hay ventas registradas para este período.</p>
+      <section className="rounded-xl border border-border bg-card p-4 shadow-sm md:p-6">
+        <h2 className="text-lg font-semibold text-foreground">Ventas por día</h2>
+        <p className="mt-2 text-sm text-muted-foreground">No hay ventas registradas para este período.</p>
       </section>
     );
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+    <section className="rounded-xl border border-border bg-card p-4 shadow-sm md:p-6">
       <div className="mb-4">
-        <h2 className="text-lg font-semibold text-slate-800">Ventas por día</h2>
-        <p className="text-sm text-slate-500">
+        <h2 className="text-lg font-semibold text-foreground">Ventas por día</h2>
+        <p className="text-sm text-muted-foreground">
           Evolución diaria de ventas y ticket promedio en el rango seleccionado
           {manyColumns ? '. Deslizá horizontalmente si usás pantalla chica.' : '.'}
         </p>
@@ -81,18 +81,18 @@ export function VentasPorDiaTable({ data = [] }) {
         {paginatedRows.map((row, index) => (
           <article
             key={`${row?.dia || 'sin-fecha'}-mobile-${index}`}
-            className="rounded-lg border border-slate-200 bg-slate-50 p-3"
+            className="rounded-lg border border-border bg-muted p-3"
           >
-            <p className="text-sm font-semibold text-slate-800">{formatDateLabel(row?.dia)}</p>
+            <p className="text-sm font-semibold text-foreground">{formatDateLabel(row?.dia)}</p>
             <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-              <p className="text-slate-600">
-                Ventas: <span className="font-semibold text-slate-800">{formatCountAr(row?.cantidadVentas)}</span>
+              <p className="text-muted-foreground">
+                Ventas: <span className="font-semibold text-foreground">{formatCountAr(row?.cantidadVentas)}</span>
               </p>
-              <p className="text-slate-600">
-                Ticket: <span className="font-semibold text-slate-800">{formatCurrencyAr(row?.ticketPromedio)}</span>
+              <p className="text-muted-foreground">
+                Ticket: <span className="font-semibold text-foreground">{formatCurrencyAr(row?.ticketPromedio)}</span>
               </p>
-              <p className="col-span-2 text-slate-600">
-                Total vendido: <span className="font-semibold text-slate-800">{formatCurrencyAr(row?.totalVendido)}</span>
+              <p className="col-span-2 text-muted-foreground">
+                Total vendido: <span className="font-semibold text-foreground">{formatCurrencyAr(row?.totalVendido)}</span>
               </p>
             </div>
           </article>

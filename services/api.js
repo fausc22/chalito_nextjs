@@ -167,6 +167,18 @@ apiClient.interceptors.response.use(
 
         tokenManager.setTokens(refreshedAccessToken);
 
+        if (response.data?.usuario) {
+          tokenManager.setUserData({
+            id: response.data.usuario.id,
+            nombre: response.data.usuario.nombre,
+            email: response.data.usuario.email ?? '',
+            usuario: response.data.usuario.usuario,
+            rol: response.data.usuario.rol,
+            avatar_key: response.data.usuario.avatar_key ?? null,
+            ultima_conexion: response.data.usuario.ultima_conexion ?? null,
+          });
+        }
+
         onRefreshComplete(refreshedAccessToken);
         isRefreshing = false;
 
@@ -225,9 +237,16 @@ apiClient.interceptors.response.use(
     // Para errores 4xx (excepto 401 y 429 que ya se manejan arriba),
     // NO rechazamos la promesa para evitar el error overlay de Next.js
     // En su lugar, devolvemos un objeto con la información del error
+    if (error.response?.status === 403) {
+      const code = error.response?.data?.code;
+      const msg =
+        error.response?.data?.message || 'No tienes permisos para esta acción';
+      if (code === 'INSUFFICIENT_PERMISSION' || code === 'INSUFFICIENT_ROLE') {
+        toast.error(msg);
+      }
+    }
+
     if (error.response?.status >= 400 && error.response?.status < 500) {
-      // Transformamos el error en una respuesta "exitosa" que contenga el error
-      // Esto evita que Next.js muestre el error overlay
       return Promise.resolve({
         data: {
           success: false,

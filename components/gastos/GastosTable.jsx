@@ -100,7 +100,7 @@ export function GastosTable({ gastos, onEditar, onEliminar, onVer, scrollRef }) 
 
     if (gastos.length === 0) {
         return (
-            <div className="bg-white rounded-xl p-8 text-center border border-slate-200">
+            <div className="bg-card rounded-xl p-8 text-center border border-border">
                 <p className="text-muted-foreground">No se encontraron gastos</p>
                 <p className="text-sm text-muted-foreground mt-2">
                     Prueba ajustando los filtros o registra un nuevo gasto
@@ -110,12 +110,12 @@ export function GastosTable({ gastos, onEditar, onEliminar, onVer, scrollRef }) 
     }
 
     return (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
             <Table>
                 <TableHeader>
-                    <TableRow className="bg-slate-50">
+                    <TableRow className="bg-muted">
                         <TableHead 
-                            className="cursor-pointer hover:bg-slate-100"
+                            className="cursor-pointer hover:bg-muted"
                             onClick={() => handleSort('fecha')}
                         >
                             Fecha <SortIcon columnKey="fecha" />
@@ -123,7 +123,7 @@ export function GastosTable({ gastos, onEditar, onEliminar, onVer, scrollRef }) 
                         <TableHead>Categoría</TableHead>
                         <TableHead>Descripción</TableHead>
                         <TableHead 
-                            className="cursor-pointer hover:bg-slate-100 text-right"
+                            className="cursor-pointer hover:bg-muted text-right"
                             onClick={() => handleSort('monto')}
                         >
                             Monto <SortIcon columnKey="monto" />
@@ -135,15 +135,15 @@ export function GastosTable({ gastos, onEditar, onEliminar, onVer, scrollRef }) 
                 </TableHeader>
                 <TableBody>
                     {currentGastos.map((gasto) => {
-                        const formaPago = FORMAS_PAGO_LABELS[gasto.forma_pago] || { label: gasto.forma_pago, color: 'bg-gray-100 text-gray-800' };
+                        const formaPago = FORMAS_PAGO_LABELS[gasto.forma_pago] || { label: gasto.forma_pago, color: 'bg-gray-100 text-foreground' };
                         
                         return (
-                            <TableRow key={gasto.id} className="hover:bg-slate-50">
+                            <TableRow key={gasto.id} className="hover:bg-muted">
                                 <TableCell className="font-medium">
                                     {formatFecha(gasto.fecha)}
                                 </TableCell>
                                 <TableCell>
-                                    <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                                    <Badge variant="outline" className="bg-destructive/10 text-red-700 border-red-200">
                                         {gasto.categoria_nombre}
                                     </Badge>
                                 </TableCell>
@@ -158,7 +158,7 @@ export function GastosTable({ gastos, onEditar, onEliminar, onVer, scrollRef }) 
                                         {formaPago.label}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="text-slate-600">
+                                <TableCell className="text-muted-foreground">
                                     {gasto.cuenta_nombre || '-'}
                                 </TableCell>
                                 <TableCell className="text-right">

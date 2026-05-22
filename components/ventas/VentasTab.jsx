@@ -336,7 +336,7 @@ export function VentasTab({
                     <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
                         <CardContent className="p-4">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-emerald-500 rounded-lg">
+                                <div className="p-2 bg-emerald-500/100 rounded-lg">
                                     <DollarSign className="h-5 w-5 text-white" />
                                 </div>
                                 <div>
@@ -351,12 +351,12 @@ export function VentasTab({
                     <Card>
                         <CardContent className="p-4">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-slate-500 rounded-lg">
+                                <div className="p-2 bg-muted0 rounded-lg">
                                     <Receipt className="h-5 w-5 text-white" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-slate-600">Cantidad</p>
-                                    <p className="text-xl font-bold text-slate-800">
+                                    <p className="text-sm text-muted-foreground">Cantidad</p>
+                                    <p className="text-xl font-bold text-foreground">
                                         {metaVentas.total_registros} ventas
                                     </p>
                                 </div>
@@ -367,7 +367,7 @@ export function VentasTab({
                         <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-red-500 rounded-lg">
+                                    <div className="p-2 bg-destructive/100 rounded-lg">
                                         <Ban className="h-5 w-5 text-white" />
                                     </div>
                                     <div>

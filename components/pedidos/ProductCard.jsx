@@ -21,7 +21,7 @@ export function ProductCard({ producto, onAgregar }) {
   };
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 overflow-hidden border border-slate-200 hover:border-slate-400 hover:bg-slate-50 flex flex-col bg-white h-full rounded-t-xl rounded-b-none">
+    <Card className="group hover:shadow-lg transition-all duration-300 overflow-hidden border border-border hover:border-slate-400 hover:bg-muted flex flex-col bg-card h-full rounded-t-xl rounded-b-none">
       {/* 🖼️ IMAGEN - Aspect Ratio 16:9, más compacta */}
       <div className="relative w-full aspect-video max-h-[130px] sm:max-h-[150px] bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 overflow-hidden">
         {producto.imagen_url && !imageError ? (
@@ -37,7 +37,7 @@ export function ProductCard({ producto, onAgregar }) {
         ) : (
           // ✨ Fallback unificado sin imagen
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-            <span className="text-xs text-slate-400 font-medium">SIN IMAGEN</span>
+            <span className="text-xs text-muted-foreground font-medium">SIN IMAGEN</span>
           </div>
         )}
       </div>
@@ -45,20 +45,20 @@ export function ProductCard({ producto, onAgregar }) {
       {/* 📝 CONTENIDO - Jerarquía visual clara */}
       <div className="p-2 flex flex-col flex-grow gap-1">
         {/* NOMBRE - Centrado */}
-        <h4 className="font-bold text-sm sm:text-base text-slate-900 line-clamp-2 leading-tight uppercase tracking-tight min-h-[2rem] sm:min-h-[2.25rem] text-center">
+        <h4 className="font-bold text-sm sm:text-base text-foreground line-clamp-2 leading-tight uppercase tracking-tight min-h-[2rem] sm:min-h-[2.25rem] text-center">
           {producto.nombre}
         </h4>
 
         {/* PRECIO Y BADGE EN LA MISMA FILA */}
         <div className="flex items-center justify-between gap-2">
           {/* PRECIO - Izquierda */}
-          <p className="text-xl sm:text-2xl font-bold text-slate-900 leading-none">
+          <p className="text-xl sm:text-2xl font-bold text-foreground leading-none">
             ${producto.precio.toLocaleString('es-AR')}
           </p>
           
           {/* BADGE EXTRAS - Derecha */}
           {producto.extrasDisponibles && producto.extrasDisponibles.length > 0 && (
-            <Badge variant="outline" className="text-[10px] sm:text-xs bg-amber-50 text-amber-700 border-amber-300 px-1.5 py-0.5 flex-shrink-0">
+            <Badge variant="outline" className="text-[10px] sm:text-xs bg-amber-500/10 text-amber-700 border-amber-300 px-1.5 py-0.5 flex-shrink-0">
               {producto.extrasDisponibles.length} extras
             </Badge>
           )}
@@ -67,7 +67,7 @@ export function ProductCard({ producto, onAgregar }) {
         {/* 🏷️ BADGES ADICIONALES - Desktop only */}
         <div className="hidden sm:flex flex-wrap gap-1.5 min-h-[1.25rem]">
           {producto.tipo && (
-            <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200 px-2 py-0.5">
+            <Badge variant="secondary" className="text-xs bg-primary/10 text-blue-700 border-blue-200 px-2 py-0.5">
               {producto.tipo}
             </Badge>
           )}
@@ -77,8 +77,8 @@ export function ProductCard({ producto, onAgregar }) {
               variant="outline" 
               className={`text-xs px-2 py-0.5 ${
                 isStockBajoArticulo(producto)
-                  ? 'bg-red-50 text-red-700 border-red-300' 
-                  : 'bg-green-50 text-green-700 border-green-300'
+                  ? 'bg-destructive/10 text-red-700 border-red-300' 
+                  : 'bg-emerald-500/100/10 text-green-700 border-green-300'
               }`}
             >
               Stock: {producto.stock_actual}
@@ -94,7 +94,7 @@ export function ProductCard({ producto, onAgregar }) {
           <Button
             size="sm"
             variant="outline"
-            className="h-9 w-9 sm:h-10 sm:w-10 p-0 rounded-lg border-2 border-slate-300 hover:border-green-500 hover:bg-green-50 text-lg font-bold transition-all active:scale-95"
+            className="h-9 w-9 sm:h-10 sm:w-10 p-0 rounded-lg border-2 border-border hover:border-green-500 hover:bg-emerald-500/100/10 text-lg font-bold transition-all active:scale-95"
             onClick={decrementar}
             disabled={cantidad <= 1}
           >
@@ -106,7 +106,7 @@ export function ProductCard({ producto, onAgregar }) {
           <Button
             size="sm"
             variant="outline"
-            className="h-9 w-9 sm:h-10 sm:w-10 p-0 rounded-lg border-2 border-slate-300 hover:border-green-500 hover:bg-green-50 text-lg font-bold transition-all active:scale-95"
+            className="h-9 w-9 sm:h-10 sm:w-10 p-0 rounded-lg border-2 border-border hover:border-green-500 hover:bg-emerald-500/100/10 text-lg font-bold transition-all active:scale-95"
             onClick={incrementar}
           >
             +

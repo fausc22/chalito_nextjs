@@ -11,7 +11,7 @@ export function ModalTimeline({ pasoActual, totalPasos = 3 }) {
     <div className="w-[60%] py-4">
       <div className="flex items-center justify-between relative">
         {/* Línea de progreso */}
-        <div className="absolute top-5 left-0 right-0 h-0.5 bg-slate-200 -z-10">
+        <div className="absolute top-5 left-0 right-0 h-0.5 bg-accent -z-10">
           <div
             className="h-full bg-blue-600 transition-all duration-300"
             style={{ width: `${((pasoActual - 1) / (totalPasos - 1)) * 100}%` }}
@@ -33,8 +33,8 @@ export function ModalTimeline({ pasoActual, totalPasos = 3 }) {
                     estaCompletado
                       ? 'bg-blue-600 border-blue-600 text-white'
                       : esActual
-                        ? 'bg-white border-blue-600 text-blue-600'
-                        : 'bg-white border-slate-300 text-slate-400'
+                        ? 'bg-card border-blue-600 text-blue-600'
+                        : 'bg-card border-border text-muted-foreground'
                   }
                 `}
               >
@@ -47,7 +47,7 @@ export function ModalTimeline({ pasoActual, totalPasos = 3 }) {
               <span
                 className={`
                   mt-2 text-xs font-medium text-center
-                  ${esActual ? 'text-blue-600' : estaCompletado ? 'text-slate-600' : 'text-slate-400'}
+                  ${esActual ? 'text-blue-600' : estaCompletado ? 'text-muted-foreground' : 'text-muted-foreground'}
                 `}
               >
                 {paso.nombre}

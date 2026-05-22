@@ -69,7 +69,7 @@ export function VentaDetalleDrawer({
                 ) : venta ? (
                     <div className="mt-6 space-y-6">
                         {/* Header con número y estado */}
-                        <div className={`p-4 rounded-lg ${isAnulada ? 'bg-red-50 border border-red-200' : 'bg-emerald-50 border border-emerald-200'}`}>
+                        <div className={`p-4 rounded-lg ${isAnulada ? 'bg-destructive/10 border border-red-200' : 'bg-emerald-500/10 border border-emerald-200'}`}>
                             <div className="flex justify-between items-center">
                                 <div>
                                     <p className="text-sm text-muted-foreground">Número de Venta</p>
@@ -98,28 +98,28 @@ export function VentaDetalleDrawer({
                             <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">
                                 Datos del Cliente
                             </h3>
-                            <div className="space-y-2 bg-slate-50 p-4 rounded-lg">
+                            <div className="space-y-2 bg-muted p-4 rounded-lg">
                                 <div className="flex items-center gap-3">
-                                    <User className="h-4 w-4 text-slate-400" />
+                                    <User className="h-4 w-4 text-muted-foreground" />
                                     <span className="font-medium">
                                         {venta.cliente_nombre || 'Consumidor Final'}
                                     </span>
                                 </div>
                                 {venta.cliente_telefono && (
                                     <div className="flex items-center gap-3">
-                                        <Phone className="h-4 w-4 text-slate-400" />
+                                        <Phone className="h-4 w-4 text-muted-foreground" />
                                         <span>{venta.cliente_telefono}</span>
                                     </div>
                                 )}
                                 {venta.cliente_email && (
                                     <div className="flex items-center gap-3">
-                                        <Mail className="h-4 w-4 text-slate-400" />
+                                        <Mail className="h-4 w-4 text-muted-foreground" />
                                         <span>{venta.cliente_email}</span>
                                     </div>
                                 )}
                                 {venta.cliente_direccion && (
                                     <div className="flex items-center gap-3">
-                                        <MapPin className="h-4 w-4 text-slate-400" />
+                                        <MapPin className="h-4 w-4 text-muted-foreground" />
                                         <span>{venta.cliente_direccion}</span>
                                     </div>
                                 )}
@@ -131,9 +131,9 @@ export function VentaDetalleDrawer({
                             <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">
                                 Información de Pago
                             </h3>
-                            <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg">
+                            <div className="grid grid-cols-2 gap-4 bg-muted p-4 rounded-lg">
                                 <div className="flex items-center gap-2">
-                                    <CreditCard className="h-4 w-4 text-slate-400" />
+                                    <CreditCard className="h-4 w-4 text-muted-foreground" />
                                     <div>
                                         <p className="text-xs text-muted-foreground">Medio de Pago</p>
                                         <p className="font-medium">{venta.medio_pago}</p>
@@ -143,6 +143,28 @@ export function VentaDetalleDrawer({
                                     <div>
                                         <p className="text-xs text-muted-foreground">Tipo Factura</p>
                                         <p className="font-medium">Tipo {venta.tipo_factura}</p>
+                                    </div>
+                                )}
+
+                                {venta.numero_factura && (
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Nº Comprobante</p>
+                                        <p className="font-medium">{venta.numero_factura}</p>
+                                    </div>
+                                )}
+                                {venta.cae_estado && (
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Estado CAE</p>
+                                        <p className="font-medium">{venta.cae_estado}</p>
+                                    </div>
+                                )}
+                                {venta.cae_id && (
+                                    <div className="col-span-2">
+                                        <p className="text-xs text-muted-foreground">CAE</p>
+                                        <p className="font-medium font-mono text-sm">{venta.cae_id}</p>
+                                        {venta.cae_fecha && (
+                                            <p className="text-xs text-muted-foreground">Vto: {String(venta.cae_fecha).slice(0, 10)}</p>
+                                        )}
                                     </div>
                                 )}
                                 {venta.cuenta_nombre && (
@@ -171,7 +193,7 @@ export function VentaDetalleDrawer({
                             <div className="border rounded-lg overflow-hidden">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="bg-slate-50">
+                                        <TableRow className="bg-muted">
                                             <TableHead>Artículo</TableHead>
                                             <TableHead className="text-center w-[60px]">Cant.</TableHead>
                                             <TableHead className="text-right w-[100px]">Precio</TableHead>
@@ -201,7 +223,7 @@ export function VentaDetalleDrawer({
                         </div>
 
                         {/* Totales */}
-                        <div className={`p-4 rounded-lg ${isAnulada ? 'bg-red-50' : 'bg-emerald-50'}`}>
+                        <div className={`p-4 rounded-lg ${isAnulada ? 'bg-destructive/10' : 'bg-emerald-500/10'}`}>
                             <div className="space-y-2">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground">Subtotal</span>
@@ -229,7 +251,7 @@ export function VentaDetalleDrawer({
                                 <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-2">
                                     Observaciones
                                 </h3>
-                                <p className="text-sm bg-amber-50 p-3 rounded-lg border border-amber-200">
+                                <p className="text-sm bg-amber-500/10 p-3 rounded-lg border border-amber-200">
                                     {venta.observaciones}
                                 </p>
                             </div>

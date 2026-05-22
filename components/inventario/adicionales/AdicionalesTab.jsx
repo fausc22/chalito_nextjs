@@ -461,10 +461,10 @@ export function AdicionalesTab({
 
         <TabsContent value="articulos" className="space-y-6">
           <div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">
+            <h3 className="text-lg font-semibold text-foreground mb-4">
               Artículos con Adicionales Asignados
             </h3>
-            <p className="text-sm text-slate-600 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               Aquí puedes ver y editar los adicionales asignados a cada artículo
             </p>
             <ArticulosConAdicionales

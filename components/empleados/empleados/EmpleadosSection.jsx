@@ -92,10 +92,10 @@ export function EmpleadosSection() {
   if (loading && empleados.length === 0) {
     return (
       <div className="space-y-4">
-        <div className="h-12 animate-pulse rounded-xl border border-slate-200 bg-slate-100" />
+        <div className="h-12 animate-pulse rounded-xl border border-border bg-muted" />
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
           {[1, 2, 3, 4].map((item) => (
-            <div key={item} className="h-60 animate-pulse rounded-xl border border-slate-200 bg-slate-100" />
+            <div key={item} className="h-60 animate-pulse rounded-xl border border-border bg-muted" />
           ))}
         </div>
       </div>

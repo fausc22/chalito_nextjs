@@ -27,34 +27,34 @@ export function ArticulosTableView({
 }) {
   return (
     <div className="overflow-x-auto">
-      <Table className="bg-white rounded-lg overflow-hidden shadow-sm">
-        <TableHeader className="bg-slate-50">
+      <Table className="bg-card rounded-lg overflow-hidden shadow-sm">
+        <TableHeader className="bg-muted">
           <TableRow>
-            <TableHead className="w-[100px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-l-2 border-r-2 border-b-2 border-gray-200 py-3">
+            <TableHead className="w-[100px] text-center text-sm font-bold text-foreground uppercase tracking-wider border-l-2 border-r-2 border-b-2 border-border py-3">
               Imagen
             </TableHead>
-            <TableHead className="w-[200px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3">
+            <TableHead className="w-[200px] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-3">
               Nombre
             </TableHead>
-            <TableHead className="w-[250px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3">
+            <TableHead className="w-[250px] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-3">
               Descripción
             </TableHead>
-            <TableHead className="w-[150px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3">
+            <TableHead className="w-[150px] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-3">
               Categoría
             </TableHead>
-            <TableHead className="w-[120px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3">
+            <TableHead className="w-[120px] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-3">
               Tipo
             </TableHead>
-            <TableHead className="w-[100px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3">
+            <TableHead className="w-[100px] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-3">
               Precio
             </TableHead>
-            <TableHead className="w-[100px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3">
+            <TableHead className="w-[100px] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-3">
               Stock
             </TableHead>
-            <TableHead className="w-[100px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3">
+            <TableHead className="w-[100px] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-3">
               Estado
             </TableHead>
-            <TableHead className="w-[150px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3">
+            <TableHead className="w-[150px] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-3">
               Acciones
             </TableHead>
           </TableRow>
@@ -63,8 +63,8 @@ export function ArticulosTableView({
           {articulos.map((articulo, index) => (
             <TableRow
               key={articulo.id}
-              className={`border-b border-gray-200 transition-colors hover:bg-blue-50 ${
-                index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+              className={`border-b border-border transition-colors hover:bg-accent ${
+                index % 2 === 0 ? 'bg-card' : 'bg-muted'
               }`}
             >
               {/* Imagen */}
@@ -81,7 +81,7 @@ export function ArticulosTableView({
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Utensils className="h-6 w-6 lg:h-8 lg:w-8 text-slate-400" />
+                      <Utensils className="h-6 w-6 lg:h-8 lg:w-8 text-muted-foreground" />
                     </div>
                   )}
                 </div>
@@ -132,7 +132,7 @@ export function ArticulosTableView({
                     </span>
                   </div>
                 ) : (
-                  <span className="text-sm font-medium text-slate-500">No aplica</span>
+                  <span className="text-sm font-medium text-muted-foreground">No aplica</span>
                 )}
               </TableCell>
 
@@ -150,7 +150,7 @@ export function ArticulosTableView({
                     variant="outline"
                     size="sm"
                     onClick={() => onEditar(articulo)}
-                    className="hover:bg-blue-50 hover:border-blue-500 text-xs"
+                    className="hover:bg-accent hover:border-blue-500 text-xs"
                   >
                     <Pencil className="h-4 w-4 mr-1" />
                     Editar

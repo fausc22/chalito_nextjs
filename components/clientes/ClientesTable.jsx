@@ -14,7 +14,7 @@ export function ClientesTable({ clientes = [], onSelectCliente }) {
     <div className="rounded-lg border overflow-hidden">
       <Table>
         <TableHeader>
-          <TableRow className="bg-slate-50">
+          <TableRow className="bg-muted">
             <TableHead>Nombre</TableHead>
             <TableHead>Teléfono</TableHead>
             <TableHead>Email</TableHead>

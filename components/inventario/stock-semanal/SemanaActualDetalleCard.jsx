@@ -11,7 +11,7 @@ import {
 
 export function SemanaActualDetalleCard({ detalle, onEditarDetalle, edicionHabilitada = true }) {
   return (
-    <Card className="border-slate-200 shadow-sm">
+    <Card className="border-border shadow-sm">
       <CardHeader className="pb-2">
         <CardTitle className="text-base leading-tight">{getNombreInsumoDetalle(detalle)}</CardTitle>
       </CardHeader>
@@ -26,17 +26,17 @@ export function SemanaActualDetalleCard({ detalle, onEditarDetalle, edicionHabil
         </div>
         <div className="col-span-2">
           <p className="text-muted-foreground text-xs uppercase tracking-wide">Consumo</p>
-          <p className="font-semibold tabular-nums text-slate-900">{formatStockValue(getConsumoMostrado(detalle))}</p>
+          <p className="font-semibold tabular-nums text-foreground">{formatStockValue(getConsumoMostrado(detalle))}</p>
         </div>
         {detalle.observaciones?.trim() ? (
           <div className="col-span-2">
             <p className="text-muted-foreground text-xs uppercase tracking-wide">Observaciones</p>
-            <p className="text-sm text-slate-700">{detalle.observaciones}</p>
+            <p className="text-sm text-foreground">{detalle.observaciones}</p>
           </div>
         ) : null}
       </CardContent>
       {edicionHabilitada ? (
-        <CardFooter className="border-t bg-slate-50/50 py-2">
+        <CardFooter className="border-t bg-muted/50 py-2">
           <Button type="button" variant="outline" size="sm" className="w-full gap-1" onClick={() => onEditarDetalle(detalle)}>
             <Pencil className="h-4 w-4" />
             Editar stock

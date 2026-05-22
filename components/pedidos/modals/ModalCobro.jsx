@@ -5,7 +5,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CreditCard, Building2, Smartphone, Wallet, FileText } from 'lucide-react';
+import { CreditCard, Building2, Smartphone, Wallet } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { pedidosService } from '@/services/pedidosService';
 import { toast } from '@/hooks/use-toast';
 import { getItemExtras } from '@/lib/extrasUtils';
@@ -13,8 +14,10 @@ import { calculateLineSubtotalFromSnapshot } from '@/lib/pedidoTotals';
 
 export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
   const [medioPago, setMedioPago] = useState('efectivo');
-  const [tipoFactura, setTipoFactura] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const mediosConArca = ['mercadopago', 'debito', 'credito'];
+  const requiereFacturaElectronica = mediosConArca.includes(medioPago);
   const [pedidoCompleto, setPedidoCompleto] = useState(null);
   const [descuentoPorcentaje, setDescuentoPorcentaje] = useState(0);
   const submittedRef = useRef(false);
@@ -52,7 +55,6 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
   useEffect(() => {
     if (isOpen && pedidoCompleto) {
       setMedioPago(pedidoCompleto.medioPago || 'efectivo');
-      setTipoFactura(''); // Resetear tipo de factura cada vez que se abre el modal
       setDescuentoPorcentaje(0);
     }
   }, [isOpen, pedidoCompleto]);
@@ -85,7 +87,6 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
       if (pedidoParaMostrar.id !== 'nuevo') {
         const response = await pedidosService.cobrarPedido(pedidoParaMostrar.id, {
           medioPago,
-          tipoFactura: tipoFactura || null,
           descuentoPorcentaje: porcentajeNormalizado,
         });
 
@@ -146,13 +147,13 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
         subtotal: totalOriginal,
         descuento_porcentaje: porcentajeNormalizado,
         total: totalFinalPreview,
-        medioPago, tipo_factura: tipoFactura || null, items
+        medioPago,
+        items
       };
 
       if (onCobroExitoso) {
         onCobroExitoso({
           medioPago,
-          tipoFactura: tipoFactura || null,
           ventaData
         });
       }
@@ -194,8 +195,8 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
         <div className="space-y-4 py-3 sm:py-4 pr-0 sm:pr-2">
           {/* Items del Pedido */}
           {pedidoParaMostrar.items && pedidoParaMostrar.items.length > 0 && (
-            <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
-              <h3 className="text-base font-semibold text-slate-800 mb-3">📦 Items del Pedido</h3>
+            <div className="bg-card border-2 border-border rounded-lg p-3 shadow-md">
+              <h3 className="text-base font-semibold text-foreground mb-3">📦 Items del Pedido</h3>
               <div className="space-y-2 max-h-60 overflow-y-auto pr-3">
                 {pedidoParaMostrar.items.map((item, index) => {
                   const precioUnitario = parseFloat(item.precio) || 0;
@@ -206,14 +207,14 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
                   const tieneExtras = extras && extras.length > 0;
                   
                   return (
-                    <div key={index} className="border-b border-slate-200 pb-2 last:border-b-0">
+                    <div key={index} className="border-b border-border pb-2 last:border-b-0">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <div className="font-semibold text-slate-900 text-sm">
+                          <div className="font-semibold text-foreground text-sm">
                             {cantidad}x {item.articulo_nombre || item.nombre || 'Artículo'}
                           </div>
                           {tieneExtras && (
-                            <div className="text-xs text-slate-600 mt-1 ml-4">
+                            <div className="text-xs text-muted-foreground mt-1 ml-4">
                               <div className="font-medium mb-1">Extras:</div>
                               {extras.map((extra, idx) => (
                                 <div key={idx} className="ml-2">
@@ -223,16 +224,16 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
                             </div>
                           )}
                           {item.observaciones && (
-                            <div className="text-xs text-slate-500 italic mt-1 ml-4">
+                            <div className="text-xs text-muted-foreground italic mt-1 ml-4">
                               Obs: {item.observaciones}
                             </div>
                           )}
                         </div>
                         <div className="text-right">
-                          <div className="text-sm font-semibold text-slate-900">
+                          <div className="text-sm font-semibold text-foreground">
                             ${subtotalItem.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </div>
-                          <div className="text-xs text-slate-500">
+                          <div className="text-xs text-muted-foreground">
                             ${precioUnitario.toLocaleString('es-AR', { minimumFractionDigits: 2 })} c/u
                           </div>
                         </div>
@@ -245,46 +246,46 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
           )}
 
           {/* Datos del Cliente */}
-          <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
-            <h3 className="text-base font-semibold text-slate-800 mb-3">👤 Datos del Cliente</h3>
+          <div className="bg-card border-2 border-border rounded-lg p-3 shadow-md">
+            <h3 className="text-base font-semibold text-foreground mb-3">👤 Datos del Cliente</h3>
             <div className="space-y-2 text-sm">
               <div>
-                <span className="font-medium text-slate-700">Nombre: </span>
-                <span className="text-slate-900">{pedidoParaMostrar.clienteNombre}</span>
+                <span className="font-medium text-foreground">Nombre: </span>
+                <span className="text-foreground">{pedidoParaMostrar.clienteNombre}</span>
               </div>
               {pedidoParaMostrar.telefono && (
                 <div>
-                  <span className="font-medium text-slate-700">Teléfono: </span>
-                  <span className="text-slate-900">{pedidoParaMostrar.telefono}</span>
+                  <span className="font-medium text-foreground">Teléfono: </span>
+                  <span className="text-foreground">{pedidoParaMostrar.telefono}</span>
                 </div>
               )}
               {pedidoParaMostrar.email && (
                 <div>
-                  <span className="font-medium text-slate-700">Email: </span>
-                  <span className="text-slate-900">{pedidoParaMostrar.email}</span>
+                  <span className="font-medium text-foreground">Email: </span>
+                  <span className="text-foreground">{pedidoParaMostrar.email}</span>
                 </div>
               )}
               {pedidoParaMostrar.direccion && (
                 <div>
-                  <span className="font-medium text-slate-700">Dirección: </span>
-                  <span className="text-slate-900">{pedidoParaMostrar.direccion}</span>
+                  <span className="font-medium text-foreground">Dirección: </span>
+                  <span className="text-foreground">{pedidoParaMostrar.direccion}</span>
                 </div>
               )}
             </div>
           </div>
 
           {/* Resumen de cobro */}
-          <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
-            <h3 className="text-base font-semibold text-slate-800 mb-3">💰 Resumen de Cobro</h3>
+          <div className="bg-card border-2 border-border rounded-lg p-3 shadow-md">
+            <h3 className="text-base font-semibold text-foreground mb-3">💰 Resumen de Cobro</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-700 font-medium">Total original:</span>
-                <span className="font-bold text-slate-900">
+                <span className="text-foreground font-medium">Total original:</span>
+                <span className="font-bold text-foreground">
                   ${totalOriginal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="space-y-1">
-                <Label htmlFor="descuentoCobro" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="descuentoCobro" className="text-sm font-medium text-foreground">
                   Descuento (%)
                 </Label>
                 <Input
@@ -305,8 +306,8 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
                 />
               </div>
               <div className="flex justify-between text-sm">
-                <span className="font-medium text-slate-700">Descuento (%):</span>
-                <span className="font-bold text-slate-900">
+                <span className="font-medium text-foreground">Descuento (%):</span>
+                <span className="font-bold text-foreground">
                   {porcentajeNormalizado.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%
                 </span>
               </div>
@@ -319,36 +320,30 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
 
               <Separator className="my-2" />
 
-              <div className="flex justify-between text-lg font-bold text-slate-900">
+              <div className="flex justify-between text-lg font-bold text-foreground">
                 <span>Total final a cobrar:</span>
                 <span>${totalFinalPreview.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>
 
-          {/* Tipo de Factura */}
-          <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
-            <Label htmlFor="tipoFactura" className="text-base font-semibold text-slate-800 mb-2 block">
-              <FileText className="h-4 w-4 inline mr-2" />
-              Tipo de Factura
-            </Label>
-            <Select value={tipoFactura} onValueChange={setTipoFactura}>
-              <SelectTrigger id="tipoFactura" className="mt-1 h-9 text-sm">
-                <SelectValue placeholder="Selecciona tipo de factura (opcional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="A">A - Responsable Inscripto</SelectItem>
-                <SelectItem value="B">B - Consumidor Final</SelectItem>
-                <SelectItem value="C">C - Exento</SelectItem>
-                <SelectItem value="M">M - Monotributo</SelectItem>
-                <SelectItem value="X">X - Remito</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {requiereFacturaElectronica ? (
+            <Alert className="border-blue-200 bg-primary/10">
+              <AlertDescription className="text-sm text-blue-900">
+                Este medio emite Factura B electrónica (ARCA). El CAE se generará automáticamente.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <Alert className="border-border bg-muted">
+              <AlertDescription className="text-sm text-foreground">
+                Comprobante interno (sin factura electrónica). El importe se registra en cuenta operativa.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Método de Pago */}
-          <div className="bg-white border-2 border-slate-300 rounded-lg p-3 shadow-md">
-            <h3 className="text-base font-semibold text-slate-800 mb-3">💳 Método de Pago</h3>
+          <div className="bg-card border-2 border-border rounded-lg p-3 shadow-md">
+            <h3 className="text-base font-semibold text-foreground mb-3">💳 Método de Pago</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Button
                 variant={medioPago === 'efectivo' ? 'default' : 'outline'}

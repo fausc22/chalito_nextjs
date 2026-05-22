@@ -23,9 +23,9 @@ export function HorariosDemandaCard({ data = [] }) {
 
   if (rows.length === 0) {
     return (
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-        <h2 className="text-lg font-semibold text-slate-800">Horarios de mayor demanda</h2>
-        <p className="mt-2 text-sm text-slate-600">
+      <section className="rounded-xl border border-border bg-card p-4 shadow-sm md:p-6">
+        <h2 className="text-lg font-semibold text-foreground">Horarios de mayor demanda</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
           No hay pedidos registrados para analizar la demanda.
         </p>
       </section>
@@ -33,15 +33,15 @@ export function HorariosDemandaCard({ data = [] }) {
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+    <section className="rounded-xl border border-border bg-card p-4 shadow-sm md:p-6">
       <div className="mb-4">
-        <h2 className="text-lg font-semibold text-slate-800">Horarios de mayor demanda</h2>
-        <p className="text-sm text-slate-500">
+        <h2 className="text-lg font-semibold text-foreground">Horarios de mayor demanda</h2>
+        <p className="text-sm text-muted-foreground">
           Identificá las franjas con más pedidos para mejorar la operación.
         </p>
       </div>
 
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 mb-3">
+      <div className="rounded-lg border border-blue-200 bg-primary/10 p-3 mb-3">
         <p className="text-xs uppercase tracking-wide text-blue-700 font-semibold">Horario pico</p>
         <p className="text-base font-semibold text-blue-900">
           {horarioPico?.franja || 'Sin datos'} {horarioPico?.cantidadPedidos ? `(${formatCountAr(horarioPico.cantidadPedidos)} pedidos)` : ''}
@@ -58,24 +58,24 @@ export function HorariosDemandaCard({ data = [] }) {
             <div
               key={franja.franja}
               className={`rounded-lg border p-3 flex items-center justify-between gap-2 ${
-                isPeak ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-slate-50'
+                isPeak ? 'border-emerald-300 bg-emerald-500/10' : 'border-border bg-muted'
               }`}
             >
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-slate-800">{franja.franja}</p>
+                <p className="font-medium text-foreground">{franja.franja}</p>
                 {isPeak ? (
                   <Badge className="mt-1 bg-emerald-600 hover:bg-emerald-600">
                     Mayor demanda
                   </Badge>
                 ) : null}
-                <div className="mt-2 h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div className="mt-2 h-2 rounded-full bg-accent overflow-hidden">
                   <div
-                    className={`h-full rounded-full ${isPeak ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                    className={`h-full rounded-full ${isPeak ? 'bg-emerald-500/100' : 'bg-primary/100'}`}
                     style={{ width: `${widthPercent}%` }}
                   />
                 </div>
               </div>
-              <p className="text-sm font-semibold text-slate-700">
+              <p className="text-sm font-semibold text-foreground">
                 {formatCountAr(currentCount)} {pedidosLabel}
               </p>
             </div>

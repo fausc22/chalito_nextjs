@@ -123,7 +123,7 @@ export function GastosForm({
                             Monto <span className="text-red-500">*</span>
                         </Label>
                         <div className="relative mt-1">
-                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
                                 $
                             </span>
                             <Input
@@ -186,7 +186,7 @@ export function GastosForm({
                             </SelectContent>
                         </Select>
                         {cuentaSeleccionada && (
-                            <p className="text-xs text-slate-500 mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                                 Saldo actual: <span className={`font-semibold ${
                                     parseFloat(cuentaSeleccionada.saldo) >= 0
                                         ? 'text-green-600'

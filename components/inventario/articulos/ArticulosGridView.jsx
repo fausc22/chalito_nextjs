@@ -49,7 +49,7 @@ function ArticuloCard({
   const [imageError, setImageError] = useState(false);
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 flex flex-col h-full rounded-t-xl rounded-b-none overflow-hidden border border-slate-200 hover:border-slate-400">
+    <Card className="group hover:shadow-lg transition-all duration-300 flex flex-col h-full rounded-t-xl rounded-b-none overflow-hidden border border-border hover:border-slate-400">
       {/* 🖼️ IMAGEN - Aspect Ratio 16:9 */}
       <div className="relative w-full aspect-video max-h-[160px] md:max-h-[180px] bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 overflow-hidden">
         {articulo.imagen_url && !imageError ? (
@@ -64,7 +64,7 @@ function ArticuloCard({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Utensils className="h-10 w-10 md:h-12 md:w-12 text-slate-400" strokeWidth={1.5} />
+            <Utensils className="h-10 w-10 md:h-12 md:w-12 text-muted-foreground" strokeWidth={1.5} />
           </div>
         )}
       </div>
@@ -99,10 +99,10 @@ function ArticuloCard({
           <Badge 
             className={`text-[10px] md:text-xs ${
               isArticuloConControlStock(articulo) && isStockBajoArticulo(articulo)
-                ? 'bg-red-50 text-red-700 border-red-300'
+                ? 'bg-destructive/10 text-red-700 border-red-300'
                 : isArticuloConControlStock(articulo)
-                  ? 'bg-green-50 text-green-700 border-green-300 hidden md:inline-flex'
-                  : 'bg-slate-100 text-slate-700 border-slate-300'
+                  ? 'bg-emerald-500/100/10 text-green-700 border-green-300 hidden md:inline-flex'
+                  : 'bg-muted text-foreground border-border'
             }`}
           >
             {isArticuloConControlStock(articulo)
@@ -131,7 +131,7 @@ function ArticuloCard({
             variant="outline"
             size="sm"
             onClick={() => onEditar(articulo)}
-            className="flex-1 h-10 md:h-11 text-xs md:text-sm font-medium rounded-lg border-2 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-98"
+            className="flex-1 h-10 md:h-11 text-xs md:text-sm font-medium rounded-lg border-2 hover:bg-muted hover:border-slate-400 transition-all active:scale-98"
           >
             <Pencil className="h-4 w-4 mr-1.5" strokeWidth={2} />
             Editar
@@ -140,7 +140,7 @@ function ArticuloCard({
             variant="outline"
             size="sm"
             onClick={() => onEliminar(articulo)}
-            className="flex-1 h-10 md:h-11 text-xs md:text-sm font-medium text-red-600 hover:bg-red-50 hover:border-red-400 hover:text-red-700 border-2 rounded-lg transition-all active:scale-98"
+            className="flex-1 h-10 md:h-11 text-xs md:text-sm font-medium text-red-600 hover:bg-destructive/10 hover:border-red-400 hover:text-red-700 border-2 rounded-lg transition-all active:scale-98"
           >
             <Trash2 className="h-4 w-4 mr-1.5" strokeWidth={2} />
             Eliminar

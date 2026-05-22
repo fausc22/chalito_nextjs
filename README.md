@@ -80,7 +80,7 @@ frontend/
 - **Inventario**: Filtros, tablas responsivas, formularios y estadísticas
 - **Dashboard**: ModuleCard, WelcomeCard, StatusCard
 - **Auth**: LoginForm, ProtectedRoute
-- **Layout**: NavBar, Footer, Layout
+- **Layout**: AdminShellLayout (sidebar + topbar), Layout, Footer
 
 > 📚 Ver [COMPONENTES_GUIA.md](./COMPONENTES_GUIA.md) para guía completa
 
@@ -126,7 +126,15 @@ Crear archivo `.env.local`:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_APP_NAME=El Chalito
+
+# Impresión térmica (agente local en PC del mostrador)
+NEXT_PUBLIC_PRINT_AGENT_URL=http://127.0.0.1:9100
+NEXT_PUBLIC_PRINT_AGENT_ENABLED=true
+NEXT_PUBLIC_PRINT_FALLBACK_BROWSER=true
+# NEXT_PUBLIC_SUPPORT_EMAIL=soporte@ejemplo.com
 ```
+
+Ver también `../docs/INSTALACION_IMPRESORA.md` y carpeta `../print-agent/`.
 
 ### Configuración de API
 

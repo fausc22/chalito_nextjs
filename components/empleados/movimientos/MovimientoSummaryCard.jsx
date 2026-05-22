@@ -6,11 +6,11 @@ const formatMoney = (amount) => new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 0,
 }).format(Number(amount) || 0);
 
-export function MovimientoSummaryCard({ title, value, accentClass = 'text-slate-900' }) {
+export function MovimientoSummaryCard({ title, value, accentClass = 'text-foreground' }) {
   return (
-    <Card className="border-slate-200 shadow-sm">
+    <Card className="border-border shadow-sm">
       <CardContent className="space-y-1 p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
         <p className={`text-2xl font-semibold ${accentClass}`}>
           {formatMoney(value)}
         </p>

@@ -8,6 +8,7 @@ export function useClienteAutocomplete({ debounceMs = 300 } = {}) {
   const [error, setError] = useState('');
   const [selectedCliente, setSelectedCliente] = useState(null);
   const debounceRef = useRef(null);
+  const requestSeqRef = useRef(0);
 
   const clear = useCallback(() => {
     setItems([]);
@@ -18,14 +19,20 @@ export function useClienteAutocomplete({ debounceMs = 300 } = {}) {
   const buscar = useCallback(async (value) => {
     const q = String(value || '').trim();
     if (q.length < 2) {
+      requestSeqRef.current += 1;
       clear();
       return;
     }
 
+    const requestId = ++requestSeqRef.current;
     setIsLoading(true);
     setError('');
 
     const result = await clientesService.buscarSugerencias(q);
+    if (requestId !== requestSeqRef.current) {
+      return;
+    }
+
     if (!result.success) {
       setError(result.error || 'No se pudieron cargar sugerencias');
       setItems([]);

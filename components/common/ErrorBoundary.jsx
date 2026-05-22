@@ -46,7 +46,7 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       // UI de respaldo personalizada
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="min-h-screen flex items-center justify-center bg-muted px-4">
           <div className="max-w-md w-full">
             <div className="card text-center">
               {/* Icono de error */}
@@ -69,25 +69,25 @@ class ErrorBoundary extends React.Component {
               </div>
 
               {/* Mensaje */}
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-2xl font-bold text-foreground mb-2">
                 ¡Algo salió mal!
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-muted-foreground mb-6">
                 Lo sentimos, ocurrió un error inesperado. El error ha sido registrado y lo investigaremos.
               </p>
 
               {/* Detalles del error (solo en desarrollo) */}
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="mb-6 text-left">
-                  <summary className="cursor-pointer text-sm font-medium text-gray-700 mb-2">
+                  <summary className="cursor-pointer text-sm font-medium text-foreground mb-2">
                     Detalles técnicos del error
                   </summary>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 overflow-auto max-h-60">
+                  <div className="bg-muted p-4 rounded-lg border border-border overflow-auto max-h-60">
                     <p className="text-sm text-danger-600 font-mono mb-2">
                       {this.state.error.toString()}
                     </p>
                     {this.state.errorInfo && (
-                      <pre className="text-xs text-gray-600 whitespace-pre-wrap">
+                      <pre className="text-xs text-muted-foreground whitespace-pre-wrap">
                         {this.state.errorInfo.componentStack}
                       </pre>
                     )}
@@ -113,7 +113,7 @@ class ErrorBoundary extends React.Component {
             </div>
 
             {/* Información adicional */}
-            <div className="mt-6 text-center text-sm text-gray-500">
+            <div className="mt-6 text-center text-sm text-muted-foreground">
               Si el problema persiste, contacta al soporte técnico.
             </div>
           </div>

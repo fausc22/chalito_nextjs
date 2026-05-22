@@ -106,7 +106,7 @@ export const ArticulosTable = ({
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-16">
           <Utensils className="h-16 w-16 text-muted-foreground mb-4" />
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">
+          <h3 className="text-xl font-semibold text-foreground mb-2">
             No se encontraron artículos
           </h3>
           <p className="text-muted-foreground">
@@ -127,7 +127,7 @@ export const ArticulosTable = ({
       case 'OTRO':
         return 'bg-purple-200 text-purple-900 border-purple-300 pointer-events-none';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200 pointer-events-none';
+        return 'bg-gray-100 text-foreground border-border pointer-events-none';
     }
   };
 
@@ -141,26 +141,26 @@ export const ArticulosTable = ({
     <div ref={tableRef}>
       {/* Vista Desktop - Tabla: sin scroll horizontal; columnas proporcionales al 100% del ancho */}
       <div className="hidden lg:block mb-8 min-w-0 overflow-x-hidden">
-        <Table className="w-full max-w-full table-fixed bg-white rounded-lg shadow-sm">
-          <TableHeader className="bg-slate-50">
+        <Table className="w-full max-w-full table-fixed bg-card rounded-lg shadow-sm">
+          <TableHeader className="bg-muted">
             <TableRow>
-              <TableHead className="w-[8%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-l-2 border-r-2 border-b-2 border-gray-200 py-4">Imagen</TableHead>
-              <TableHead className="w-[14%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Nombre</TableHead>
-              <TableHead className="w-[18%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Descripción</TableHead>
-              <TableHead className="w-[10%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Categoría</TableHead>
-              <TableHead className="w-[9%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Tipo</TableHead>
-              <TableHead className="w-[9%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Precio</TableHead>
-              <TableHead className="w-[7%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Stock</TableHead>
-              <TableHead className="w-[8%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Estado</TableHead>
-              <TableHead className="w-[17%] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-4">Acciones</TableHead>
+              <TableHead className="w-[8%] text-center text-sm font-bold text-foreground uppercase tracking-wider border-l-2 border-r-2 border-b-2 border-border py-4">Imagen</TableHead>
+              <TableHead className="w-[14%] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-4">Nombre</TableHead>
+              <TableHead className="w-[18%] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-4">Descripción</TableHead>
+              <TableHead className="w-[10%] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-4">Categoría</TableHead>
+              <TableHead className="w-[9%] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-4">Tipo</TableHead>
+              <TableHead className="w-[9%] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-4">Precio</TableHead>
+              <TableHead className="w-[7%] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-4">Stock</TableHead>
+              <TableHead className="w-[8%] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-4">Estado</TableHead>
+              <TableHead className="w-[17%] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-4">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {currentArticulos.map((articulo, index) => (
               <TableRow
                 key={articulo.id}
-                className={`border-b border-gray-200 transition-colors hover:bg-blue-50 ${
-                  index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                className={`border-b border-border transition-colors hover:bg-accent ${
+                  index % 2 === 0 ? 'bg-card' : 'bg-muted'
                 }`}
               >
                 {/* Imagen: contenido en la celda para no invadir NOMBRE */}
@@ -203,7 +203,7 @@ export const ArticulosTable = ({
 
                 {/* Precio */}
                 <TableCell className="text-right py-1 px-2 min-w-0">
-                  <span className="font-semibold text-slate-900">
+                  <span className="font-semibold text-foreground">
                     ${articulo.precio}
                   </span>
                 </TableCell>
@@ -213,7 +213,7 @@ export const ArticulosTable = ({
                   {isArticuloConControlStock(articulo) ? (
                     <span className="font-medium">{articulo.stock_actual || 0}</span>
                   ) : (
-                    <span className="text-sm font-medium text-slate-500">No aplica</span>
+                    <span className="text-sm font-medium text-muted-foreground">No aplica</span>
                   )}
                 </TableCell>
 
@@ -233,7 +233,7 @@ export const ArticulosTable = ({
                         size="icon"
                         onClick={() => onVerCostos(articulo)}
                         title="Ver costos"
-                        className="hover:scale-110 hover:bg-emerald-50 hover:border-emerald-300 transition-all text-emerald-700"
+                        className="hover:scale-110 hover:bg-emerald-500/10 hover:border-emerald-300 transition-all text-emerald-700"
                       >
                         <Calculator className="h-4 w-4" />
                       </Button>
@@ -243,7 +243,7 @@ export const ArticulosTable = ({
                       size="icon"
                       onClick={() => onEditar(articulo)}
                       title="Editar"
-                      className="hover:scale-110 hover:bg-blue-50 hover:border-blue-300 transition-all"
+                      className="hover:scale-110 hover:bg-accent hover:border-blue-300 transition-all"
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -252,7 +252,7 @@ export const ArticulosTable = ({
                       size="icon"
                       onClick={() => onEliminar(articulo)}
                       title="Eliminar"
-                      className="text-destructive hover:bg-red-50 hover:border-red-300 hover:scale-110 transition-all"
+                      className="text-destructive hover:bg-destructive/10 hover:border-red-300 hover:scale-110 transition-all"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -368,7 +368,7 @@ function ArticuloMobileCard({
   const [imageError, setImageError] = React.useState(false);
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 flex flex-col h-full rounded-t-xl rounded-b-none overflow-hidden border border-slate-200 hover:border-slate-400">
+    <Card className="group hover:shadow-lg transition-all duration-300 flex flex-col h-full rounded-t-xl rounded-b-none overflow-hidden border border-border hover:border-slate-400">
       {/* 🖼️ IMAGEN - Aspect Ratio 16:9, max 180px */}
       <div className="relative w-full aspect-video max-h-[160px] md:max-h-[180px] bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 overflow-hidden">
         {articulo.imagen_url && !imageError ? (
@@ -383,7 +383,7 @@ function ArticuloMobileCard({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Utensils className="h-10 w-10 md:h-12 md:w-12 text-slate-400" strokeWidth={1.5} />
+            <Utensils className="h-10 w-10 md:h-12 md:w-12 text-muted-foreground" strokeWidth={1.5} />
           </div>
         )}
       </div>
@@ -418,10 +418,10 @@ function ArticuloMobileCard({
           <Badge 
             className={`text-[10px] md:text-xs ${
               isArticuloConControlStock(articulo) && isStockBajoArticulo(articulo)
-                ? 'bg-red-50 text-red-700 border-red-300'
+                ? 'bg-destructive/10 text-red-700 border-red-300'
                 : isArticuloConControlStock(articulo)
-                  ? 'bg-green-50 text-green-700 border-green-300 hidden md:inline-flex'
-                  : 'bg-slate-100 text-slate-700 border-slate-300'
+                  ? 'bg-emerald-500/100/10 text-green-700 border-green-300 hidden md:inline-flex'
+                  : 'bg-muted text-foreground border-border'
             }`}
           >
             {isArticuloConControlStock(articulo)
@@ -452,7 +452,7 @@ function ArticuloMobileCard({
               size="icon"
               onClick={() => onVerCostos(articulo)}
               title="Ver costos"
-              className="h-10 w-10 shrink-0 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 border-2"
+              className="h-10 w-10 shrink-0 text-emerald-700 hover:bg-emerald-500/10 hover:border-emerald-400 border-2"
             >
               <Calculator className="h-4 w-4" strokeWidth={2} />
             </Button>
@@ -461,7 +461,7 @@ function ArticuloMobileCard({
             variant="outline"
             size="sm"
             onClick={() => onEditar(articulo)}
-            className="flex-1 h-10 md:h-11 text-xs md:text-sm font-medium rounded-lg border-2 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-98"
+            className="flex-1 h-10 md:h-11 text-xs md:text-sm font-medium rounded-lg border-2 hover:bg-muted hover:border-slate-400 transition-all active:scale-98"
           >
             <Pencil className="h-4 w-4 mr-1.5" strokeWidth={2} />
             Editar
@@ -470,7 +470,7 @@ function ArticuloMobileCard({
             variant="outline"
             size="sm"
             onClick={() => onEliminar(articulo)}
-            className="flex-1 h-10 md:h-11 text-xs md:text-sm font-medium text-red-600 hover:bg-red-50 hover:border-red-400 hover:text-red-700 border-2 rounded-lg transition-all active:scale-98"
+            className="flex-1 h-10 md:h-11 text-xs md:text-sm font-medium text-red-600 hover:bg-destructive/10 hover:border-red-400 hover:text-red-700 border-2 rounded-lg transition-all active:scale-98"
           >
             <Trash2 className="h-4 w-4 mr-1.5" strokeWidth={2} />
             Eliminar

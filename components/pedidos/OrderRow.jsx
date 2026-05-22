@@ -14,6 +14,7 @@ function OrderRowComponent({
   onListo,
   onEntregar,
   onEditar,
+  onCambiarHorario,
   onCancelar,
   onCobrar,
   onImprimir,
@@ -100,27 +101,27 @@ function OrderRowComponent({
       style={style}
       data-pedido-id={pedido.id}
       className={`
-        group relative bg-white rounded-lg overflow-hidden
+        group relative bg-card rounded-lg overflow-hidden
         hover:shadow-md transition-all mb-3 flex flex-col
-        ${showHighlight ? 'bg-amber-100 border-amber-500 ring-1 ring-amber-300 animate-breathe' : 'border border-slate-300'}
+        ${showHighlight ? 'bg-amber-100 border-amber-500 ring-1 ring-amber-300 animate-breathe' : 'border border-border'}
         ${isDragging ? 'select-none' : ''}
         w-full min-h-[100px]
       `}
     >
       {isPendingUpdate && (
         <div
-          className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-white/75 backdrop-blur-[1px]"
+          className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-card/75 backdrop-blur-[1px]"
           aria-busy="true"
           aria-live="polite"
         >
-          <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
-            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-slate-600" />
+          <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground shadow-sm">
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
             <span>Procesando…</span>
           </div>
         </div>
       )}
       {/* Header Superior: Fondo oscuro igual a las cards */}
-      <div className="bg-slate-200 pb-2 pt-3 px-3 flex-shrink-0">
+      <div className="bg-accent pb-2 pt-3 px-3 flex-shrink-0">
         <div className="flex flex-wrap items-center justify-between gap-2">
           {/* Lado izquierdo: Drag Handle, ID, Origen, Cliente, Badge Retiro/Delivery */}
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -131,16 +132,16 @@ function OrderRowComponent({
                 className="cursor-grab active:cursor-grabbing touch-none flex-shrink-0"
               >
                 <div
-                  className="flex items-center justify-center w-6 h-6 rounded-md border border-slate-300/70 bg-white/80 
+                  className="flex items-center justify-center w-6 h-6 rounded-md border border-border/70 bg-card/80 
                              shadow-[0_0_0_1px_rgba(148,163,184,0.25)]
-                             group-hover:border-slate-400 group-hover:bg-slate-50
+                             group-hover:border-slate-400 group-hover:bg-muted
                              transition-colors"
                   title="Arrastrar para adelantar a preparación"
                 >
                   <div className="flex flex-col gap-[2px]">
-                    <div className="w-0.5 h-0.5 bg-slate-500 rounded-full" />
-                    <div className="w-0.5 h-0.5 bg-slate-500 rounded-full" />
-                    <div className="w-0.5 h-0.5 bg-slate-500 rounded-full" />
+                    <div className="w-0.5 h-0.5 bg-muted0 rounded-full" />
+                    <div className="w-0.5 h-0.5 bg-muted0 rounded-full" />
+                    <div className="w-0.5 h-0.5 bg-muted0 rounded-full" />
                   </div>
                 </div>
               </div>
@@ -148,7 +149,7 @@ function OrderRowComponent({
             
             <div className="flex flex-col flex-shrink-0 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="text-xs font-bold text-slate-900">#{pedido.id}</span>
+                <span className="text-xs font-bold text-foreground">#{pedido.id}</span>
                 {pedido.tipoEntrega === 'delivery' && (
                   <Badge
                     variant="outline"
@@ -171,19 +172,19 @@ function OrderRowComponent({
                     className={`text-[10px] px-1.5 py-0.5 font-semibold whitespace-nowrap flex-shrink-0 ${
                       origenLabel === 'WEB'
                         ? 'bg-sky-100 text-sky-800 border-sky-300'
-                        : 'bg-slate-100 text-slate-800 border-slate-300'
+                        : 'bg-muted text-foreground border-border'
                     }`}
                   >
                     {origenLabel}
                   </Badge>
                 )}
                 {isActualizadoRecientemente && (
-                  <Badge className="bg-yellow-500 text-white text-[10px] px-1.5 py-0.5 font-semibold animate-pulse whitespace-nowrap flex-shrink-0">
+                  <Badge className="bg-amber-500/100 text-white text-[10px] px-1.5 py-0.5 font-semibold animate-pulse whitespace-nowrap flex-shrink-0">
                     Actualizado
                   </Badge>
                 )}
               </div>
-              <p className="text-xs font-bold text-slate-900 truncate max-w-[200px]">
+              <p className="text-xs font-bold text-foreground truncate max-w-[200px]">
                 {pedido.clienteNombre}
               </p>
             </div>
@@ -197,7 +198,7 @@ function OrderRowComponent({
                 ✓ PAGADO
               </Badge>
             ) : isMercadoPagoPendiente ? (
-              <Badge className="bg-amber-500 text-white font-semibold text-xs px-2 py-0.5 pointer-events-none whitespace-nowrap">
+              <Badge className="bg-amber-500/100 text-white font-semibold text-xs px-2 py-0.5 pointer-events-none whitespace-nowrap">
                 PENDIENTE MP
               </Badge>
             ) : (
@@ -214,19 +215,19 @@ function OrderRowComponent({
                   px-2.5 py-1 rounded-md border text-xs leading-tight
                   ${
                     isPendingUpdate
-                      ? 'border-slate-200 bg-slate-100 text-slate-500'
+                      ? 'border-border bg-muted text-muted-foreground'
                       : estadoTemporal.isLate
-                        ? 'bg-red-50 border-red-300 text-red-700'
+                        ? 'bg-destructive/10 border-red-300 text-red-700'
                         : (estadoTemporal.isNearLimit || estadoTemporal.isNearScheduled)
-                          ? 'bg-amber-50 border-amber-300 text-amber-700'
-                          : 'bg-slate-50 border-slate-300 text-slate-700'
+                          ? 'bg-amber-500/10 border-amber-300 text-amber-700'
+                          : 'bg-muted border-border text-foreground'
                   }
                 `}
               >
                 {isPendingUpdate ? (
                   <>
-                    <span className="h-3 w-14 animate-pulse rounded bg-slate-200" />
-                    <span className="mt-1 h-3 w-10 animate-pulse rounded bg-slate-200" />
+                    <span className="h-3 w-14 animate-pulse rounded bg-accent" />
+                    <span className="mt-1 h-3 w-10 animate-pulse rounded bg-accent" />
                   </>
                 ) : (
                   <>
@@ -260,17 +261,17 @@ function OrderRowComponent({
         )}
         {isMercadoPagoPendiente && (
           <p className="mt-2 pl-6 text-[11px] font-semibold text-amber-700">
-            Esperando pago Mercado Pago
+            Esperando pago Mercado Pago (web) o usá COBRAR si cobraste con Postnet
           </p>
         )}
       </div>
 
       {/* Cuerpo Inferior: Items y Acciones - Fondo blanco */}
-      <div className="pt-2 px-3 pb-3 flex flex-col flex-grow bg-white">
+      <div className="pt-2 px-3 pb-3 flex flex-col flex-grow bg-card">
         <div className="flex flex-col lg:flex-row lg:items-end gap-3">
           {/* Items del pedido */}
-          <div className="bg-white rounded p-2 border border-slate-200 flex-1 min-w-0 lg:max-w-[70%]">
-            <div className="text-slate-900">
+          <div className="bg-card rounded p-2 border border-border flex-1 min-w-0 lg:max-w-[70%]">
+            <div className="text-foreground">
               {pedido.items.slice(0, 3).map((item, idx) => (
                 <div key={idx} className="truncate" title={`${item.cantidad}x ${item.nombre}`}>
                   <span className="text-xs font-bold">{item.cantidad}x</span>{' '}
@@ -278,7 +279,7 @@ function OrderRowComponent({
                 </div>
               ))}
               {pedido.items.length > 3 && (
-                <div className="text-xs text-slate-500 font-medium">
+                <div className="text-xs text-muted-foreground font-medium">
                   +{pedido.items.length - 3} más...
                 </div>
               )}
@@ -293,6 +294,7 @@ function OrderRowComponent({
               onListo={onListo}
               onEntregar={onEntregar}
               onEditar={onEditar}
+              onCambiarHorario={onCambiarHorario}
               onCancelar={onCancelar}
               onCobrar={onCobrar}
               onImprimir={onImprimir}
@@ -336,9 +338,9 @@ export function OrderRowGhost({ pedido }) {
   })();
 
   return (
-    <div className="bg-white border-2 border-blue-400 rounded-lg overflow-hidden shadow-lg flex flex-col pointer-events-none select-none w-full min-h-[100px]">
+    <div className="bg-card border-2 border-blue-400 rounded-lg overflow-hidden shadow-lg flex flex-col pointer-events-none select-none w-full min-h-[100px]">
       {/* Header Superior: Fondo oscuro igual a las cards */}
-      <div className="bg-slate-200 pb-2 pt-3 px-3 flex-shrink-0">
+      <div className="bg-accent pb-2 pt-3 px-3 flex-shrink-0">
         <div className="flex items-center justify-between gap-2">
           {/* Lado izquierdo: Drag Handle, ID, Origen, Cliente, Badge Retiro/Delivery */}
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -353,7 +355,7 @@ export function OrderRowGhost({ pedido }) {
             
             <div className="flex flex-col flex-shrink-0 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="text-xs font-bold text-slate-900">#{pedido.id}</span>
+                <span className="text-xs font-bold text-foreground">#{pedido.id}</span>
                 {pedido.tipoEntrega === 'delivery' && (
                   <Badge
                     variant="outline"
@@ -376,14 +378,14 @@ export function OrderRowGhost({ pedido }) {
                     className={`text-[10px] px-1.5 py-0.5 font-semibold whitespace-nowrap flex-shrink-0 ${
                       origenLabel === 'WEB'
                         ? 'bg-sky-100 text-sky-800 border-sky-300'
-                        : 'bg-slate-100 text-slate-800 border-slate-300'
+                        : 'bg-muted text-foreground border-border'
                     }`}
                   >
                     {origenLabel}
                   </Badge>
                 )}
               </div>
-              <p className="text-xs font-bold text-slate-900 truncate max-w-[200px]">
+              <p className="text-xs font-bold text-foreground truncate max-w-[200px]">
                 {pedido.clienteNombre}
               </p>
             </div>
@@ -409,7 +411,7 @@ export function OrderRowGhost({ pedido }) {
                 ? 'bg-red-200 border-2 border-red-500 animate-pulse' 
                 : estadoTemporal.isNearLimit 
                   ? 'bg-yellow-200 border-2 border-yellow-500'
-                  : 'bg-slate-200 border border-slate-400'}
+                  : 'bg-accent border border-slate-400'}
             `}>
               <div>
                 <p className={`text-[10px] font-medium ${
@@ -417,7 +419,7 @@ export function OrderRowGhost({ pedido }) {
                     ? 'text-red-700' 
                     : estadoTemporal.isNearLimit 
                       ? 'text-yellow-700'
-                      : 'text-slate-700'
+                      : 'text-foreground'
                 }`}>
                   {estadoTemporal.subLabel}
                 </p>
@@ -426,7 +428,7 @@ export function OrderRowGhost({ pedido }) {
                     ? 'text-red-900' 
                     : estadoTemporal.isNearLimit 
                       ? 'text-yellow-900'
-                      : 'text-slate-900'
+                      : 'text-foreground'
                 }`}>
                   {estadoTemporal.isLate || pedido.estado === 'en_cocina' 
                     ? estadoTemporal.label.replace(/^(En prep\.|Atrasado)\s/, '')
@@ -439,11 +441,11 @@ export function OrderRowGhost({ pedido }) {
       </div>
 
       {/* Cuerpo Inferior: Items y Acciones - Fondo blanco */}
-      <div className="pt-2 px-3 pb-3 flex flex-col flex-grow bg-white">
+      <div className="pt-2 px-3 pb-3 flex flex-col flex-grow bg-card">
         <div className="flex flex-col lg:flex-row lg:items-end gap-3">
           {/* Items del pedido */}
-          <div className="bg-white rounded p-2 border border-slate-200 flex-1 min-w-0 md:max-w-[70%]">
-            <div className="text-slate-800">
+          <div className="bg-card rounded p-2 border border-border flex-1 min-w-0 md:max-w-[70%]">
+            <div className="text-foreground">
               {pedido.items.slice(0, 3).map((item, idx) => (
                 <div key={idx} className="truncate" title={`${item.cantidad}x ${item.nombre}`}>
                   <span className="text-xs font-bold">{item.cantidad}x</span>{' '}
@@ -451,7 +453,7 @@ export function OrderRowGhost({ pedido }) {
                 </div>
               ))}
               {pedido.items.length > 3 && (
-                <div className="text-xs text-slate-500 font-medium">
+                <div className="text-xs text-muted-foreground font-medium">
                   +{pedido.items.length - 3} más...
                 </div>
               )}

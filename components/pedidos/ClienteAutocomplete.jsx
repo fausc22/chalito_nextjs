@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, Search, Phone } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ export function ClienteAutocomplete({
   placeholder = 'Nombre del cliente',
 }) {
   const [open, setOpen] = useState(false);
+  const blurTimeoutRef = useRef(null);
   const {
     query,
     setQuery,
@@ -20,14 +21,43 @@ export function ClienteAutocomplete({
     error,
   } = useClienteAutocomplete({ debounceMs: 300 });
 
+  useEffect(() => {
+    setQuery(value ?? '');
+  }, [value, setQuery]);
+
+  useEffect(() => {
+    return () => {
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const trimmedQuery = (value ?? query ?? '').trim();
+  const showNoMatchHint =
+    trimmedQuery.length >= 2 && !isLoading && !error && items.length === 0;
+
   const shouldShowList = useMemo(
-    () => open && (isLoading || error || items.length > 0 || query.trim().length >= 2),
-    [open, isLoading, error, items.length, query]
+    () => open && (isLoading || Boolean(error) || items.length > 0),
+    [open, isLoading, error, items.length]
   );
 
   const handleChange = (nextValue) => {
     onInputChange?.(nextValue);
     setQuery(nextValue);
+    setOpen(true);
+  };
+
+  const handleBlur = () => {
+    blurTimeoutRef.current = setTimeout(() => {
+      setOpen(false);
+    }, 150);
+  };
+
+  const handleFocus = () => {
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current);
+    }
     setOpen(true);
   };
 
@@ -38,14 +68,19 @@ export function ClienteAutocomplete({
         <Input
           value={value}
           onChange={(e) => handleChange(e.target.value)}
-          onFocus={() => setOpen(true)}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           placeholder={placeholder}
           className="pl-9"
         />
       </div>
 
+      {showNoMatchHint ? (
+        <p className="text-xs text-muted-foreground">No hay coincidencias para la búsqueda.</p>
+      ) : null}
+
       {shouldShowList && (
-        <div className="absolute z-50 mt-1 max-h-72 w-full overflow-auto rounded-md border bg-white p-2 shadow-lg">
+        <div className="absolute z-50 mt-1 max-h-72 w-full overflow-auto rounded-md border bg-card p-2 shadow-lg">
           {isLoading ? (
             <div className="flex items-center gap-2 p-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -57,12 +92,6 @@ export function ClienteAutocomplete({
             <p className="p-2 text-sm text-red-600">{error}</p>
           ) : null}
 
-          {!isLoading && !error && items.length === 0 ? (
-            <p className="p-2 text-sm text-muted-foreground">
-              No hay coincidencias para la búsqueda.
-            </p>
-          ) : null}
-
           {!isLoading && !error && items.length > 0 ? (
             <div className="space-y-1">
               {items.map((cliente) => (
@@ -71,6 +100,7 @@ export function ClienteAutocomplete({
                   type="button"
                   variant="ghost"
                   className="h-auto w-full justify-start px-2 py-2"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     onSelectCliente?.(cliente);
                     onInputChange?.(cliente.nombre || '');

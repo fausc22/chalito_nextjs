@@ -14,7 +14,7 @@ export function LocalPagination({
 
   return (
     <div
-      className={`mt-4 flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 ${className}`}
+      className={`mt-4 flex items-center justify-between gap-3 rounded-lg border border-border bg-muted px-3 py-2 ${className}`}
     >
       <Button
         type="button"
@@ -25,7 +25,7 @@ export function LocalPagination({
       >
         Anterior
       </Button>
-      <p className="text-sm font-medium text-slate-700">
+      <p className="text-sm font-medium text-foreground">
         Página {page} de {totalPages}
       </p>
       <Button

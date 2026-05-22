@@ -9,52 +9,7 @@ import { formatDireccionEntrega, parseClienteDireccion } from '../../lib/formatt
 import { getItemExtras } from '../../lib/extrasUtils';
 import { calculateCartSubtotal } from '../../lib/pedidoTotals';
 import { setFieldError, zodIssuesToErrors } from '@/lib/form-errors';
-
-// Esquema de validación para el cliente (mismo que useNuevoPedido)
-const clienteSchema = z.object({
-  nombre: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(100, 'El nombre es demasiado largo'),
-  telefono: z.string().min(1, 'El teléfono es requerido').max(20, 'El teléfono es demasiado largo'),
-  email: z.preprocess(
-    (val) => {
-      if (!val || (typeof val === 'string' && val.trim() === '')) {
-        return undefined;
-      }
-      return val;
-    },
-    z.string().email('Email inválido').optional()
-  ),
-  direccion: z.object({
-    calle: z.string().optional(),
-    numero: z.string().optional(),
-    edificio: z.string().optional(),
-    piso: z.string().optional(),
-    observaciones: z.string().optional(),
-  }).optional(),
-});
-
-// Esquema de validación para el carrito
-const carritoSchema = z.array(
-  z.object({
-    id: z.number().or(z.string()),
-    nombre: z.string(),
-    precio: z.number().min(0),
-    cantidad: z.number().int().min(1),
-    extrasSeleccionados: z.array(z.any()).optional(),
-    observacion: z.string().optional().nullable(),
-  })
-).min(1, 'Debe agregar al menos un producto al carrito');
-
-// Esquema de validación para el pedido completo
-const pedidoSchema = z.object({
-  cliente: clienteSchema,
-  carrito: carritoSchema,
-  tipoEntrega: z.enum(['delivery', 'retiro']),
-  origen: z.string().min(1),
-  tipoPedido: z.string().min(1),
-  horaProgramada: z.string().optional().nullable(),
-  medioPago: z.string().optional(),
-  estadoPago: z.string(),
-});
+import { clienteSchema, carritoSchema, pedidoSchema } from './pedidoFormSchemas';
 
 // Normalización para comparar nombres de categorías (ignora tildes y mayúsculas/minúsculas)
 const normalizarCategoria = (value) =>
@@ -230,6 +185,7 @@ export const useEditarPedido = () => {
 
   // Cargar datos del pedido cuando se abre el modal
   const cargarPedido = useCallback(async (pedidoId) => {
+    setFieldErrors({});
     setLoadingPedido(true);
     try {
       const response = await pedidosService.obtenerPedidoPorId(pedidoId);

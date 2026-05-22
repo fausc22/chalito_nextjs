@@ -44,7 +44,7 @@ export const IngredientesForm = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0 pb-2">
-          <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
             <Carrot className="h-5 w-5" />
             {isEditing ? 'Editar Ingrediente' : 'Crear Nuevo Ingrediente'}
           </DialogTitle>
@@ -135,7 +135,7 @@ export const IngredientesForm = ({
 
           {/* Checkbox disponible */}
           {isEditing && (formulario.disponible === 0 || formulario.disponible === false) ? (
-            <div className="flex items-center gap-3 p-4 bg-amber-50 border-2 border-amber-500 rounded-lg cursor-pointer hover:bg-amber-100 transition-colors">
+            <div className="flex items-center gap-3 p-4 bg-amber-500/10 border-2 border-amber-500 rounded-lg cursor-pointer hover:bg-amber-100 transition-colors">
               <Checkbox
                 id="disponible"
                 checked={formulario.disponible !== 0 && formulario.disponible !== false}
@@ -147,14 +147,14 @@ export const IngredientesForm = ({
               </Label>
             </div>
           ) : (
-            <div className="flex items-center gap-3 p-4 bg-slate-50 border-2 border-slate-300 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+            <div className="flex items-center gap-3 p-4 bg-muted border-2 border-border rounded-lg cursor-pointer hover:bg-muted transition-colors">
               <Checkbox
                 id="disponible"
                 checked={formulario.disponible !== 0 && formulario.disponible !== false}
                 onCheckedChange={(checked) => onFieldChange('disponible', checked ? 1 : 0)}
                 className="w-5 h-5 border-2"
               />
-              <Label htmlFor="disponible" className="cursor-pointer font-medium text-slate-700">
+              <Label htmlFor="disponible" className="cursor-pointer font-medium text-foreground">
                 Disponible para uso
               </Label>
             </div>

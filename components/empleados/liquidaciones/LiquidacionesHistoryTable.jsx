@@ -89,11 +89,11 @@ export function LiquidacionesHistoryTable({
   }, [currentPage, totalPages]);
 
   return (
-    <Card className="border-slate-200 shadow-sm">
+    <Card className="border-border shadow-sm">
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <CardTitle className="text-lg text-slate-800">Liquidaciones guardadas</CardTitle>
-          <p className="mt-1 text-sm text-slate-500">Historial reciente de liquidaciones persistidas.</p>
+          <CardTitle className="text-lg text-foreground">Liquidaciones guardadas</CardTitle>
+          <p className="mt-1 text-sm text-muted-foreground">Historial reciente de liquidaciones persistidas.</p>
         </div>
         <Button type="button" variant="outline" onClick={() => onRefresh()} disabled={loading}>
           {loading ? 'Actualizando...' : 'Actualizar historial'}
@@ -128,10 +128,10 @@ export function LiquidacionesHistoryTable({
               <TableBody>
               {paginatedRows.map((row) => (
                   <TableRow key={row.id}>
-                  <TableCell className="font-medium text-slate-700">{row.empleadoNombre}</TableCell>
+                  <TableCell className="font-medium text-foreground">{row.empleadoNombre}</TableCell>
                   <TableCell>{formatDate(row.fechaDesde)}</TableCell>
                   <TableCell>{formatDate(row.fechaHasta)}</TableCell>
-                    <TableCell className="text-right font-semibold text-slate-700">
+                    <TableCell className="text-right font-semibold text-foreground">
                       {formatMoney(row.totalFinal)}
                     </TableCell>
                   <TableCell>{formatDate(row.createdAt)}</TableCell>
@@ -142,7 +142,7 @@ export function LiquidacionesHistoryTable({
                       variant="outline"
                         onClick={() => onViewDetail(row)}
                         disabled={loadingDetailId === row.id}
-                      className="border-slate-300 text-slate-700 hover:bg-slate-50"
+                      className="border-border text-foreground hover:bg-muted"
                       >
                         {loadingDetailId === row.id ? 'Cargando...' : 'Ver detalle'}
                       </Button>
@@ -154,7 +154,7 @@ export function LiquidacionesHistoryTable({
 
           {totalPages > 1 ? (
             <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 Mostrando {(currentPage - 1) * itemsPerPage + 1}-
                 {Math.min(currentPage * itemsPerPage, rows.length)} de {rows.length} liquidaciones
               </p>

@@ -30,7 +30,7 @@ export function GastosCard({ gasto, onVer, onEditar, onEliminar }) {
         }).format(monto);
     };
 
-    const formaPago = FORMAS_PAGO_LABELS[gasto.forma_pago] || { label: gasto.forma_pago, color: 'bg-gray-100 text-gray-800' };
+    const formaPago = FORMAS_PAGO_LABELS[gasto.forma_pago] || { label: gasto.forma_pago, color: 'bg-gray-100 text-foreground' };
 
     return (
         <Card className="hover:shadow-md transition-shadow border-l-4 border-l-red-500">
@@ -38,7 +38,7 @@ export function GastosCard({ gasto, onVer, onEditar, onEliminar }) {
                 {/* Header */}
                 <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                        <Badge variant="outline" className="bg-destructive/10 text-red-700 border-red-200">
                             {gasto.categoria_nombre}
                         </Badge>
                         <Badge className={formaPago.color}>
@@ -51,12 +51,12 @@ export function GastosCard({ gasto, onVer, onEditar, onEliminar }) {
                 </div>
 
                 {/* Descripción */}
-                <p className="text-slate-700 font-medium mb-3 line-clamp-2">
+                <p className="text-foreground font-medium mb-3 line-clamp-2">
                     {gasto.descripcion}
                 </p>
 
                 {/* Detalles */}
-                <div className="space-y-1 text-sm text-slate-500 mb-4">
+                <div className="space-y-1 text-sm text-muted-foreground mb-4">
                     <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
                         <span>{formatFecha(gasto.fecha)}</span>
@@ -68,7 +68,7 @@ export function GastosCard({ gasto, onVer, onEditar, onEliminar }) {
                         </div>
                     )}
                     {gasto.observaciones && (
-                        <p className="text-xs text-slate-400 mt-2 italic">
+                        <p className="text-xs text-muted-foreground mt-2 italic">
                             {gasto.observaciones}
                         </p>
                     )}

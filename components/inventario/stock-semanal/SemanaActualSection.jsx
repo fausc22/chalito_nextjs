@@ -82,19 +82,19 @@ function ProgressRow({ label, value, total }) {
   const percentage = total > 0 ? (value / total) * 100 : 0;
   const safePercentage = Math.max(0, Math.min(100, percentage));
 
-  let barColorClass = 'bg-blue-500';
+  let barColorClass = 'bg-primary/100';
   if (label === 'Stock final cargado') {
-    barColorClass = 'bg-blue-500';
+    barColorClass = 'bg-primary/100';
   }
   if (label === 'Completos para cierre') {
-    barColorClass = total > 0 && value === total ? 'bg-green-500' : 'bg-slate-400';
+    barColorClass = total > 0 && value === total ? 'bg-emerald-500/100/100' : 'bg-slate-400';
   }
 
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-3 text-sm">
         <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium text-slate-800">
+        <span className="font-medium text-foreground">
           {value} / {total}
         </span>
       </div>
@@ -317,7 +317,7 @@ export function SemanaActualSection({
   if (primeraCarga && loadingSemanaAbierta) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-3">
-        <Loader2 className="h-10 w-10 animate-spin text-[#315e92]" />
+        <Loader2 className="h-10 w-10 animate-spin text-blue-700" />
         <p className="text-muted-foreground text-sm">Cargando semana actual...</p>
       </div>
     );
@@ -327,11 +327,11 @@ export function SemanaActualSection({
     <div className="space-y-6 relative">
       {loadingSemanaAbierta && !primeraCarga ? (
         <div
-          className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/70 backdrop-blur-[1px]"
+          className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-card/70 backdrop-blur-[1px]"
           aria-busy="true"
         >
-          <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 shadow-sm text-sm text-slate-700">
-            <Loader2 className="h-4 w-4 animate-spin text-[#315e92]" />
+          <div className="flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 shadow-sm text-sm text-foreground">
+            <Loader2 className="h-4 w-4 animate-spin text-blue-700" />
             Actualizando...
           </div>
         </div>
@@ -352,9 +352,9 @@ export function SemanaActualSection({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
         <div className="space-y-1 text-center sm:text-left">
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-            <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">Semana actual</h3>
+            <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Semana actual</h3>
             {haySemanaActiva ? (
-              <Badge variant="outline" className="text-slate-800 border-slate-300">
+              <Badge variant="outline" className="text-foreground border-border">
                 Abierta
               </Badge>
             ) : null}
@@ -393,14 +393,14 @@ export function SemanaActualSection({
       </div>
 
       {!haySemanaActiva && !errorSemanaAbierta ? (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/40 p-10 text-center space-y-3">
-          <p className="text-base font-semibold text-slate-900">No hay una semana activa en este momento.</p>
+        <div className="rounded-xl border border-dashed border-border bg-muted/40 p-10 text-center space-y-3">
+          <p className="text-base font-semibold text-foreground">No hay una semana activa en este momento.</p>
           <p className="text-sm text-muted-foreground">Creá una nueva semana para comenzar a cargar stock.</p>
           <Button
             type="button"
             size="sm"
             variant="ghost"
-            className="gap-1 text-slate-700"
+            className="gap-1 text-foreground"
             onClick={() => {
               if (onIrHistorico) {
                 onIrHistorico();
@@ -420,18 +420,18 @@ export function SemanaActualSection({
       {haySemanaActiva ? (
         <div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
-            <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3">
+            <div className="rounded-lg border border-border bg-muted/60 px-4 py-3">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Período</p>
-              <p className="text-sm font-medium text-slate-900 mt-1">
+              <p className="text-sm font-medium text-foreground mt-1">
                 {formatDateShort(semanaAbierta.fecha_inicio)} - {formatDateShort(semanaAbierta.fecha_fin)}
               </p>
               <p className="text-xs uppercase tracking-wide text-muted-foreground mt-3">Observaciones</p>
-              <p className="text-sm text-slate-800 mt-1 line-clamp-3">
+              <p className="text-sm text-foreground mt-1 line-clamp-3">
                 {semanaAbierta.observaciones?.trim() ? semanaAbierta.observaciones : 'Sin observaciones'}
               </p>
             </div>
 
-            <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3">
+            <div className="rounded-lg border border-border bg-muted/60 px-4 py-3">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Estado de carga</p>
               <div className="mt-2 space-y-3">
                 <ProgressRow label="Stock inicial cargado" value={detallesConInicial} total={detalles.length} />
@@ -511,12 +511,12 @@ export function SemanaActualSection({
               <div className="space-y-3 text-sm text-muted-foreground">
                 <p>
                   Vas a cerrar la semana del{' '}
-                  <strong className="text-slate-900">{formatDateShort(semanaAbierta?.fecha_inicio)}</strong> al{' '}
-                  <strong className="text-slate-900">{formatDateShort(semanaAbierta?.fecha_fin)}</strong>.
+                  <strong className="text-foreground">{formatDateShort(semanaAbierta?.fecha_inicio)}</strong> al{' '}
+                  <strong className="text-foreground">{formatDateShort(semanaAbierta?.fecha_fin)}</strong>.
                 </p>
                 <p>
-                  Quedará en estado <strong className="text-slate-900">Cerrada</strong>, dejará de poder editarse el
-                  stock inicial y final, y pasará al <strong className="text-slate-900">histórico</strong> de semanas.
+                  Quedará en estado <strong className="text-foreground">Cerrada</strong>, dejará de poder editarse el
+                  stock inicial y final, y pasará al <strong className="text-foreground">histórico</strong> de semanas.
                 </p>
               </div>
             </AlertDialogDescription>

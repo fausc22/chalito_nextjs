@@ -35,19 +35,19 @@ function VentasContent() {
 
     return (
         <Layout title="Ventas">
-            <main className="main-content">
+            <div className="main-content">
                 {/* Header */}
-                <div className="mb-8 pb-6 border-b-2 border-slate-200">
-                    <h1 className="text-[2rem] font-semibold text-[#315e92] mb-2 flex items-center gap-2">
+                <div className="mb-8 pb-6 border-b-2 border-border">
+                    <h1 className="text-[2rem] font-semibold admin-page-heading mb-2 flex items-center gap-2">
                         💳 Módulo de Ventas
                     </h1>
-                    <p className="text-slate-500 text-base">
+                    <p className="text-muted-foreground text-base">
                         Consultá el historial de ventas y gestioná los ingresos del negocio
                     </p>
                 </div>
 
                 {/* Contenido principal */}
-                <div className="bg-white rounded-xl p-8 shadow-sm border border-slate-200 min-h-[400px]">
+                <div className="bg-card rounded-xl p-8 shadow-sm border border-border min-h-[400px]">
                     <VentasTab
                         ventas={ventas}
                         loadingVentas={loadingVentas}
@@ -63,7 +63,7 @@ function VentasContent() {
                         onLimpiarVentaDetalle={limpiarVentaDetalle}
                     />
                 </div>
-            </main>
+            </div>
         </Layout>
     );
 }
@@ -71,7 +71,7 @@ function VentasContent() {
 export default function VentasPage() {
     return (
         <ErrorBoundary>
-            <ProtectedRoute>
+            <ProtectedRoute module="ventas">
                 <VentasContent />
             </ProtectedRoute>
         </ErrorBoundary>

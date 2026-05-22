@@ -83,7 +83,7 @@ export function ModalSeleccionarArticulo({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader className="flex-shrink-0 pb-2">
-          <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
             <Package className="h-5 w-5" />
             Seleccionar Artículo Elaborado
           </DialogTitle>
@@ -132,7 +132,7 @@ export function ModalSeleccionarArticulo({
                 <Card
                   key={articulo.id}
                   className={`cursor-pointer transition-all hover:shadow-md ${
-                    estaSeleccionado ? 'border-blue-500 bg-blue-50' : 'border-slate-200'
+                    estaSeleccionado ? 'border-blue-500 bg-primary/10' : 'border-border'
                   }`}
                   onClick={() => handleSeleccionarArticulo(articulo)}
                 >

@@ -80,13 +80,13 @@ export function LiquidacionMovimientosTable({ rows }) {
   }, [currentPage, totalPages]);
 
   return (
-    <Card className="border-slate-200 shadow-sm">
+    <Card className="border-border shadow-sm">
       <CardHeader className="pb-4">
-        <CardTitle className="text-lg text-slate-800">Detalle de movimientos</CardTitle>
+        <CardTitle className="text-lg text-foreground">Detalle de movimientos</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         {rows.length === 0 ? (
-          <div className="px-6 pb-6 text-sm text-slate-500">
+          <div className="px-6 pb-6 text-sm text-muted-foreground">
             No se registran movimientos para el período filtrado.
           </div>
         ) : (
@@ -103,13 +103,13 @@ export function LiquidacionMovimientosTable({ rows }) {
               <TableBody>
                 {paginatedRows.map((row) => (
                   <TableRow key={row.id}>
-                    <TableCell className="font-medium text-slate-700">{formatDate(row.fecha)}</TableCell>
+                    <TableCell className="font-medium text-foreground">{formatDate(row.fecha)}</TableCell>
                     <TableCell>
-                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         {row.tipo || '-'}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right font-semibold text-slate-700">
+                    <TableCell className="text-right font-semibold text-foreground">
                       {formatMoney(row.monto)}
                     </TableCell>
                     <TableCell className="max-w-[380px] truncate">{row.descripcion || '-'}</TableCell>
@@ -122,7 +122,7 @@ export function LiquidacionMovimientosTable({ rows }) {
 
         {rows.length > 0 && totalPages > 1 ? (
           <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               Mostrando {(currentPage - 1) * itemsPerPage + 1}-
               {Math.min(currentPage * itemsPerPage, rows.length)} de {rows.length} movimientos
             </p>

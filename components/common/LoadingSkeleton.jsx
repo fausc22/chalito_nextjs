@@ -56,7 +56,7 @@ export function TableSkeleton({ rows = 5, cols = 4, className = '' }) {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-200">
+            <tr className="border-b border-border">
               {[...Array(cols)].map((_, index) => (
                 <th key={index} className="px-4 py-3 text-left">
                   <Skeleton height="h-4" width="w-20" />
@@ -93,7 +93,7 @@ export function ArticulosTableSkeleton({ rows = 10 }) {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-200 bg-gray-50">
+            <tr className="border-b border-border bg-muted">
               <th className="px-4 py-3 text-left">
                 <Skeleton height="h-4" width="w-16" />
               </th>
@@ -122,7 +122,7 @@ export function ArticulosTableSkeleton({ rows = 10 }) {
           </thead>
           <tbody>
             {[...Array(rows)].map((_, index) => (
-              <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+              <tr key={index} className="border-b border-gray-100 hover:bg-muted">
                 {/* Imagen */}
                 <td className="px-4 py-3">
                   <Skeleton height="h-12" width="w-12" className="rounded" />

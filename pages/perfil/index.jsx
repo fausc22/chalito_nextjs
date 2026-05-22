@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Eye, EyeOff, KeyRound, Save, UserRound } from 'lucide-react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { Layout } from '@/components/layout/Layout';
 import { AvatarPicker } from '@/components/user/AvatarPicker';
 import { UserAvatar } from '@/components/user/UserAvatar';
@@ -180,14 +181,14 @@ function PerfilContent() {
 
   return (
     <Layout title="Mi Perfil">
-      <main className="main-content">
+      <div className="main-content">
         <div className="mb-6">
-          <h1 className="text-[2rem] font-semibold text-[#315e92] mb-2">Mi Perfil</h1>
-          <p className="text-slate-500">Administra tus datos de cuenta, avatar y contraseña.</p>
+          <h1 className="text-[2rem] font-semibold admin-page-heading mb-2">Mi Perfil</h1>
+          <p className="text-muted-foreground">Administra tus datos de cuenta, avatar y contraseña.</p>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <Card className="xl:col-span-1 border-slate-200">
+          <Card className="xl:col-span-1 border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-xl">Resumen</CardTitle>
               <CardDescription>Vista rapida de tu cuenta</CardDescription>
@@ -200,8 +201,8 @@ function PerfilContent() {
                   size="xl"
                 />
                 <div>
-                  <p className="text-lg font-semibold text-slate-800">{profileForm.nombre || '-'}</p>
-                  <p className="text-sm text-slate-500">{profileForm.email || `@${profileForm.usuario}`}</p>
+                  <p className="text-lg font-semibold text-foreground">{profileForm.nombre || '-'}</p>
+                  <p className="text-sm text-muted-foreground">{profileForm.email || `@${profileForm.usuario}`}</p>
                   <p className="text-xs mt-1 font-medium text-blue-700">{roleLabel}</p>
                 </div>
                 <Button
@@ -214,8 +215,8 @@ function PerfilContent() {
               </div>
               <Separator className="my-5" />
               <div className="space-y-2 text-sm">
-                <p className="text-slate-500">Ultima conexión</p>
-                <p className="font-medium text-slate-700">
+                <p className="text-muted-foreground">Ultima conexión</p>
+                <p className="font-medium text-foreground">
                   {formatDateTimeSafe(user?.ultima_conexion)}
                 </p>
               </div>
@@ -223,7 +224,7 @@ function PerfilContent() {
           </Card>
 
           <div className="xl:col-span-2 space-y-6">
-            <Card className="border-slate-200">
+            <Card className="border-border">
               <CardHeader>
                 <CardTitle className="text-xl flex items-center gap-2">
                   <UserRound className="h-5 w-5 text-blue-700" />
@@ -285,7 +286,7 @@ function PerfilContent() {
               </CardContent>
             </Card>
 
-            <Card className="border-slate-200">
+            <Card className="border-border">
               <CardHeader>
                 <button
                   type="button"
@@ -301,7 +302,7 @@ function PerfilContent() {
                     <CardDescription className="mt-1">Usa una contraseña segura para proteger tu cuenta.</CardDescription>
                   </div>
                   <ChevronDown
-                    className={`h-5 w-5 text-slate-500 transition-transform duration-300 ${isPasswordSectionOpen ? 'rotate-180' : ''}`}
+                    className={`h-5 w-5 text-muted-foreground transition-transform duration-300 ${isPasswordSectionOpen ? 'rotate-180' : ''}`}
                   />
                 </button>
               </CardHeader>
@@ -324,7 +325,7 @@ function PerfilContent() {
                       />
                       <button
                         type="button"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         onClick={() => togglePasswordVisibility('actual')}
                         disabled={savingPassword}
                         aria-label={showPasswords.actual ? 'Ocultar contraseña actual' : 'Mostrar contraseña actual'}
@@ -352,7 +353,7 @@ function PerfilContent() {
                         />
                         <button
                           type="button"
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                           onClick={() => togglePasswordVisibility('nueva')}
                           disabled={savingPassword}
                           aria-label={showPasswords.nueva ? 'Ocultar nueva contraseña' : 'Mostrar nueva contraseña'}
@@ -378,7 +379,7 @@ function PerfilContent() {
                         />
                         <button
                           type="button"
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                           onClick={() => togglePasswordVisibility('confirmar')}
                           disabled={savingPassword}
                           aria-label={showPasswords.confirmar ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'}
@@ -415,15 +416,17 @@ function PerfilContent() {
           onSelect={handleAvatarSelection}
           user={user}
         />
-      </main>
+      </div>
     </Layout>
   );
 }
 
 export default function PerfilPage() {
   return (
-    <ProtectedRoute>
-      <PerfilContent />
+    <ProtectedRoute module="perfil">
+      <ErrorBoundary>
+        <PerfilContent />
+      </ErrorBoundary>
     </ProtectedRoute>
   );
 }

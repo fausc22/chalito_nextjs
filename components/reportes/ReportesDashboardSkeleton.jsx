@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/common/LoadingSkeleton';
 export function ReportesDashboardSkeleton() {
   return (
     <div className="space-y-5">
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 md:p-6">
+      <div className="bg-card rounded-xl border border-border shadow-sm p-4 md:p-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Skeleton height="h-10" />
           <Skeleton height="h-10" />

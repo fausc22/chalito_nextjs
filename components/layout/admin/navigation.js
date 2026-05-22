@@ -8,49 +8,59 @@ import {
   TrendingDown,
   TrendingUp,
   User,
+  UserCog,
   Users,
-  Wallet,
 } from 'lucide-react';
 import { ROUTES } from '@/config/routes';
+import {
+  MODULES,
+  MODULE_ROUTES,
+  getAccessibleModulesForRole,
+  getHomeShortcutModules,
+} from '@/config/permissions';
 
-const roleCanSeeClientes = (role) => role === 'ADMIN' || role === 'GERENTE';
+const NAV_META = {
+  [MODULES.DASHBOARD]: { label: 'Inicio', icon: LayoutDashboard },
+  [MODULES.PEDIDOS]: { label: 'Pedidos', icon: ShoppingBasket },
+  [MODULES.COCINA]: { label: 'Cocina', icon: CreditCard },
+  [MODULES.INVENTARIO]: { label: 'Inventario', icon: Package },
+  [MODULES.VENTAS]: { label: 'Ventas', icon: TrendingUp },
+  [MODULES.CLIENTES]: { label: 'Clientes', icon: Users },
+  [MODULES.EMPLEADOS]: { label: 'Empleados', icon: Users },
+  [MODULES.GASTOS]: { label: 'Gastos', icon: TrendingDown },
+  [MODULES.REPORTES]: { label: 'Reportes', icon: BarChart3 },
+  [MODULES.CONFIGURACION]: { label: 'Configuración', icon: Settings },
+  [MODULES.USUARIOS]: { label: 'Usuarios', icon: UserCog },
+};
+
+const MODULE_HREF_OVERRIDES = {
+  [MODULES.EMPLEADOS]: `${ROUTES.EMPLEADOS}/asistencia`,
+};
+
+const buildNavItems = (userRole, moduleList) =>
+  moduleList
+    .filter((m) => NAV_META[m])
+    .map((m) => ({
+      module: m,
+      href: MODULE_HREF_OVERRIDES[m] || MODULE_ROUTES[m],
+      label: NAV_META[m].label,
+      icon: NAV_META[m].icon,
+    }))
+    .filter((item) => item.href);
 
 export const getMainNavItems = (userRole) => {
-  const items = [
-    { href: ROUTES.DASHBOARD, label: 'Inicio', icon: LayoutDashboard },
-    { href: ROUTES.PEDIDOS, label: 'Pedidos', icon: ShoppingBasket },
-    { href: ROUTES.COCINA, label: 'Cocina', icon: CreditCard },
-    { href: ROUTES.INVENTARIO, label: 'Inventario', icon: Package },
-    { href: ROUTES.VENTAS, label: 'Ventas', icon: TrendingUp },
-    { href: ROUTES.EMPLEADOS, label: 'Empleados', icon: Users },
-    { href: ROUTES.GASTOS, label: 'Gastos', icon: TrendingDown },
-    { href: ROUTES.FONDOS, label: 'Fondos', icon: Wallet },
-    { href: ROUTES.REPORTES, label: 'Reportes', icon: BarChart3 },
-  ];
-
-  if (roleCanSeeClientes(userRole)) {
-    items.splice(6, 0, { href: ROUTES.CLIENTES, label: 'Clientes', icon: Users });
-  }
-
-  return items;
+  const modules = getAccessibleModulesForRole(userRole, 'read');
+  return buildNavItems(userRole, modules);
 };
 
 export const getUserMenuItems = () => [
   { href: ROUTES.PERFIL, label: 'Mi perfil', icon: User },
-  { href: ROUTES.CONFIGURACION, label: 'Configuracion', icon: Settings },
 ];
 
-export const getShortcutItems = (userRole) => {
-  const base = [
-    { href: ROUTES.PEDIDOS, label: 'Pedidos', icon: ShoppingBasket },
-    { href: ROUTES.COCINA, label: 'Cocina', icon: CreditCard },
-    { href: ROUTES.INVENTARIO, label: 'Inventario', icon: Package },
-    { href: ROUTES.VENTAS, label: 'Ventas', icon: TrendingUp },
-  ];
-
-  if (roleCanSeeClientes(userRole)) {
-    base.push({ href: ROUTES.CLIENTES, label: 'Clientes', icon: Users });
-  }
-
-  return base;
+export const getHomeShortcuts = (userRole) => {
+  const modules = getHomeShortcutModules(userRole);
+  return buildNavItems(userRole, modules);
 };
+
+/** @deprecated Usar getHomeShortcuts */
+export const getShortcutItems = getHomeShortcuts;

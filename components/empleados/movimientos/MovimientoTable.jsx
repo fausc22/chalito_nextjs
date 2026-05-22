@@ -43,7 +43,7 @@ const TYPE_META = {
   CONSUMO: { label: 'Consumo', className: 'border-indigo-200 bg-indigo-100 text-indigo-700' },
 };
 
-const getTypeMeta = (type) => TYPE_META[type] || { label: type || 'Movimiento', className: 'border-slate-200 bg-slate-100 text-slate-700' };
+const getTypeMeta = (type) => TYPE_META[type] || { label: type || 'Movimiento', className: 'border-border bg-muted text-foreground' };
 
 const MSG_NO_ELIMINAR_LIQUIDADO = 'No es posible eliminar este movimiento porque ya forma parte de una liquidación guardada';
 
@@ -98,11 +98,11 @@ export function MovimientoTable({ rows, onEdit, onDelete, loading, isDeleting })
 
   if (loading && rows.length === 0) {
     return (
-      <Card className="border-slate-200 shadow-sm">
+      <Card className="border-border shadow-sm">
         <CardContent className="p-4">
           <div className="space-y-3">
             {[1, 2, 3, 4].map((item) => (
-              <div key={item} className="h-10 animate-pulse rounded bg-slate-100" />
+              <div key={item} className="h-10 animate-pulse rounded bg-muted" />
             ))}
           </div>
         </CardContent>
@@ -112,8 +112,8 @@ export function MovimientoTable({ rows, onEdit, onDelete, loading, isDeleting })
 
   if (!rows.length) {
     return (
-      <Card className="border-slate-200 shadow-sm">
-        <CardContent className="p-8 text-center text-sm text-slate-500">
+      <Card className="border-border shadow-sm">
+        <CardContent className="p-8 text-center text-sm text-muted-foreground">
           No hay movimientos para mostrar con los filtros seleccionados.
         </CardContent>
       </Card>
@@ -121,7 +121,7 @@ export function MovimientoTable({ rows, onEdit, onDelete, loading, isDeleting })
   }
 
   return (
-    <Card className="border-slate-200 shadow-sm">
+    <Card className="border-border shadow-sm">
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <Table>
@@ -142,7 +142,7 @@ export function MovimientoTable({ rows, onEdit, onDelete, loading, isDeleting })
                 const puedeEliminar = row.puedeEliminarse !== false;
                 return (
                   <TableRow key={row.id}>
-                    <TableCell className="font-medium text-slate-700">
+                    <TableCell className="font-medium text-foreground">
                       {formatDate(row.fecha)}
                     </TableCell>
                     <TableCell>{row.empleadoNombre}</TableCell>
@@ -151,13 +151,13 @@ export function MovimientoTable({ rows, onEdit, onDelete, loading, isDeleting })
                         {typeMeta.label}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right font-semibold text-slate-700">
+                    <TableCell className="text-right font-semibold text-foreground">
                       {formatMoney(row.monto)}
                     </TableCell>
                     <TableCell className="max-w-[180px]">
-                      <p className="truncate text-sm text-slate-700">{row.descripcion || '-'}</p>
+                      <p className="truncate text-sm text-foreground">{row.descripcion || '-'}</p>
                     </TableCell>
-                    <TableCell className="text-slate-600">{row.registradoPor}</TableCell>
+                    <TableCell className="text-muted-foreground">{row.registradoPor}</TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-end gap-0.5 sm:justify-center">
                         <Button
@@ -167,7 +167,7 @@ export function MovimientoTable({ rows, onEdit, onDelete, loading, isDeleting })
                           onClick={() => onEdit(row)}
                           disabled={isDeleting}
                           title="Editar"
-                          className="h-8 w-8 shrink-0 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                          className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-muted hover:text-foreground"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -191,7 +191,7 @@ export function MovimientoTable({ rows, onEdit, onDelete, loading, isDeleting })
                           }
                           className={
                             puedeEliminar
-                              ? 'h-8 w-8 shrink-0 text-slate-600 hover:bg-red-50 hover:text-destructive'
+                              ? 'h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive'
                               : 'h-8 w-8 shrink-0 cursor-not-allowed text-slate-300 hover:bg-transparent hover:text-slate-300'
                           }
                         >
@@ -208,7 +208,7 @@ export function MovimientoTable({ rows, onEdit, onDelete, loading, isDeleting })
 
         {totalPages > 1 ? (
           <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               Mostrando {(currentPage - 1) * itemsPerPage + 1}-
               {Math.min(currentPage * itemsPerPage, rows.length)} de {rows.length} movimientos
             </p>

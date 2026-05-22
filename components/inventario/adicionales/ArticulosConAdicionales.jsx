@@ -131,12 +131,12 @@ export function ArticulosConAdicionales({
   return (
     <div ref={containerRef} className="space-y-3">
       {currentArticulos.map((articulo) => (
-        <Card key={articulo.id} className="border border-slate-200">
+        <Card key={articulo.id} className="border border-border">
           <CardContent className="p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <h3 className="font-semibold text-base text-slate-800">{articulo.nombre}</h3>
+                  <h3 className="font-semibold text-base text-foreground">{articulo.nombre}</h3>
                   <Badge variant="outline" className="text-xs">
                     {articulo.adicionales.length} adicional{articulo.adicionales.length !== 1 ? 'es' : ''}
                   </Badge>

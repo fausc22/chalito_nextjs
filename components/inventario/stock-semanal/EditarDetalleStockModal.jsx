@@ -44,12 +44,12 @@ export function EditarDetalleStockModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <Package className="h-5 w-5 text-[#315e92]" />
+          <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Package className="h-5 w-5 text-blue-700" />
             Cargar stock
           </DialogTitle>
           <DialogDescription className="text-left">
-            <span className="font-medium text-slate-800">{nombre}</span>
+            <span className="font-medium text-foreground">{nombre}</span>
             <span className="block text-sm text-muted-foreground mt-1">
               Editá stock inicial y/o final. Los valores vacíos no se envían al guardar.
             </span>

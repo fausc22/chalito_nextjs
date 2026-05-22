@@ -68,7 +68,7 @@ export function VentasTable({ ventas, onVerDetalle, onAnular }) {
                 <div className="rounded-md border">
                     <Table>
                         <TableHeader>
-                            <TableRow className="bg-slate-50">
+                            <TableRow className="bg-muted">
                                 <TableHead className="w-[80px]"># Venta</TableHead>
                                 <TableHead>Fecha</TableHead>
                                 <TableHead>Cliente</TableHead>
@@ -82,7 +82,7 @@ export function VentasTable({ ventas, onVerDetalle, onAnular }) {
                             {ventas.map((venta) => (
                                 <TableRow 
                                     key={venta.id}
-                                    className={venta.estado === 'ANULADA' ? 'bg-red-50/50' : ''}
+                                    className={venta.estado === 'ANULADA' ? 'bg-destructive/10/50' : ''}
                                 >
                                     <TableCell className="font-mono font-semibold text-emerald-700">
                                         #{venta.id}
@@ -124,7 +124,7 @@ export function VentasTable({ ventas, onVerDetalle, onAnular }) {
                                                 size="icon"
                                                 onClick={() => onVerDetalle(venta)}
                                                 title="Ver detalle"
-                                                className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                                className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-accent"
                                             >
                                                 <Eye className="h-4 w-4" />
                                             </Button>
@@ -134,7 +134,7 @@ export function VentasTable({ ventas, onVerDetalle, onAnular }) {
                                                     size="icon"
                                                     onClick={() => onAnular(venta)}
                                                     title="Anular venta"
-                                                    className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-50"
+                                                    className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-destructive/10"
                                                 >
                                                     <Ban className="h-4 w-4" />
                                                 </Button>

@@ -57,7 +57,7 @@ function EmpleadosSectionContent() {
         headerSubtitle={sectionMeta.subtitle}
         headerActions={
           isAsistencia ? (
-            <Button asChild variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
+            <Button asChild variant="outline" className="border-blue-200 text-blue-700 hover:bg-accent">
               <a href="#actividad-reciente">Ver historial</a>
             </Button>
           ) : isEmpleados ? (
@@ -99,7 +99,7 @@ function EmpleadosSectionContent() {
 export default function EmpleadosSectionPage() {
   return (
     <ErrorBoundary>
-      <ProtectedRoute>
+      <ProtectedRoute module="empleados">
         <EmpleadosSectionContent />
       </ProtectedRoute>
     </ErrorBoundary>

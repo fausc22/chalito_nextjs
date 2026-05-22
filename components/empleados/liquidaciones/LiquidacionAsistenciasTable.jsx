@@ -91,13 +91,13 @@ export function LiquidacionAsistenciasTable({ rows }) {
   }, [currentPage, totalPages]);
 
   return (
-    <Card className="border-slate-200 shadow-sm">
+    <Card className="border-border shadow-sm">
       <CardHeader className="pb-4">
-        <CardTitle className="text-lg text-slate-800">Detalle de asistencias</CardTitle>
+        <CardTitle className="text-lg text-foreground">Detalle de asistencias</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         {rows.length === 0 ? (
-          <div className="px-6 pb-6 text-sm text-slate-500">
+          <div className="px-6 pb-6 text-sm text-muted-foreground">
             No hay asistencias dentro del período seleccionado.
           </div>
         ) : (
@@ -114,7 +114,7 @@ export function LiquidacionAsistenciasTable({ rows }) {
               <TableBody>
                 {paginatedRows.map((row) => (
                   <TableRow key={row.id}>
-                    <TableCell className="font-medium text-slate-700">{formatDate(row.fecha)}</TableCell>
+                    <TableCell className="font-medium text-foreground">{formatDate(row.fecha)}</TableCell>
                     <TableCell>{formatHour(row.ingreso)}</TableCell>
                     <TableCell>{formatHour(row.egreso)}</TableCell>
                     <TableCell>{formatHoursAndMinutes(row.horas, row.minutos)}</TableCell>
@@ -127,7 +127,7 @@ export function LiquidacionAsistenciasTable({ rows }) {
 
         {rows.length > 0 && totalPages > 1 ? (
           <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               Mostrando {(currentPage - 1) * itemsPerPage + 1}-
               {Math.min(currentPage * itemsPerPage, rows.length)} de {rows.length} asistencias
             </p>

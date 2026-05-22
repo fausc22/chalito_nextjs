@@ -178,10 +178,10 @@ export function MovimientosSection() {
       ) : null}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MovimientoSummaryCard title="Total bonos" value={resumen.BONO} accentClass="text-slate-900" />
-        <MovimientoSummaryCard title="Total descuentos" value={resumen.DESCUENTO} accentClass="text-slate-900" />
-        <MovimientoSummaryCard title="Total adelantos" value={resumen.ADELANTO} accentClass="text-slate-900" />
-        <MovimientoSummaryCard title="Total consumos" value={resumen.CONSUMO} accentClass="text-slate-900" />
+        <MovimientoSummaryCard title="Total bonos" value={resumen.BONO} accentClass="text-foreground" />
+        <MovimientoSummaryCard title="Total descuentos" value={resumen.DESCUENTO} accentClass="text-foreground" />
+        <MovimientoSummaryCard title="Total adelantos" value={resumen.ADELANTO} accentClass="text-foreground" />
+        <MovimientoSummaryCard title="Total consumos" value={resumen.CONSUMO} accentClass="text-foreground" />
       </div>
 
       <MovimientoTable

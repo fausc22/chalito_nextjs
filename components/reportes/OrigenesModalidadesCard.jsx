@@ -61,31 +61,31 @@ export function OrigenesModalidadesCard({ origenes = [], modalidades = [] }) {
 
   return (
     <section className="grid gap-4">
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+      <div className="rounded-xl border border-border bg-card p-4 shadow-sm md:p-6">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-slate-800">Origen de pedidos</h3>
-          <p className="text-sm text-slate-500">
+          <h3 className="text-lg font-semibold text-foreground">Origen de pedidos</h3>
+          <p className="text-sm text-muted-foreground">
             Distribución de demanda según cómo ingresan los pedidos.
           </p>
         </div>
 
         {origenesRows.length === 0 ? (
-          <p className="text-sm text-slate-600">No hay orígenes registrados.</p>
+          <p className="text-sm text-muted-foreground">No hay orígenes registrados.</p>
         ) : (
           <div className="space-y-3">
             {origenesRows.map((origen) => {
               const percent = getPercentage(origen.cantidad, totalOrigenes);
               return (
-                <article key={origen.key} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <article key={origen.key} className="rounded-lg border border-border bg-muted p-3">
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <p className="text-sm font-semibold text-slate-800">{origen.key}</p>
-                    <p className="text-xs font-medium text-slate-600">{formatPercentage(percent)}</p>
+                    <p className="text-sm font-semibold text-foreground">{origen.key}</p>
+                    <p className="text-xs font-medium text-muted-foreground">{formatPercentage(percent)}</p>
                   </div>
-                  <div className="mb-2 h-2 overflow-hidden rounded-full bg-slate-200">
+                  <div className="mb-2 h-2 overflow-hidden rounded-full bg-accent">
                     <div className="h-full rounded-full bg-indigo-500" style={{ width: `${percent}%` }} />
                   </div>
-                  <p className="text-sm text-slate-600">
-                    Cantidad de pedidos: <span className="font-semibold text-slate-800">{formatCountAr(origen.cantidad)}</span>
+                  <p className="text-sm text-muted-foreground">
+                    Cantidad de pedidos: <span className="font-semibold text-foreground">{formatCountAr(origen.cantidad)}</span>
                   </p>
                 </article>
               );
@@ -94,31 +94,31 @@ export function OrigenesModalidadesCard({ origenes = [], modalidades = [] }) {
         )}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+      <div className="rounded-xl border border-border bg-card p-4 shadow-sm md:p-6">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-slate-800">Modalidades</h3>
-          <p className="text-sm text-slate-500">
+          <h3 className="text-lg font-semibold text-foreground">Modalidades</h3>
+          <p className="text-sm text-muted-foreground">
             Reparto entre retiro en local y entregas.
           </p>
         </div>
 
         {modalidadesRows.length === 0 ? (
-          <p className="text-sm text-slate-600">No hay modalidades registradas.</p>
+          <p className="text-sm text-muted-foreground">No hay modalidades registradas.</p>
         ) : (
           <div className="space-y-3">
             {modalidadesRows.map((modalidad) => {
               const percent = getPercentage(modalidad.cantidad, totalModalidades);
               return (
-                <article key={modalidad.key} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <article key={modalidad.key} className="rounded-lg border border-border bg-muted p-3">
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <p className="text-sm font-semibold text-slate-800">{modalidad.key}</p>
-                    <p className="text-xs font-medium text-slate-600">{formatPercentage(percent)}</p>
+                    <p className="text-sm font-semibold text-foreground">{modalidad.key}</p>
+                    <p className="text-xs font-medium text-muted-foreground">{formatPercentage(percent)}</p>
                   </div>
-                  <div className="mb-2 h-2 overflow-hidden rounded-full bg-slate-200">
+                  <div className="mb-2 h-2 overflow-hidden rounded-full bg-accent">
                     <div className="h-full rounded-full bg-violet-500" style={{ width: `${percent}%` }} />
                   </div>
-                  <p className="text-sm text-slate-600">
-                    Cantidad de pedidos: <span className="font-semibold text-slate-800">{formatCountAr(modalidad.cantidad)}</span>
+                  <p className="text-sm text-muted-foreground">
+                    Cantidad de pedidos: <span className="font-semibold text-foreground">{formatCountAr(modalidad.cantidad)}</span>
                   </p>
                 </article>
               );

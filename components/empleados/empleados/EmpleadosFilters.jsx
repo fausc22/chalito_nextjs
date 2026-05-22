@@ -17,10 +17,10 @@ export function EmpleadosFilters({
   loading,
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+    <div className="rounded-xl border border-border bg-card p-3 shadow-sm">
       <div className="flex flex-col gap-3 lg:flex-row">
         <div className="relative lg:min-w-0 lg:flex-[1.6]">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={searchValue}
             onChange={(event) => onSearchChange(event.target.value)}
@@ -32,7 +32,7 @@ export function EmpleadosFilters({
         <select
           value={estadoValue}
           onChange={(event) => onEstadoChange(event.target.value)}
-          className="h-10 min-w-[170px] rounded-md border border-slate-300 bg-white px-3 pr-9 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 lg:flex-[0.9]"
+          className="h-10 min-w-[170px] rounded-md border border-border bg-card px-3 pr-9 text-sm text-foreground outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 lg:flex-[0.9]"
         >
           {FILTERS.map((filter) => (
             <option key={filter.value} value={filter.value}>
@@ -46,7 +46,7 @@ export function EmpleadosFilters({
           variant="outline"
           onClick={onRefresh}
           disabled={loading}
-          className="border-slate-300 text-slate-700"
+          className="border-border text-foreground"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           Actualizar

@@ -65,7 +65,7 @@ export function Footer() {
               href="https://twitter.com/elchalito"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-8 h-8 rounded-full bg-blue-700 hover:bg-blue-500 text-white flex items-center justify-center transition-colors"
+              className="w-8 h-8 rounded-full bg-blue-700 hover:bg-accent0 text-white flex items-center justify-center transition-colors"
               aria-label="Twitter"
             >
               <Twitter className="h-4 w-4" />

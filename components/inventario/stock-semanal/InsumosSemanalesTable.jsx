@@ -11,19 +11,19 @@ export function InsumosSemanalesTable({
 }) {
   return (
     <div className="hidden lg:block overflow-x-auto">
-      <Table className="bg-white rounded-lg overflow-hidden shadow-sm">
-        <TableHeader className="bg-slate-50">
+      <Table className="bg-card rounded-lg overflow-hidden shadow-sm">
+        <TableHeader className="bg-muted">
           <TableRow>
-            <TableHead className="text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-b-2 border-gray-200 py-3 px-2">
+            <TableHead className="text-center text-sm font-bold text-foreground uppercase tracking-wider border-b-2 border-border py-3 px-2">
               Nombre
             </TableHead>
-            <TableHead className="text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-b-2 border-gray-200 py-3 px-2">
+            <TableHead className="text-center text-sm font-bold text-foreground uppercase tracking-wider border-b-2 border-border py-3 px-2">
               Descripción
             </TableHead>
-            <TableHead className="w-[120px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-b-2 border-gray-200 py-3 px-2">
+            <TableHead className="w-[120px] text-center text-sm font-bold text-foreground uppercase tracking-wider border-b-2 border-border py-3 px-2">
               Estado
             </TableHead>
-            <TableHead className="w-[160px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-b-2 border-gray-200 py-3 px-2">
+            <TableHead className="w-[160px] text-center text-sm font-bold text-foreground uppercase tracking-wider border-b-2 border-border py-3 px-2">
               Acciones
             </TableHead>
           </TableRow>
@@ -34,8 +34,8 @@ export function InsumosSemanalesTable({
             return (
               <TableRow
                 key={insumo.id}
-                className={`border-b border-gray-200 transition-colors hover:bg-blue-50 ${
-                  index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                className={`border-b border-border transition-colors hover:bg-accent ${
+                  index % 2 === 0 ? 'bg-card' : 'bg-muted'
                 }`}
               >
                 <TableCell className="font-medium text-center py-2 px-2 align-top">
@@ -65,7 +65,7 @@ export function InsumosSemanalesTable({
                       size="icon"
                       onClick={() => onEditar(insumo)}
                       title="Editar"
-                      className="hover:scale-110 hover:bg-blue-50 hover:border-blue-300 transition-all"
+                      className="hover:scale-110 hover:bg-accent hover:border-blue-300 transition-all"
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -75,7 +75,7 @@ export function InsumosSemanalesTable({
                       size="icon"
                       onClick={() => onEliminar(insumo)}
                       title="Eliminar"
-                      className="text-destructive hover:bg-red-50 hover:border-red-300 hover:scale-110 transition-all"
+                      className="text-destructive hover:bg-destructive/10 hover:border-red-300 hover:scale-110 transition-all"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

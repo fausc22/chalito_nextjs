@@ -124,7 +124,7 @@ export function SemanasHistoricoSection({
   if (primeraCarga && loading) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-[#315e92]" />
+        <Loader2 className="h-8 w-8 animate-spin text-blue-700" />
         <p className="text-muted-foreground text-sm">Cargando histórico...</p>
       </div>
     );
@@ -134,9 +134,9 @@ export function SemanasHistoricoSection({
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-end sm:justify-between gap-4">
         <div className="space-y-2 min-w-[200px] max-w-xs">
-          <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">Estado</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Estado</p>
           <Select value={filtroEstado} onValueChange={handleFiltroChange}>
-            <SelectTrigger className="w-full sm:w-[220px] border-slate-200">
+            <SelectTrigger className="w-full sm:w-[220px] border-border">
               <SelectValue placeholder="Filtrar" />
             </SelectTrigger>
             <SelectContent>
@@ -167,8 +167,8 @@ export function SemanasHistoricoSection({
       ) : null}
 
       {items.length === 0 && !error ? (
-        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 py-10 px-4 text-center text-sm text-muted-foreground space-y-2">
-          <p className="font-medium text-slate-700">No hay resultados</p>
+        <div className="rounded-lg border border-dashed border-border bg-muted/60 py-10 px-4 text-center text-sm text-muted-foreground space-y-2">
+          <p className="font-medium text-foreground">No hay resultados</p>
           <p>
             {filtroEstado === FILTRO_TODAS
               ? 'Todavía no hay semanas registradas. Creá una semana en la sección superior cuando estés listo.'
@@ -178,36 +178,36 @@ export function SemanasHistoricoSection({
       ) : null}
 
       {items.length > 0 ? (
-        <div className="hidden lg:block overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
+        <div className="hidden lg:block overflow-x-auto rounded-lg border border-border shadow-sm">
           <Table>
-            <TableHeader className="bg-slate-50">
+            <TableHeader className="bg-muted">
               <TableRow>
-                <TableHead className="font-semibold text-slate-800 whitespace-nowrap">Fecha inicio</TableHead>
-                <TableHead className="font-semibold text-slate-800 whitespace-nowrap">Fecha fin</TableHead>
-                <TableHead className="font-semibold text-slate-800">Estado</TableHead>
-                <TableHead className="font-semibold text-slate-800 whitespace-nowrap">Fecha cierre</TableHead>
-                <TableHead className="text-right font-semibold text-slate-800 w-[100px]">Insumos</TableHead>
-                <TableHead className="w-[130px] text-center font-semibold text-slate-800">Acciones</TableHead>
+                <TableHead className="font-semibold text-foreground whitespace-nowrap">Fecha inicio</TableHead>
+                <TableHead className="font-semibold text-foreground whitespace-nowrap">Fecha fin</TableHead>
+                <TableHead className="font-semibold text-foreground">Estado</TableHead>
+                <TableHead className="font-semibold text-foreground whitespace-nowrap">Fecha cierre</TableHead>
+                <TableHead className="text-right font-semibold text-foreground w-[100px]">Insumos</TableHead>
+                <TableHead className="w-[130px] text-center font-semibold text-foreground">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {items.map((row) => {
                 const nInsumos = insumosCount(row);
                 return (
-                  <TableRow key={row.id} className="hover:bg-slate-50/80">
-                    <TableCell className="font-medium text-slate-900 whitespace-nowrap text-sm">
+                  <TableRow key={row.id} className="hover:bg-muted/80">
+                    <TableCell className="font-medium text-foreground whitespace-nowrap text-sm">
                       {formatDateShort(row.fecha_inicio)}
                     </TableCell>
-                    <TableCell className="font-medium text-slate-900 whitespace-nowrap text-sm">
+                    <TableCell className="font-medium text-foreground whitespace-nowrap text-sm">
                       {formatDateShort(row.fecha_fin)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-slate-800 border-slate-300">
+                      <Badge variant="outline" className="text-foreground border-border">
                         {formatEstadoSemana(row.estado)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-slate-700 whitespace-nowrap">{formatDateTime(row.fecha_cierre)}</TableCell>
-                    <TableCell className="text-right tabular-nums text-slate-800 font-medium">
+                    <TableCell className="text-sm text-foreground whitespace-nowrap">{formatDateTime(row.fecha_cierre)}</TableCell>
+                    <TableCell className="text-right tabular-nums text-foreground font-medium">
                       {nInsumos != null ? nInsumos : '—'}
                     </TableCell>
                     <TableCell className="text-center">
@@ -215,7 +215,7 @@ export function SemanasHistoricoSection({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="gap-1 text-[#315e92] border-slate-200 hover:bg-slate-50"
+                        className="gap-1 text-blue-700 border-border hover:bg-muted"
                         disabled={!onObtenerSemanaPorId}
                         onClick={() => abrirDetalle(row)}
                       >
@@ -236,18 +236,18 @@ export function SemanasHistoricoSection({
           {items.map((row) => {
             const nInsumos = insumosCount(row);
             return (
-              <div key={row.id} className="rounded-lg border border-slate-200 bg-white shadow-sm p-4 space-y-3">
+              <div key={row.id} className="rounded-lg border border-border bg-card shadow-sm p-4 space-y-3">
                 <div className="space-y-1">
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p className="text-sm font-semibold text-foreground">
                     Semana {formatDateShort(row.fecha_inicio)} - {formatDateShort(row.fecha_fin)}
                   </p>
-                  <p className="text-sm text-slate-700">
+                  <p className="text-sm text-foreground">
                     Estado:{' '}
-                    <Badge variant="outline" className="text-slate-800 border-slate-300 align-middle">
+                    <Badge variant="outline" className="text-foreground border-border align-middle">
                       {formatEstadoSemana(row.estado)}
                     </Badge>
                   </p>
-                  <p className="text-sm text-slate-700">
+                  <p className="text-sm text-foreground">
                     Obs:{' '}
                     <span className="text-muted-foreground">
                       {row.observaciones?.trim() ? row.observaciones : 'Sin observaciones'}
@@ -264,7 +264,7 @@ export function SemanasHistoricoSection({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="w-full gap-1 text-[#315e92] border-slate-200 hover:bg-slate-50"
+                  className="w-full gap-1 text-blue-700 border-border hover:bg-muted"
                   disabled={!onObtenerSemanaPorId}
                   onClick={() => abrirDetalle(row)}
                 >
@@ -278,7 +278,7 @@ export function SemanasHistoricoSection({
       ) : null}
 
       {items.length > 0 && totalPaginas > 1 ? (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1 border-t border-slate-100">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1 border-t border-border">
           <p className="text-xs text-muted-foreground order-2 sm:order-none">
             Página {paginaActual} de {totalPaginas}
           </p>

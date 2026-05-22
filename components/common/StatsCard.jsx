@@ -35,9 +35,9 @@ export const StatsCard = ({
       <div className={`text-4xl font-bold mb-2 ${colors[color]?.split(' ')[2] || 'text-blue-600'}`}>
         {value}
       </div>
-      <div className="text-gray-700 font-medium">{title}</div>
+      <div className="text-foreground font-medium">{title}</div>
       {subtitle && (
-        <div className="text-sm text-gray-600 mt-1">{subtitle}</div>
+        <div className="text-sm text-muted-foreground mt-1">{subtitle}</div>
       )}
     </div>
   );

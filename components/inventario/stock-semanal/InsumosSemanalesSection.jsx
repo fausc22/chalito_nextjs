@@ -188,7 +188,7 @@ export function InsumosSemanalesSection({
   if (loadingInsumosSemanales && insumosSemanales.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-14 gap-3">
-        <Loader2 className="h-10 w-10 animate-spin text-[#315e92]" aria-hidden />
+        <Loader2 className="h-10 w-10 animate-spin text-blue-700" aria-hidden />
         <p className="text-muted-foreground text-sm">Cargando insumos semanales…</p>
       </div>
     );
@@ -214,11 +214,11 @@ export function InsumosSemanalesSection({
     <div className="space-y-6 relative">
       {loadingInsumosSemanales && insumosSemanales.length > 0 ? (
         <div
-          className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/70 backdrop-blur-[1px]"
+          className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-card/70 backdrop-blur-[1px]"
           aria-busy="true"
         >
-          <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 shadow-sm text-sm text-slate-700">
-            <Loader2 className="h-4 w-4 animate-spin text-[#315e92]" />
+          <div className="flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 shadow-sm text-sm text-foreground">
+            <Loader2 className="h-4 w-4 animate-spin text-blue-700" />
             Actualizando…
           </div>
         </div>
@@ -325,8 +325,8 @@ export function InsumosSemanalesSection({
               <div className="space-y-3">
                 <p>¿Confirmás que querés eliminar este insumo semanal?</p>
                 {insumoEliminar ? (
-                  <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-                    <p className="font-medium text-slate-900">{insumoEliminar.nombre}</p>
+                  <div className="rounded-md border border-border bg-muted px-3 py-2">
+                    <p className="font-medium text-foreground">{insumoEliminar.nombre}</p>
                     <p className="text-sm text-muted-foreground">Se eliminará definitivamente de la base de datos.</p>
                   </div>
                 ) : null}

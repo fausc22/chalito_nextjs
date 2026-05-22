@@ -26,8 +26,8 @@ export function MovimientoFilters({
   );
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-      <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div className="rounded-xl border border-border bg-card p-3 shadow-sm">
+      <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         <Filter className="h-4 w-4" />
         Filtros
       </div>
@@ -36,7 +36,7 @@ export function MovimientoFilters({
         <select
           value={filtros.empleado_id}
           onChange={(event) => onChange('empleado_id', event.target.value)}
-          className="h-10 min-w-[210px] rounded-md border border-slate-300 bg-white px-3 pr-9 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          className="h-10 min-w-[210px] rounded-md border border-border bg-card px-3 pr-9 text-sm text-foreground outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
         >
           <option value="all">Todos los empleados</option>
           {empleados.map((empleado) => (
@@ -49,7 +49,7 @@ export function MovimientoFilters({
         <select
           value={filtros.tipo}
           onChange={(event) => onChange('tipo', event.target.value)}
-          className="h-10 min-w-[170px] rounded-md border border-slate-300 bg-white px-3 pr-9 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          className="h-10 min-w-[170px] rounded-md border border-border bg-card px-3 pr-9 text-sm text-foreground outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
         >
           {TIPO_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -76,7 +76,7 @@ export function MovimientoFilters({
           <Button
             type="button"
             variant="outline"
-            className="border-slate-300 px-3 text-slate-700"
+            className="border-border px-3 text-foreground"
             onClick={onRefresh}
             disabled={loading}
           >
@@ -87,7 +87,7 @@ export function MovimientoFilters({
             <Button
               type="button"
               variant="outline"
-              className="border-slate-300 px-3 text-slate-700"
+              className="border-border px-3 text-foreground"
               onClick={onClear}
               disabled={loading}
               aria-label="Limpiar filtros"

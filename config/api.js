@@ -11,8 +11,12 @@ export const API_CONFIG = {
       CHANGE_PASSWORD: '/auth/change-password'
     },
     USUARIOS: {
+      LIST: '/usuarios',
+      BY_ID: (id) => `/usuarios/${id}`,
+      ACTIVO: (id) => `/usuarios/${id}/activo`,
+      PASSWORD: (id) => `/usuarios/${id}/password`,
       ME: '/usuarios/me',
-      CHANGE_PASSWORD: '/usuarios/me/password'
+      CHANGE_PASSWORD: '/usuarios/me/password',
     },
     PEDIDOS: {
       LIST: '/pedidos',
@@ -29,10 +33,35 @@ export const API_CONFIG = {
       COMANDA_PRINT: (id) => `/pedidos/${id}/comanda-print`,
       TICKET_PRINT: (id) => `/pedidos/${id}/ticket-print`,
       INICIAR_PREPARACION_MANUAL: (id) => `/pedidos/${id}/iniciar-preparacion-manual`,
+      ENTREGADOS: '/pedidos/entregados',
+      HORARIO_ENTREGA: (id) => `/pedidos/${id}/horario-entrega`,
     },
     CONFIGURACION: {
       LIST: '/configuracion-sistema',
       BY_KEY: (clave) => `/configuracion-sistema/${clave}`,
+    },
+    TIENDA_ONLINE: {
+      HORARIOS: '/configuracion/tienda-online/horarios',
+      HORARIOS_DIA: '/configuracion/tienda-online/horarios/dia',
+      SETTINGS: '/configuracion/tienda-online/settings',
+      ESTADO: '/configuracion/tienda-online/estado',
+      APARIENCIA: '/configuracion/tienda-online/apariencia',
+    },
+    MERCADOPAGO: {
+      ESTADO: '/configuracion/mercadopago/estado',
+    },
+    CUPONES: {
+      LIST: '/configuracion/cupones',
+      BY_ID: (id) => `/configuracion/cupones/${id}`,
+      TOGGLE: (id) => `/configuracion/cupones/${id}/toggle`,
+    },
+    WHATSAPP: {
+      ESTADO: '/configuracion/whatsapp/estado',
+      QR: '/configuracion/whatsapp/qr',
+      CONECTAR: '/configuracion/whatsapp/conectar',
+      DESCONECTAR: '/configuracion/whatsapp/desconectar',
+      SETTINGS: '/configuracion/whatsapp/settings',
+      PREVIEWS: '/configuracion/whatsapp/previews',
     },
     VENTAS: {
       LIST: '/ventas',
@@ -124,20 +153,6 @@ export const API_CONFIG = {
       CATEGORIA_BY_ID: (id) => `/gastos/categorias/${id}`,
       CUENTAS: '/gastos/cuentas',
       RESUMEN: '/gastos/resumen',
-    },
-    FONDOS: {
-      CUENTAS: {
-        LIST: '/fondos/cuentas',
-        CREATE: '/fondos/cuentas',
-        BY_ID: (id) => `/fondos/cuentas/${id}`,
-        UPDATE: (id) => `/fondos/cuentas/${id}`,
-        DELETE: (id) => `/fondos/cuentas/${id}`,
-        MOVIMIENTOS: (id) => `/fondos/cuentas/${id}/movimientos`,
-        HISTORIAL: (id) => `/fondos/cuentas/${id}/historial`,
-      },
-      MOVIMIENTOS: {
-        CREATE: '/fondos/movimientos',
-      },
     },
     EMPLEADOS: {
       LIST: '/empleados',

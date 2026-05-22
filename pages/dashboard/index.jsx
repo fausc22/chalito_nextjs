@@ -1,79 +1,65 @@
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { Layout } from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
-import { DashboardHeader } from '@/components/dashboard-v2/DashboardHeader';
-import { OperationalHero } from '@/components/dashboard-v2/OperationalHero';
-import { OperationalKpiGrid } from '@/components/dashboard-v2/OperationalKpiGrid';
-import { OperationalAlertsPanel } from '@/components/dashboard-v2/OperationalAlertsPanel';
-import { QuickActions } from '@/components/dashboard-v2/QuickActions';
-import { RecentActivityPanel } from '@/components/dashboard-v2/RecentActivityPanel';
-import { AdminFinancialMetrics } from '@/components/dashboard-v2/AdminFinancialMetrics';
-import { RoleGate } from '@/components/dashboard-v2/RoleGate';
-import { useDashboardData } from '@/hooks/dashboard/useDashboardData';
-import { Button } from '@/components/ui/button';
-import { AlertCircle } from 'lucide-react';
+import { useConnectionStatus } from '@/contexts/ConnectionStatusContext';
+import { ROLES } from '@/config/api';
+import { HomeWelcome } from '@/components/home/HomeWelcome';
+import { HomePrimaryAction } from '@/components/home/HomePrimaryAction';
+import { HomeShortcutsGrid } from '@/components/home/HomeShortcutsGrid';
+import { HomePulseStrip } from '@/components/home/HomePulseStrip';
+import { HomeCocinaLauncher } from '@/components/home/HomeCocinaLauncher';
 
-function DashboardContent() {
+function HomeContent() {
   const { user, userRole } = useAuth();
-  const { loading, error, operational, alerts, recentActivity, adminMetrics, reload } = useDashboardData(userRole);
+  const {
+    pedidosAtrasadosCount,
+    workerActive,
+    pollingActive,
+    lastPollingError,
+  } = useConnectionStatus();
+
+  const systemIssue = !workerActive || !pollingActive || Boolean(lastPollingError);
+  const hasAlerts = pedidosAtrasadosCount > 0 || systemIssue;
+  const isCocina = userRole === ROLES.COCINA;
 
   return (
-    <Layout title="Dashboard">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-        <DashboardHeader userName={user?.nombre || user?.usuario} />
+    <Layout title="Inicio">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
+        <HomeWelcome
+          userName={user?.nombre || user?.usuario}
+          userRole={userRole}
+          hasAlerts={hasAlerts}
+        />
 
-        {error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="mt-0.5 h-4 w-4 text-rose-700" />
-                <div>
-                  <p className="text-sm font-semibold text-rose-800">No se pudo cargar el dashboard</p>
-                  <p className="mt-1 text-sm text-rose-700">{error}</p>
-                </div>
-              </div>
-              <Button type="button" size="sm" variant="outline" onClick={reload}>
-                Reintentar
-              </Button>
-            </div>
-          </div>
-        ) : null}
-
-        {loading ? (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 6 }).map((_, idx) => (
-              <div key={idx} className="h-28 animate-pulse rounded-2xl border border-slate-200 bg-white" />
-            ))}
-          </div>
+        {isCocina ? (
+          <HomeCocinaLauncher />
         ) : (
           <>
-            <OperationalHero activeOrders={operational.active} delayedOrders={operational.delayed} />
-            <OperationalKpiGrid kpis={operational} />
+            <HomePrimaryAction userRole={userRole} />
+            <HomeShortcutsGrid
+              userRole={userRole}
+              pedidosAtrasadosCount={pedidosAtrasadosCount}
+            />
+            <HomePulseStrip
+              pedidosAtrasadosCount={pedidosAtrasadosCount}
+              workerActive={workerActive}
+              pollingActive={pollingActive}
+              lastPollingError={lastPollingError}
+            />
           </>
         )}
-
-        <div className="grid gap-4 xl:grid-cols-12">
-          <div className="space-y-4 xl:col-span-7">
-            <OperationalAlertsPanel alerts={alerts} />
-            <RecentActivityPanel items={recentActivity} />
-          </div>
-          <div className="space-y-4 xl:col-span-5">
-            <QuickActions userRole={userRole} />
-          </div>
-        </div>
-
-        <RoleGate adminOnly>
-          <AdminFinancialMetrics metrics={adminMetrics} />
-        </RoleGate>
       </div>
     </Layout>
   );
 }
 
-export default function DashboardPage() {
+export default function HomePage() {
   return (
-    <ProtectedRoute>
-      <DashboardContent />
+    <ProtectedRoute module="dashboard">
+      <ErrorBoundary>
+        <HomeContent />
+      </ErrorBoundary>
     </ProtectedRoute>
   );
 }

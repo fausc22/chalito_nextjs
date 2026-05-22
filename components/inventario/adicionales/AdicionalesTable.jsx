@@ -7,22 +7,22 @@ export function AdicionalesTable({ adicionales, onEditar, onEliminar }) {
   return (
     <div className="hidden lg:block overflow-x-auto">
       <div className="max-w-[960px] mx-auto">
-        <Table className="bg-white rounded-lg overflow-hidden shadow-sm">
-          <TableHeader className="bg-slate-50">
+        <Table className="bg-card rounded-lg overflow-hidden shadow-sm">
+          <TableHeader className="bg-muted">
             <TableRow>
-              <TableHead className="w-[180px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-l-2 border-r-2 border-b-2 border-gray-200 py-3 px-2">Nombre</TableHead>
-              <TableHead className="w-[250px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3 px-2">Descripción</TableHead>
-              <TableHead className="w-[130px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3 px-2">Precio Extra</TableHead>
-              <TableHead className="w-[100px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3 px-2">Estado</TableHead>
-              <TableHead className="w-[120px] text-center text-sm font-bold text-slate-800 uppercase tracking-wider border-r-2 border-b-2 border-gray-200 py-3 px-2">Acciones</TableHead>
+              <TableHead className="w-[180px] text-center text-sm font-bold text-foreground uppercase tracking-wider border-l-2 border-r-2 border-b-2 border-border py-3 px-2">Nombre</TableHead>
+              <TableHead className="w-[250px] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-3 px-2">Descripción</TableHead>
+              <TableHead className="w-[130px] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-3 px-2">Precio Extra</TableHead>
+              <TableHead className="w-[100px] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-3 px-2">Estado</TableHead>
+              <TableHead className="w-[120px] text-center text-sm font-bold text-foreground uppercase tracking-wider border-r-2 border-b-2 border-border py-3 px-2">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {adicionales.map((adicional, index) => (
               <TableRow
                 key={adicional.id}
-                className={`border-b border-gray-200 transition-colors hover:bg-purple-50 ${
-                  index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                className={`border-b border-border transition-colors hover:bg-purple-50 ${
+                  index % 2 === 0 ? 'bg-card' : 'bg-muted'
                 }`}
               >
                 <TableCell className="font-medium text-center py-2 px-2">
@@ -62,7 +62,7 @@ export function AdicionalesTable({ adicionales, onEditar, onEliminar }) {
                       size="icon"
                       onClick={() => onEliminar(adicional)}
                       title="Eliminar"
-                      className="text-destructive hover:bg-red-50 hover:border-red-300 hover:scale-110 transition-all"
+                      className="text-destructive hover:bg-destructive/10 hover:border-red-300 hover:scale-110 transition-all"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

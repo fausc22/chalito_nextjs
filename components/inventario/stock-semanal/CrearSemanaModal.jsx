@@ -32,8 +32,8 @@ export function CrearSemanaModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px] max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <CalendarRange className="h-5 w-5 text-[#315e92]" />
+          <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+            <CalendarRange className="h-5 w-5 text-blue-700" />
             Crear nueva semana
           </DialogTitle>
           <DialogDescription>

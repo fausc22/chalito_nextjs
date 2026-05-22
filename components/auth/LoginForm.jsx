@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
-import { ROUTES } from '../../config/routes';
+import { getDefaultRouteForRole } from '../../config/permissions';
 import { toast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -80,7 +80,7 @@ export function LoginForm() {
         icon: '👋',
       });
 
-      router.push(ROUTES.DASHBOARD);
+      router.push(getDefaultRouteForRole(result.user?.rol));
     }
   };
 
@@ -91,8 +91,8 @@ export function LoginForm() {
   return (
     <div className="w-full animate-fade-in">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Iniciar Sesión</h2>
-        <p className="text-gray-600 text-sm">Ingresa tus credenciales para acceder al sistema</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Iniciar Sesión</h2>
+        <p className="text-muted-foreground text-sm">Ingresa tus credenciales para acceder al sistema</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -136,7 +136,7 @@ export function LoginForm() {
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               onClick={togglePasswordVisibility}
               disabled={isLoading}
               aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
@@ -171,7 +171,7 @@ export function LoginForm() {
 
         {/* Error message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start space-x-2 animate-bounce-in">
+          <div className="bg-destructive/10 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start space-x-2 animate-bounce-in">
             <span className="text-lg">⚠️</span>
             <span className="text-sm font-medium">{error}</span>
           </div>
@@ -197,19 +197,19 @@ export function LoginForm() {
 
       {/* Credenciales de prueba - solo desarrollo */}
       {process.env.NODE_ENV === 'development' && (
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">Credenciales de prueba:</h4>
+        <div className="mt-6 pt-6 border-t border-border">
+          <h4 className="text-sm font-semibold text-foreground mb-3">Credenciales de prueba:</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-            <div className="bg-gray-50 px-3 py-2 rounded">
+            <div className="bg-muted px-3 py-2 rounded">
               <strong>Admin:</strong> admin / admin123
             </div>
-            <div className="bg-gray-50 px-3 py-2 rounded">
+            <div className="bg-muted px-3 py-2 rounded">
               <strong>Gerente:</strong> gerente / gerente123
             </div>
-            <div className="bg-gray-50 px-3 py-2 rounded">
+            <div className="bg-muted px-3 py-2 rounded">
               <strong>Cajero:</strong> cajero / cajero123
             </div>
-            <div className="bg-gray-50 px-3 py-2 rounded">
+            <div className="bg-muted px-3 py-2 rounded">
               <strong>Chef:</strong> chef / cocina123
             </div>
           </div>

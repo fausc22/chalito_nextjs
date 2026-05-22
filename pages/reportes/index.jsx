@@ -252,19 +252,19 @@ function ReportesContent() {
 
   return (
     <Layout title="Reportes y estadísticas">
-      <main className="main-content">
-        <div className="mb-5 sm:mb-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 sm:p-6">
+      <div className="main-content">
+        <div className="mb-5 sm:mb-6 rounded-2xl border border-border bg-gradient-to-br from-white to-slate-50 p-4 sm:p-6">
           <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <h1 className="text-[1.65rem] sm:text-[2rem] font-semibold text-[#315e92] mb-1.5 flex items-center gap-2">
+              <h1 className="text-[1.65rem] sm:text-[2rem] font-semibold admin-page-heading mb-1.5 flex items-center gap-2">
                 <BarChart3 className="h-7 w-7 sm:h-8 sm:w-8" />
                 Reportes y estadísticas
               </h1>
-              <p className="text-slate-600 text-sm sm:text-base">
+              <p className="text-muted-foreground text-sm sm:text-base">
                 Analizá ventas, demanda, productos destacados y rendimiento general del negocio.
               </p>
             </div>
-            <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
+            <div className="rounded-lg border border-blue-100 bg-primary/10 px-3 py-2">
               <p className="text-xs uppercase tracking-wide text-blue-700 font-semibold">Rango seleccionado</p>
               <p className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-blue-900">
                 <CalendarRange className="h-4 w-4" />
@@ -288,12 +288,12 @@ function ReportesContent() {
           {!hasLoaded && loading ? <ReportesDashboardSkeleton /> : null}
 
           {hasLoaded && error ? (
-            <div className="bg-white rounded-xl border border-rose-200 p-8 text-center shadow-sm">
+            <div className="bg-card rounded-xl border border-rose-200 p-8 text-center shadow-sm">
               <AlertCircle className="h-10 w-10 mx-auto text-rose-500 mb-3" />
-              <h2 className="text-lg font-semibold text-slate-800 mb-1">
+              <h2 className="text-lg font-semibold text-foreground mb-1">
                 No pudimos cargar los reportes
               </h2>
-              <p className="text-slate-600 mb-4">
+              <p className="text-muted-foreground mb-4">
                 Revisá tu conexión e intentá nuevamente en unos segundos.
               </p>
               <Button type="button" onClick={handleAplicarClick}>
@@ -303,10 +303,10 @@ function ReportesContent() {
           ) : null}
 
           {hasLoaded && !loading && !error && isEmptyDashboard ? (
-            <div className="bg-white rounded-xl border border-slate-200 p-8 text-center shadow-sm">
-              <Inbox className="h-10 w-10 mx-auto text-slate-400 mb-3" />
-              <h2 className="text-lg font-semibold text-slate-800 mb-1">Sin datos para este rango</h2>
-              <p className="text-slate-600">
+            <div className="bg-card rounded-xl border border-border p-8 text-center shadow-sm">
+              <Inbox className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+              <h2 className="text-lg font-semibold text-foreground mb-1">Sin datos para este rango</h2>
+              <p className="text-muted-foreground">
                 No hay información disponible para el período seleccionado.
               </p>
             </div>
@@ -318,7 +318,7 @@ function ReportesContent() {
 
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <div className="overflow-x-auto pb-1">
-                  <TabsList className="inline-flex h-auto w-max min-w-max justify-start gap-1.5 rounded-xl border border-slate-200 bg-white p-1 sm:min-w-0">
+                  <TabsList className="inline-flex h-auto w-max min-w-max justify-start gap-1.5 rounded-xl border border-border bg-card p-1 sm:min-w-0">
                     <TabsTrigger
                       value="ventas"
                       className="rounded-lg px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none"
@@ -378,7 +378,7 @@ function ReportesContent() {
             </>
           ) : null}
         </div>
-      </main>
+      </div>
     </Layout>
   );
 }
@@ -386,7 +386,7 @@ function ReportesContent() {
 export default function ReportesPage() {
   return (
     <ErrorBoundary>
-      <ProtectedRoute>
+      <ProtectedRoute module="reportes">
         <ReportesContent />
       </ProtectedRoute>
     </ErrorBoundary>

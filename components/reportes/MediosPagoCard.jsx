@@ -29,18 +29,18 @@ export function MediosPagoCard({ data = [] }) {
 
   if (rows.length === 0) {
     return (
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-        <h2 className="text-lg font-semibold text-slate-800">Medios de pago</h2>
-        <p className="mt-2 text-sm text-slate-600">No hay medios de pago registrados.</p>
+      <section className="rounded-xl border border-border bg-card p-4 shadow-sm md:p-6">
+        <h2 className="text-lg font-semibold text-foreground">Medios de pago</h2>
+        <p className="mt-2 text-sm text-muted-foreground">No hay medios de pago registrados.</p>
       </section>
     );
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+    <section className="rounded-xl border border-border bg-card p-4 shadow-sm md:p-6">
       <div className="mb-4">
-        <h2 className="text-lg font-semibold text-slate-800">Medios de pago</h2>
-        <p className="text-sm text-slate-500">
+        <h2 className="text-lg font-semibold text-foreground">Medios de pago</h2>
+        <p className="text-sm text-muted-foreground">
           Distribución de ventas por método de cobro.
         </p>
       </div>
@@ -52,20 +52,20 @@ export function MediosPagoCard({ data = [] }) {
             : getPercentage(medio.cantidadVentas, totalCantidad);
 
           return (
-            <article key={`${medio.nombre}-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <article key={`${medio.nombre}-${index}`} className="rounded-lg border border-border bg-muted p-3">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-800">{medio.nombre}</p>
-                <p className="text-xs font-medium text-slate-600">{formatPercentage(percent)}</p>
+                <p className="text-sm font-semibold text-foreground">{medio.nombre}</p>
+                <p className="text-xs font-medium text-muted-foreground">{formatPercentage(percent)}</p>
               </div>
-              <div className="mb-2 h-2 overflow-hidden rounded-full bg-slate-200">
-                <div className="h-full rounded-full bg-blue-500" style={{ width: `${Math.max(0, Math.min(100, percent))}%` }} />
+              <div className="mb-2 h-2 overflow-hidden rounded-full bg-accent">
+                <div className="h-full rounded-full bg-primary/100" style={{ width: `${Math.max(0, Math.min(100, percent))}%` }} />
               </div>
-              <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
                 <p>
-                  Cantidad: <span className="font-semibold text-slate-800">{formatCountAr(medio.cantidadVentas)}</span>
+                  Cantidad: <span className="font-semibold text-foreground">{formatCountAr(medio.cantidadVentas)}</span>
                 </p>
                 <p>
-                  Total vendido: <span className="font-semibold text-slate-800">{formatCurrencyAr(medio.totalVendido)}</span>
+                  Total vendido: <span className="font-semibold text-foreground">{formatCurrencyAr(medio.totalVendido)}</span>
                 </p>
               </div>
             </article>

@@ -46,7 +46,7 @@ export function IngredientesCard({ ingrediente, onEditar, onEliminar }) {
                   {ingrediente.unidad_base || 'UNIDADES'}
                 </span>
               </div>
-              <span className="font-semibold text-sm text-slate-800">
+              <span className="font-semibold text-sm text-foreground">
                 {ingrediente.costo_unitario_base !== undefined && ingrediente.costo_unitario_base !== null
                   ? `$${parseFloat(ingrediente.costo_unitario_base || 0).toFixed(2)}`
                   : '-'}

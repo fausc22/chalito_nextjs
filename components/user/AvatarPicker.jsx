@@ -64,8 +64,8 @@ export function AvatarPicker({
                 onClick={() => setLocalValue(optionKey)}
                 className={`rounded-lg border p-3 transition text-left ${
                   isSelected
-                    ? 'border-blue-500 ring-2 ring-blue-300 bg-blue-50'
-                    : 'border-slate-200 hover:border-blue-300'
+                    ? 'border-blue-500 ring-2 ring-blue-300 bg-primary/10'
+                    : 'border-border hover:border-blue-300'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -78,7 +78,7 @@ export function AvatarPicker({
                   />
                   {isSelected ? <Check className="h-4 w-4 text-blue-600" /> : null}
                 </div>
-                <p className="mt-2 text-sm font-medium text-slate-700 capitalize">{label}</p>
+                <p className="mt-2 text-sm font-medium text-foreground capitalize">{label}</p>
               </button>
             );
           })}

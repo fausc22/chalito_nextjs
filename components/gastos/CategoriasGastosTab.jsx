@@ -215,10 +215,10 @@ export function CategoriasGastosTab({
             </div>
 
             {/* Tabla Desktop */}
-            <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="hidden md:block bg-card rounded-xl border border-border overflow-hidden">
                 <Table>
                     <TableHeader>
-                        <TableRow className="bg-slate-50">
+                        <TableRow className="bg-muted">
                             <TableHead>Nombre</TableHead>
                             <TableHead>Descripción</TableHead>
                             <TableHead className="text-center">Estado</TableHead>
@@ -240,13 +240,13 @@ export function CategoriasGastosTab({
                                     <TableCell className="font-medium">
                                         {categoria.nombre}
                                     </TableCell>
-                                    <TableCell className="text-slate-600">
+                                    <TableCell className="text-muted-foreground">
                                         {categoria.descripcion || '-'}
                                     </TableCell>
                                     <TableCell className="text-center">
                                         <Badge 
                                             variant={categoria.activa ? "default" : "secondary"}
-                                            className={categoria.activa ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-600"}
+                                            className={categoria.activa ? "bg-green-100 text-green-800" : "bg-muted text-muted-foreground"}
                                         >
                                             {categoria.activa ? 'Activa' : 'Inactiva'}
                                         </Badge>
@@ -267,7 +267,7 @@ export function CategoriasGastosTab({
                                                 title={categoria.activa ? 'Desactivar' : 'Activar'}
                                             >
                                                 {categoria.activa ? (
-                                                    <X className="h-4 w-4 text-slate-500" />
+                                                    <X className="h-4 w-4 text-muted-foreground" />
                                                 ) : (
                                                     <Check className="h-4 w-4 text-green-500" />
                                                 )}
@@ -314,18 +314,18 @@ export function CategoriasGastosTab({
                             <CardContent className="p-4">
                                 <div className="flex items-start justify-between mb-2">
                                     <div>
-                                        <h3 className="font-semibold text-slate-800">{categoria.nombre}</h3>
-                                        <p className="text-sm text-slate-500">{categoria.descripcion || 'Sin descripción'}</p>
+                                        <h3 className="font-semibold text-foreground">{categoria.nombre}</h3>
+                                        <p className="text-sm text-muted-foreground">{categoria.descripcion || 'Sin descripción'}</p>
                                     </div>
                                     <Badge 
                                         variant={categoria.activa ? "default" : "secondary"}
-                                        className={categoria.activa ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-600"}
+                                        className={categoria.activa ? "bg-green-100 text-green-800" : "bg-muted text-muted-foreground"}
                                     >
                                         {categoria.activa ? 'Activa' : 'Inactiva'}
                                     </Badge>
                                 </div>
 
-                                <div className="flex justify-between items-center text-sm text-slate-600 mb-4">
+                                <div className="flex justify-between items-center text-sm text-muted-foreground mb-4">
                                     <span>{categoria.total_gastos || 0} gastos</span>
                                     <span className="font-semibold text-red-600">{formatMonto(categoria.monto_total)}</span>
                                 </div>

@@ -2,6 +2,7 @@ import { createContext, useContext, useReducer, useEffect, useCallback } from 'r
 import { authService } from '../services/authService';
 import { useNotification } from './NotificationContext';
 import { ROLES, ROLE_HIERARCHY } from '../config/api';
+import { canAccess as canAccessPermission } from '../config/permissions';
 import { useRouter } from 'next/router';
 
 const AuthContext = createContext();
@@ -151,7 +152,6 @@ export const AuthProvider = ({ children }) => {
             payload: { user: result.user }
           });
 
-          // Enriquecer con datos completos de perfil (avatar_key, ultima_conexion).
           const profileResult = await authService.getProfile();
           if (mounted && profileResult.success && profileResult.user) {
             dispatch({
@@ -160,6 +160,9 @@ export const AuthProvider = ({ children }) => {
             });
           }
         } else {
+          if (result.error?.response?.data?.code === 'USER_INACTIVE') {
+            authService.logout();
+          }
           if (result.error?.response?.status === 401) {
             authService.logout();
           }
@@ -267,6 +270,14 @@ export const AuthProvider = ({ children }) => {
   const isCajero = useCallback(() => [ROLES.CAJERO, ROLES.GERENTE, ROLES.ADMIN].includes(state.user?.rol), [state.user?.rol]);
   const isCocina = useCallback(() => state.user?.rol === ROLES.COCINA, [state.user?.rol]);
 
+  const canAccessModule = useCallback(
+    (module, action = 'read') => {
+      if (!state.user?.rol) return false;
+      return canAccessPermission(state.user.rol, module, action);
+    },
+    [state.user?.rol]
+  );
+
   const value = {
     ...state,
     login,
@@ -280,6 +291,7 @@ export const AuthProvider = ({ children }) => {
     isGerente,
     isCajero,
     isCocina,
+    canAccessModule,
     userRole: state.user?.rol,
     userName: state.user?.nombre,
     userEmail: state.user?.email

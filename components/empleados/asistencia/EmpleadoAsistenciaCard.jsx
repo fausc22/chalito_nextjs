@@ -13,7 +13,7 @@ const ESTADO_UI = {
   },
   turno_cerrado: {
     label: 'Turno cerrado',
-    badgeClass: 'border-slate-200 bg-slate-100 text-slate-700',
+    badgeClass: 'border-border bg-muted text-foreground',
   },
 };
 
@@ -41,14 +41,14 @@ export function EmpleadoAsistenciaCard({ empleado, onRegistrarIngreso, onRegistr
   const egresoDisponible = empleado.estado === 'en_turno';
 
   return (
-    <Card className="border-slate-200 shadow-sm transition-all hover:shadow-md">
+    <Card className="border-border shadow-sm transition-all hover:shadow-md">
       <CardHeader className="space-y-3 pb-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-base font-semibold text-slate-900">
+            <h3 className="text-base font-semibold text-foreground">
               {empleado.nombre}
             </h3>
-            <p className="text-sm text-slate-900">
+            <p className="text-sm text-foreground">
               Valor hora: {formatCurrency(empleado.valorHora)}
             </p>
           </div>
@@ -60,21 +60,21 @@ export function EmpleadoAsistenciaCard({ empleado, onRegistrarIngreso, onRegistr
 
       <CardContent className="space-y-4 pt-0">
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Ingreso</p>
-            <p className="mt-1 font-semibold text-slate-700">
+          <div className="rounded-lg border border-border bg-muted p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ingreso</p>
+            <p className="mt-1 font-semibold text-foreground">
               {formatTime(empleado.asistenciaActual?.ingreso)}
             </p>
           </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Egreso</p>
-            <p className="mt-1 font-semibold text-slate-700">
+          <div className="rounded-lg border border-border bg-muted p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Egreso</p>
+            <p className="mt-1 font-semibold text-foreground">
               {formatTime(empleado.asistenciaActual?.egreso)}
             </p>
           </div>
         </div>
 
-        <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+        <div className="rounded-lg border border-blue-100 bg-primary/10 p-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Horas del turno</p>
           <p className="mt-1 text-sm font-semibold text-blue-800">
             {(empleado.horasTurno || 0).toFixed(2)} hs

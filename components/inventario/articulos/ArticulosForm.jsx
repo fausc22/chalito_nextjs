@@ -257,7 +257,7 @@ export const ArticulosForm = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0 pb-2">
-          <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
             <Utensils className="h-5 w-5" />
             {isEditing ? 'Editar Artículo' : 'Crear Nuevo Artículo'}
           </DialogTitle>
@@ -315,10 +315,10 @@ export const ArticulosForm = ({
           </div>
 
           {/* ==================== SECCIÓN DE IMAGEN (OPCIONAL) ==================== */}
-          <div className="border-2 border-dashed border-blue-200 rounded-lg p-4 bg-blue-50/30 space-y-3">
+          <div className="border-2 border-dashed border-blue-200 rounded-lg p-4 bg-primary/10/30 space-y-3">
             <div className="flex items-center gap-2">
               <ImageIcon className="h-5 w-5 text-blue-600" />
-              <Label className="text-sm font-medium text-slate-700">
+              <Label className="text-sm font-medium text-foreground">
                 Imagen del artículo (Opcional)
               </Label>
             </div>
@@ -330,9 +330,9 @@ export const ArticulosForm = ({
                   htmlFor="imagen-input" 
                   className="flex-1 cursor-pointer"
                 >
-                  <div className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-blue-300 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-400 transition-colors">
+                  <div className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-blue-300 bg-card rounded-lg hover:bg-accent hover:border-blue-400 transition-colors">
                     <Upload className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium text-slate-700">
+                    <span className="text-sm font-medium text-foreground">
                       {imagenFile ? 'Cambiar imagen' : 'Seleccionar imagen'}
                     </span>
                   </div>
@@ -351,7 +351,7 @@ export const ArticulosForm = ({
                     type="button"
                     variant="outline"
                     onClick={handleEliminarImagen}
-                    className="sm:w-auto border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    className="sm:w-auto border-red-300 text-red-600 hover:bg-destructive/10 hover:text-red-700"
                   >
                     <X className="h-4 w-4 mr-1" />
                     Quitar
@@ -362,7 +362,7 @@ export const ArticulosForm = ({
               {/* Preview de la imagen */}
               {imagenPreview && (
                 <div className="relative">
-                  <div className="relative w-full h-40 sm:h-48 bg-slate-100 rounded-lg overflow-hidden border-2 border-slate-200">
+                  <div className="relative w-full h-40 sm:h-48 bg-muted rounded-lg overflow-hidden border-2 border-border">
                     <Image
                       src={imagenPreview}
                       alt="Vista previa del artículo"
@@ -372,7 +372,7 @@ export const ArticulosForm = ({
                       unoptimized={typeof imagenPreview === 'string' && imagenPreview.startsWith('data:')}
                     />
                   </div>
-                  <p className="text-xs text-slate-500 mt-2">
+                  <p className="text-xs text-muted-foreground mt-2">
                     <span className="font-medium">{imagenFile?.name}</span> 
                     {' '}({(imagenFile?.size / 1024).toFixed(0)} KB)
                   </p>
@@ -381,7 +381,7 @@ export const ArticulosForm = ({
 
               {/* Indicación de formatos permitidos */}
               {!imagenFile && (
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-muted-foreground">
                   Formatos: JPG, PNG, WebP • Tamaño máximo: 5MB
                 </p>
               )}
@@ -450,8 +450,8 @@ export const ArticulosForm = ({
 
           {/* Sección de ingredientes (solo si es ELABORADO) */}
           {formulario.tipo === 'ELABORADO' && (
-            <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 bg-slate-50">
-              <h3 className="text-slate-600 font-medium mb-3 text-[30px]">Ingredientes del artículo</h3>
+            <div className="border-2 border-dashed border-border rounded-lg p-4 bg-muted">
+              <h3 className="text-muted-foreground font-medium mb-3 text-[30px]">Ingredientes del artículo</h3>
 
               {/* Selector de ingredientes */}
               <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mb-4">
@@ -459,7 +459,7 @@ export const ArticulosForm = ({
                   value={ingredienteTemp.ingrediente_id}
                   onValueChange={(value) => setIngredienteTemp(prev => ({ ...prev, ingrediente_id: value }))}
                 >
-                  <SelectTrigger className="border-2 bg-white">
+                  <SelectTrigger className="border-2 bg-card">
                     <SelectValue placeholder="Seleccionar ingrediente..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -480,14 +480,14 @@ export const ArticulosForm = ({
                   onChange={(e) => setIngredienteTemp(prev => ({ ...prev, cantidad: e.target.value }))}
                   min="0"
                   step="0.01"
-                  className="border-2 bg-white"
+                  className="border-2 bg-card"
                 />
 
                 <Select
                   value={ingredienteTemp.unidad_medida}
                   onValueChange={(value) => setIngredienteTemp(prev => ({ ...prev, unidad_medida: value }))}
                 >
-                  <SelectTrigger className="border-2 bg-white">
+                  <SelectTrigger className="border-2 bg-card">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -513,14 +513,14 @@ export const ArticulosForm = ({
               {/* Lista de ingredientes agregados */}
               {formulario.ingredientes.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-slate-500 text-sm">Ingredientes agregados:</p>
+                  <p className="text-muted-foreground text-sm">Ingredientes agregados:</p>
                   <div className="space-y-2">
                     {formulario.ingredientes.map(ing => (
                       <div
                         key={ing.ingrediente_id}
-                        className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-md"
+                        className="flex items-center justify-between p-3 bg-card border border-border rounded-md"
                       >
-                        <span className="text-slate-700 text-sm">
+                        <span className="text-foreground text-sm">
                           {ing.nombre} - {ing.cantidad} {ing.unidad_medida}
                         </span>
                         <button
@@ -539,7 +539,7 @@ export const ArticulosForm = ({
           )}
 
           {/* Control de stock */}
-          <div className={`border-2 rounded-lg p-4 space-y-3 ${controlaStockActivo ? 'border-emerald-300 bg-emerald-50/50' : 'border-slate-300 bg-slate-50'}`}>
+          <div className={`border-2 rounded-lg p-4 space-y-3 ${controlaStockActivo ? 'border-emerald-300 bg-emerald-500/10/50' : 'border-border bg-muted'}`}>
             <div className="flex items-start gap-3">
               <Checkbox
                 id="controla_stock"
@@ -548,10 +548,10 @@ export const ArticulosForm = ({
                 className="w-5 h-5 mt-0.5 border-2"
               />
               <div className="space-y-1">
-                <Label htmlFor="controla_stock" className="cursor-pointer font-medium text-slate-800">
+                <Label htmlFor="controla_stock" className="cursor-pointer font-medium text-foreground">
                   Controlar stock de este artículo
                 </Label>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-muted-foreground">
                   {controlaStockActivo
                     ? 'Este artículo manejará stock propio.'
                     : 'Este artículo no manejará stock propio.'}
@@ -625,7 +625,7 @@ export const ArticulosForm = ({
 
           {/* Checkbox Activo / Reactivar */}
           {isEditing && (formulario.activo === 0 || formulario.activo === false) ? (
-            <div className="flex items-center gap-3 p-4 bg-amber-50 border-2 border-amber-500 rounded-lg cursor-pointer hover:bg-amber-100 transition-colors">
+            <div className="flex items-center gap-3 p-4 bg-amber-500/10 border-2 border-amber-500 rounded-lg cursor-pointer hover:bg-amber-100 transition-colors">
               <Checkbox
                 id="activo"
                 checked={formulario.activo !== 0 && formulario.activo !== false}
@@ -637,14 +637,14 @@ export const ArticulosForm = ({
               </Label>
             </div>
           ) : (
-            <div className="flex items-center gap-3 p-4 bg-slate-50 border-2 border-slate-300 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
+            <div className="flex items-center gap-3 p-4 bg-muted border-2 border-border rounded-lg cursor-pointer hover:bg-muted transition-colors">
               <Checkbox
                 id="activo"
                 checked={formulario.activo !== 0 && formulario.activo !== false}
                 onCheckedChange={(checked) => handleChange('activo', checked ? 1 : 0)}
                 className="w-5 h-5 border-2"
               />
-              <Label htmlFor="activo" className="cursor-pointer font-medium text-slate-700">
+              <Label htmlFor="activo" className="cursor-pointer font-medium text-foreground">
                 Activo (disponible para la venta)
               </Label>
             </div>

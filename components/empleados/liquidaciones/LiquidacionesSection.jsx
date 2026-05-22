@@ -404,8 +404,8 @@ export function LiquidacionesSection() {
   if (loadingInicial) {
     return (
       <div className="space-y-4">
-        <div className="h-28 animate-pulse rounded-xl border border-slate-200 bg-slate-100" />
-        <div className="h-64 animate-pulse rounded-xl border border-slate-200 bg-slate-100" />
+        <div className="h-28 animate-pulse rounded-xl border border-border bg-muted" />
+        <div className="h-64 animate-pulse rounded-xl border border-border bg-muted" />
       </div>
     );
   }
@@ -444,10 +444,10 @@ export function LiquidacionesSection() {
                 canGuardar={!liquidacion.isGuardada}
               />
               {hasTechnicalDetail ? (
-                <Card className="border-slate-200 shadow-sm">
+                <Card className="border-border shadow-sm">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-slate-800">Detalle tecnico</CardTitle>
-                    <p className="text-sm text-slate-500">
+                    <CardTitle className="text-lg text-foreground">Detalle tecnico</CardTitle>
+                    <p className="text-sm text-muted-foreground">
                       Navega el detalle de asistencias y movimientos de la liquidación actual.
                     </p>
                   </CardHeader>
@@ -457,18 +457,18 @@ export function LiquidacionesSection() {
                       onValueChange={setActiveDetailTab}
                       className="w-full"
                     >
-                      <TabsList className="mb-4 grid w-full grid-cols-1 gap-2 bg-slate-100 p-1 sm:grid-cols-2">
+                      <TabsList className="mb-4 grid w-full grid-cols-1 gap-2 bg-muted p-1 sm:grid-cols-2">
                         <TabsTrigger
                           value="asistencias"
                           disabled={!hasAsistencias}
-                          className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
+                          className="data-[state=active]:bg-card data-[state=active]:text-foreground"
                         >
                           Asistencias ({asistenciasRows.length})
                         </TabsTrigger>
                         <TabsTrigger
                           value="movimientos"
                           disabled={!hasMovimientos}
-                          className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
+                          className="data-[state=active]:bg-card data-[state=active]:text-foreground"
                         >
                           Movimientos ({movimientosRows.length})
                         </TabsTrigger>
@@ -485,7 +485,7 @@ export function LiquidacionesSection() {
                   </CardContent>
                 </Card>
               ) : (
-                <Card className="border-slate-200 shadow-sm">
+                <Card className="border-border shadow-sm">
                   <CardContent className="pt-6">
                     <EmpleadosFeedback
                       type="empty"

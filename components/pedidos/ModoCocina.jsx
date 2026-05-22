@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Clock, Package, RefreshCw, AlertTriangle } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { comandasService } from '../../services/comandasService';
 import { getSufijoPresentacionCocina, getExtrasSinPresentacion } from '../../lib/extrasUtils';
 import { pedidosService } from '../../services/pedidosService';
@@ -365,17 +366,20 @@ export function ModoCocina({ isOpen, onClose, modoCocina = true, onPedidoActuali
   }, [currentTime]);
 
   return (
-      <div className="w-full h-screen bg-slate-50 p-4 overflow-y-auto">
+      <div className="relative w-full h-screen bg-background p-4 overflow-y-auto">
+        <div className="absolute right-4 top-4 z-50">
+          <ThemeToggle className="bg-card border border-border shadow-sm" />
+        </div>
         {/* Header simple para cocina */}
-        <div className="mb-4 pb-3 border-b-2 border-slate-300 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-slate-800">COMANDAS EN PREPARACIÓN</h1>
-          <span className="text-2xl font-bold text-slate-800">{comandas.length} ACTIVAS</span>
+        <div className="mb-4 pb-3 border-b-2 border-border flex items-center justify-between pr-14">
+          <h1 className="text-2xl font-bold text-foreground">COMANDAS EN PREPARACIÓN</h1>
+          <span className="text-2xl font-bold text-foreground">{comandas.length} ACTIVAS</span>
         </div>
         {loading && comandas.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <RefreshCw className="h-12 w-12 mx-auto mb-4 text-slate-400 animate-spin" />
-              <p className="text-slate-500">Cargando comandas...</p>
+              <RefreshCw className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-spin" />
+              <p className="text-muted-foreground">Cargando comandas...</p>
             </div>
           </div>
         ) : error ? (
@@ -388,7 +392,7 @@ export function ModoCocina({ isOpen, onClose, modoCocina = true, onPedidoActuali
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <Package className="h-16 w-16 mx-auto mb-4 text-slate-300" />
-              <p className="text-lg font-semibold text-slate-600">No hay comandas en preparación</p>
+              <p className="text-lg font-semibold text-muted-foreground">No hay comandas en preparación</p>
             </div>
           </div>
         ) : (
@@ -400,10 +404,10 @@ export function ModoCocina({ isOpen, onClose, modoCocina = true, onPedidoActuali
               return (
                 <Card
                   key={comanda.id}
-                  className={`bg-white border-2 shadow-md ${
+                  className={`bg-card border-2 shadow-md ${
                     tieneAlerta 
                       ? 'border-red-500 animate-pulse' 
-                      : 'border-slate-300'
+                      : 'border-border'
                   }`}
                 >
                   {/* Header: #pedido | Cuanto antes / Para HH:MM + nombre cliente */}
@@ -414,7 +418,7 @@ export function ModoCocina({ isOpen, onClose, modoCocina = true, onPedidoActuali
                   }`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-bold text-xl">#{comanda.pedidoId}</span>
-                      <span className="text-base font-semibold rounded-lg px-2 py-1 bg-white/20">
+                      <span className="text-base font-semibold rounded-lg px-2 py-1 bg-card/20">
                         {comanda.horaProgramada && formatearHoraProgramada(comanda.horaProgramada)
                           ? `Para ${formatearHoraProgramada(comanda.horaProgramada)}`
                           : 'Cuanto antes'}
@@ -434,7 +438,7 @@ export function ModoCocina({ isOpen, onClose, modoCocina = true, onPedidoActuali
                   <div className="p-3 space-y-2.5">
                     {comanda.articulos?.map((articulo, idx) => (
                       <div key={idx} className="border-l-4 border-slate-500 pl-2.5 py-1.5">
-                        <p className="font-bold text-base text-slate-900">
+                        <p className="font-bold text-base text-foreground">
                           {articulo.cantidad}x {(articulo.articuloNombre || '').toUpperCase()}{getSufijoPresentacionCocina(articulo.personalizaciones?.extras ?? []).toUpperCase()}
                         </p>
                         {/* Extras (sin presentación: Hacela doble/triple va en el nombre como medallones) */}
@@ -443,7 +447,7 @@ export function ModoCocina({ isOpen, onClose, modoCocina = true, onPedidoActuali
                           return extrasLista.length > 0 && (
                             <div className="mt-1.5 space-y-1">
                               {extrasLista.map((extra, extraIdx) => (
-                                <p key={extraIdx} className="text-sm font-medium text-slate-700 ml-2">
+                                <p key={extraIdx} className="text-sm font-medium text-foreground ml-2">
                                   + {(typeof extra === 'object' && (extra.nombre || extra.adicional_nombre || extra.name) ? (extra.nombre || extra.adicional_nombre || extra.name) : String(extra)).toUpperCase()}
                                 </p>
                               ))}
@@ -451,7 +455,7 @@ export function ModoCocina({ isOpen, onClose, modoCocina = true, onPedidoActuali
                           );
                         })()}
                         {articulo.observaciones && (
-                          <p className="text-sm font-medium text-slate-700 italic mt-1 ml-2 flex items-center gap-1">
+                          <p className="text-sm font-medium text-foreground italic mt-1 ml-2 flex items-center gap-1">
                             <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
                             {String(articulo.observaciones || '').toUpperCase()}
                           </p>

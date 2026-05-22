@@ -67,9 +67,9 @@ export const UserInfoCard = ({
           {roleIcon}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 truncate">{user?.nombre}</h3>
-          <p className="text-sm text-gray-500 truncate">{user?.email}</p>
-          <p className="text-xs text-gray-400 truncate">@{user?.usuario}</p>
+          <h3 className="font-semibold text-foreground truncate">{user?.nombre}</h3>
+          <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
+          <p className="text-xs text-muted-foreground truncate">@{user?.usuario}</p>
           <span className={`inline-block mt-2 px-3 py-1 text-xs font-semibold rounded-full ${roleColorClass}`}>
             {roleDisplayName}
           </span>
@@ -89,10 +89,10 @@ export const StatusCard = ({
   color = 'green'
 }) => {
   const colors = {
-    green: 'bg-green-50 border-green-200',
-    blue: 'bg-blue-50 border-blue-200',
-    yellow: 'bg-yellow-50 border-yellow-200',
-    red: 'bg-red-50 border-red-200',
+    green: 'bg-emerald-500/100/10 border-green-200',
+    blue: 'bg-primary/10 border-blue-200',
+    yellow: 'bg-amber-500/10 border-yellow-200',
+    red: 'bg-destructive/10 border-red-200',
   };
 
   const colorClass = colors[color] || colors.green;
@@ -102,8 +102,8 @@ export const StatusCard = ({
       <div className="flex items-center space-x-4">
         <div className="text-4xl flex-shrink-0">{icon}</div>
         <div>
-          <h3 className="font-semibold text-gray-900">{title}</h3>
-          <p className="text-sm text-gray-600">{subtitle}</p>
+          <h3 className="font-semibold text-foreground">{title}</h3>
+          <p className="text-sm text-muted-foreground">{subtitle}</p>
         </div>
       </div>
     </Card>

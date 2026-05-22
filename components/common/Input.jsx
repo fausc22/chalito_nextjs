@@ -27,7 +27,7 @@ export const Input = ({
       )}
       <div className="relative">
         {icon && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
             {icon}
           </div>
         )}
@@ -40,7 +40,7 @@ export const Input = ({
         <p className="mt-1 text-sm text-danger-600">{error}</p>
       )}
       {helperText && !error && (
-        <p className="mt-1 text-sm text-gray-500">{helperText}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{helperText}</p>
       )}
     </div>
   );
@@ -78,7 +78,7 @@ export const Textarea = ({
         <p className="mt-1 text-sm text-danger-600">{error}</p>
       )}
       {helperText && !error && (
-        <p className="mt-1 text-sm text-gray-500">{helperText}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{helperText}</p>
       )}
     </div>
   );
@@ -124,7 +124,7 @@ export const Select = ({
         <p className="mt-1 text-sm text-danger-600">{error}</p>
       )}
       {helperText && !error && (
-        <p className="mt-1 text-sm text-gray-500">{helperText}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{helperText}</p>
       )}
     </div>
   );
@@ -144,7 +144,7 @@ export const Checkbox = ({
     <div className="flex items-center gap-2">
       <input
         type="checkbox"
-        className={`w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 focus:ring-2 ${className}`}
+        className={`w-4 h-4 text-primary-600 bg-gray-100 border-border rounded focus:ring-primary-500 focus:ring-2 ${className}`}
         {...props}
       />
       {label && (

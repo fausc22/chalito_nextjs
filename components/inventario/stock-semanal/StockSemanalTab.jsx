@@ -46,9 +46,9 @@ export function StockSemanalTab({
 
   return (
     <div className="space-y-10">
-      <header className="border-b border-slate-100 pb-6">
-        <div className="flex items-center gap-2 text-slate-900">
-          <CalendarRange className="h-5 w-5 shrink-0 text-[#315e92]" aria-hidden />
+      <header className="border-b border-border pb-6">
+        <div className="flex items-center gap-2 text-foreground">
+          <CalendarRange className="h-5 w-5 shrink-0 text-blue-700" aria-hidden />
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Stock semanal</h2>
         </div>
         <p className="text-muted-foreground mt-1 max-w-2xl leading-relaxed">
@@ -58,7 +58,7 @@ export function StockSemanalTab({
 
       {/* 1. Semana actual — bloque principal */}
       <section aria-labelledby="stock-semanal-semana-actual-heading">
-        <Card className="border border-slate-200 shadow-sm rounded-xl">
+        <Card className="border border-border shadow-sm rounded-xl">
           <CardContent className="p-5 sm:p-6">
             <SemanaActualSection
               semanaAbierta={semanaAbierta}
@@ -77,14 +77,14 @@ export function StockSemanalTab({
 
       {/* 2. Configuración de insumos */}
       <section aria-labelledby="stock-semanal-insumos-heading">
-        <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="pb-3 border-b border-slate-100/80">
+        <Card className="border-border shadow-sm">
+          <CardHeader className="pb-3 border-b border-border/80">
             <div className="flex items-center justify-between gap-3">
               <CardTitle
                 id="stock-semanal-insumos-heading"
-                className="text-lg sm:text-xl font-bold tracking-tight text-slate-800 flex items-center gap-2"
+                className="text-lg sm:text-xl font-bold tracking-tight text-foreground flex items-center gap-2"
               >
-                <ClipboardList className="h-5 w-5 text-[#315e92] shrink-0" aria-hidden />
+                <ClipboardList className="h-5 w-5 text-blue-700 shrink-0" aria-hidden />
                 Insumos semanales
               </CardTitle>
               <Button
@@ -94,7 +94,7 @@ export function StockSemanalTab({
                 aria-label={insumosExpanded ? 'Cerrar sección de insumos semanales' : 'Abrir sección de insumos semanales'}
                 aria-expanded={insumosExpanded}
                 onClick={() => setInsumosExpanded((v) => !v)}
-                className="h-8 w-8 rounded-md border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                className="h-8 w-8 rounded-md border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <ChevronDown
                   className={`h-5 w-5 transition-transform duration-200 ${insumosExpanded ? '' : '-rotate-90'}`}
@@ -127,14 +127,14 @@ export function StockSemanalTab({
 
       {/* 3. Histórico */}
       <section id="stock-semanal-historico-section" aria-labelledby="stock-semanal-historico-heading">
-        <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="pb-3 border-b border-slate-100/80">
+        <Card className="border-border shadow-sm">
+          <CardHeader className="pb-3 border-b border-border/80">
             <div className="flex items-center justify-between gap-3">
               <CardTitle
                 id="stock-semanal-historico-heading"
-                className="text-lg sm:text-xl font-bold tracking-tight text-slate-800 flex items-center gap-2"
+                className="text-lg sm:text-xl font-bold tracking-tight text-foreground flex items-center gap-2"
               >
-                <History className="h-5 w-5 text-[#315e92] shrink-0" aria-hidden />
+                <History className="h-5 w-5 text-blue-700 shrink-0" aria-hidden />
                 Listado de semanas histórico
               </CardTitle>
               <Button
@@ -144,7 +144,7 @@ export function StockSemanalTab({
                 aria-label={historicoExpanded ? 'Cerrar sección de histórico' : 'Abrir sección de histórico'}
                 aria-expanded={historicoExpanded}
                 onClick={() => setHistoricoExpanded((v) => !v)}
-                className="h-8 w-8 rounded-md border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                className="h-8 w-8 rounded-md border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <ChevronDown
                   className={`h-5 w-5 transition-transform duration-200 ${historicoExpanded ? '' : '-rotate-90'}`}

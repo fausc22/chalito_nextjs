@@ -26,7 +26,7 @@ export function VentasCard({ venta, onVerDetalle, onAnular }) {
     const isAnulada = venta.estado === 'ANULADA';
 
     return (
-        <Card className={`transition-all ${isAnulada ? 'bg-red-50/50 border-red-200' : 'hover:shadow-md'}`}>
+        <Card className={`transition-all ${isAnulada ? 'bg-destructive/10/50 border-red-200' : 'hover:shadow-md'}`}>
             <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
                     <div>
@@ -63,7 +63,7 @@ export function VentasCard({ venta, onVerDetalle, onAnular }) {
             <CardContent className="space-y-3">
                 {/* Cliente */}
                 <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-slate-400" />
+                    <User className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">
                         {venta.cliente_nombre || 'Consumidor Final'}
                     </span>
@@ -71,7 +71,7 @@ export function VentasCard({ venta, onVerDetalle, onAnular }) {
 
                 {venta.cliente_telefono && (
                     <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-slate-400" />
+                        <Phone className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">
                             {venta.cliente_telefono}
                         </span>
@@ -80,7 +80,7 @@ export function VentasCard({ venta, onVerDetalle, onAnular }) {
 
                 {/* Medio de pago */}
                 <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-slate-400" />
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
                     <Badge variant="outline" className="font-normal">
                         {venta.medio_pago}
                     </Badge>
@@ -108,7 +108,7 @@ export function VentasCard({ venta, onVerDetalle, onAnular }) {
                         variant="outline"
                         size="sm"
                         onClick={() => onVerDetalle(venta)}
-                        className="flex-1 gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                        className="flex-1 gap-2 text-blue-600 border-blue-200 hover:bg-accent"
                     >
                         <Eye className="h-4 w-4" />
                         Ver Detalle
@@ -118,7 +118,7 @@ export function VentasCard({ venta, onVerDetalle, onAnular }) {
                             variant="outline"
                             size="sm"
                             onClick={() => onAnular(venta)}
-                            className="gap-2 text-red-600 border-red-200 hover:bg-red-50"
+                            className="gap-2 text-red-600 border-red-200 hover:bg-destructive/10"
                         >
                             <Ban className="h-4 w-4" />
                             Anular
