@@ -167,7 +167,7 @@ export function MovimientoFormModal({
                 type="date"
                 value={form.fecha}
                 onChange={(event) => handleChange('fecha', event.target.value)}
-                className="mt-1 w-[160px] max-w-full sm:w-full"
+                className="mt-1"
               />
               {errors.fecha ? <p className="mt-1 text-xs text-red-600">{errors.fecha}</p> : null}
             </div>
@@ -202,7 +202,11 @@ export function MovimientoFormModal({
             <Button type="button" variant="outline" onClick={onClose} disabled={isMutating} className="w-full sm:w-auto">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isMutating || hasErrors} className="w-full sm:w-auto">
+            <Button
+              type="submit"
+              disabled={isMutating || hasErrors}
+              className="w-full bg-green-600 text-white hover:bg-green-700 hover:text-white sm:w-auto"
+            >
               {isMutating ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Crear movimiento'}
             </Button>
           </DialogFooter>

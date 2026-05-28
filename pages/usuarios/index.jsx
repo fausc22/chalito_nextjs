@@ -24,7 +24,8 @@ function UsuariosContent() {
   }, [cargarUsuarios]);
 
   return (
-    <Layout title="Usuarios">
+    <Layout title="Usuarios del sistema">
+      <div className="main-content">
       <UsuariosTab
         usuarios={usuarios}
         loading={loading}
@@ -37,6 +38,7 @@ function UsuariosContent() {
         setActivoUsuario={setActivoUsuario}
         resetPassword={resetPassword}
       />
+      </div>
     </Layout>
   );
 }

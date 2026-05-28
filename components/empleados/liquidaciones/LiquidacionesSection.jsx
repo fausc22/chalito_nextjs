@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { useLiquidaciones } from '@/hooks/empleados/useLiquidaciones';
+import { useAuth } from '@/contexts/AuthContext';
+import { canViewEmployeeLiquidaciones } from '@/config/empleadosPermissions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmpleadosFeedback } from '@/components/empleados/EmpleadosFeedback';
@@ -196,6 +198,7 @@ const toInputDate = (value) => {
 };
 
 export function LiquidacionesSection() {
+  const { userRole } = useAuth();
   const {
     empleados,
     liquidacion,
@@ -218,10 +221,12 @@ export function LiquidacionesSection() {
   const [calculationContext, setCalculationContext] = useState(null);
   const [loadingDetailId, setLoadingDetailId] = useState(null);
   const [activeDetailTab, setActiveDetailTab] = useState('asistencias');
+  const canViewLiquidaciones = useMemo(() => canViewEmployeeLiquidaciones(userRole), [userRole]);
 
   useEffect(() => {
+    if (!canViewLiquidaciones) return;
     cargarInicial();
-  }, [cargarInicial]);
+  }, [canViewLiquidaciones, cargarInicial]);
 
   useEffect(() => {
     const handleGuardarDesdeHeader = async () => {
@@ -407,6 +412,15 @@ export function LiquidacionesSection() {
         <div className="h-28 animate-pulse rounded-xl border border-border bg-muted" />
         <div className="h-64 animate-pulse rounded-xl border border-border bg-muted" />
       </div>
+    );
+  }
+
+  if (!canViewLiquidaciones) {
+    return (
+      <EmpleadosFeedback
+        type="error"
+        message="No tienes permisos para ver liquidaciones."
+      />
     );
   }
 

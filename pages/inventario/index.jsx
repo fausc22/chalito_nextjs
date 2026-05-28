@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Box, Carrot, Tag, Plus, CalendarRange } from 'lucide-react';
+import { Box, Carrot, Tag, Plus, CalendarRange, Package } from 'lucide-react';
 import { ProtectedRoute } from '../../components/auth/ProtectedRoute';
 import { Layout } from '../../components/layout/Layout';
+import { ModuleHeader } from '../../components/layout/ModuleHeader';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArticulosTab } from '../../components/inventario/articulos/ArticulosTab';
@@ -107,15 +108,11 @@ function InventarioContent() {
   return (
     <Layout title="Inventario">
       <div className="main-content">
-        {/* Header */}
-        <div className="mb-8 pb-6 border-b-2 border-border">
-          <h1 className="text-[2rem] font-semibold admin-page-heading mb-2 flex items-center gap-2">
-            📦Módulo Inventario
-          </h1>
-          <p className="text-muted-foreground text-base">
-            Administrá artículos, ingredientes, categorías, adicionales y stock semanal
-          </p>
-        </div>
+        <ModuleHeader
+          title="Inventario"
+          description="Administrá artículos, ingredientes, categorías, adicionales y stock semanal."
+          icon={Package}
+        />
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

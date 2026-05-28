@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
+import { CreditCard } from 'lucide-react';
 import { ProtectedRoute } from '../../components/auth/ProtectedRoute';
 import { Layout } from '../../components/layout/Layout';
+import { ModuleHeader } from '../../components/layout/ModuleHeader';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
 import { VentasTab } from '../../components/ventas/VentasTab';
 import { useVentas } from '../../hooks/ventas/useVentas';
@@ -36,15 +38,11 @@ function VentasContent() {
     return (
         <Layout title="Ventas">
             <div className="main-content">
-                {/* Header */}
-                <div className="mb-8 pb-6 border-b-2 border-border">
-                    <h1 className="text-[2rem] font-semibold admin-page-heading mb-2 flex items-center gap-2">
-                        💳 Módulo de Ventas
-                    </h1>
-                    <p className="text-muted-foreground text-base">
-                        Consultá el historial de ventas y gestioná los ingresos del negocio
-                    </p>
-                </div>
+                <ModuleHeader
+                    title="Ventas"
+                    description="Consultá el historial de ventas y gestioná los ingresos del negocio."
+                    icon={CreditCard}
+                />
 
                 {/* Contenido principal */}
                 <div className="bg-card rounded-xl p-8 shadow-sm border border-border min-h-[400px]">

@@ -3,6 +3,7 @@ import { ChevronDown, Eye, EyeOff, KeyRound, Save, UserRound } from 'lucide-reac
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { Layout } from '@/components/layout/Layout';
+import { ModuleHeader } from '@/components/layout/ModuleHeader';
 import { AvatarPicker } from '@/components/user/AvatarPicker';
 import { UserAvatar } from '@/components/user/UserAvatar';
 import { Button } from '@/components/ui/button';
@@ -182,10 +183,11 @@ function PerfilContent() {
   return (
     <Layout title="Mi Perfil">
       <div className="main-content">
-        <div className="mb-6">
-          <h1 className="text-[2rem] font-semibold admin-page-heading mb-2">Mi Perfil</h1>
-          <p className="text-muted-foreground">Administra tus datos de cuenta, avatar y contraseña.</p>
-        </div>
+        <ModuleHeader
+          title="Mi perfil"
+          description="Administrá tus datos de cuenta, avatar y contraseña."
+          icon={UserRound}
+        />
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <Card className="xl:col-span-1 border-border">

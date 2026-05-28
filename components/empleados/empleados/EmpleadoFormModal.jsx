@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Power } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,7 +40,14 @@ const validateForm = (form) => {
   return errors;
 };
 
-export function EmpleadoFormModal({ isOpen, onClose, empleado, onSubmit, isMutating }) {
+export function EmpleadoFormModal({
+  isOpen,
+  onClose,
+  empleado,
+  onSubmit,
+  onToggleEstado,
+  isMutating,
+}) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const isEditing = Boolean(empleado);
@@ -96,6 +105,36 @@ export function EmpleadoFormModal({ isOpen, onClose, empleado, onSubmit, isMutat
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+          {isEditing && empleado ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-foreground">Estado</span>
+                <Badge
+                  variant="outline"
+                  className={empleado.activo
+                    ? 'border-green-200 bg-green-100 text-green-700'
+                    : 'border-border bg-muted text-muted-foreground'}
+                >
+                  {empleado.activo ? 'Activo' : 'Inactivo'}
+                </Badge>
+              </div>
+              {onToggleEstado ? (
+                <Button
+                  type="button"
+                  variant={empleado.activo ? 'outline' : 'default'}
+                  onClick={() => onToggleEstado(empleado)}
+                  disabled={isMutating}
+                  className={empleado.activo
+                    ? 'border-amber-300 text-amber-700 hover:bg-amber-500/10'
+                    : 'bg-green-600 text-white hover:bg-green-700'}
+                >
+                  <Power className="h-4 w-4" />
+                  {empleado.activo ? 'Inactivar' : 'Activar'}
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
             <div>
               <Label htmlFor="nombre">Nombre *</Label>
@@ -180,7 +219,7 @@ export function EmpleadoFormModal({ isOpen, onClose, empleado, onSubmit, isMutat
                 type="date"
                 value={form.fecha_ingreso}
                 onChange={(event) => handleChange('fecha_ingreso', event.target.value)}
-                className="mt-1 w-[160px] max-w-full sm:w-full"
+                className="mt-1"
               />
               {errors.fecha_ingreso ? <p className="mt-1 text-xs text-red-600">{errors.fecha_ingreso}</p> : null}
             </div>
@@ -201,7 +240,11 @@ export function EmpleadoFormModal({ isOpen, onClose, empleado, onSubmit, isMutat
             <Button type="button" variant="outline" onClick={onClose} disabled={isMutating} className="w-full sm:w-auto">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isMutating || hasErrors} className="w-full sm:w-auto">
+            <Button
+              type="submit"
+              disabled={isMutating || hasErrors}
+              className="w-full bg-green-600 text-white hover:bg-green-700 hover:text-white sm:w-auto"
+            >
               {isMutating ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Crear empleado'}
             </Button>
           </DialogFooter>

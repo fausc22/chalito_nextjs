@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { ROUTE_TITLES, ROUTES } from '@/config/routes';
@@ -19,7 +19,7 @@ export function AdminShellLayout({
   const router = useRouter();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => isPedidosRoute(router.pathname));
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [topbarHeight, setTopbarHeight] = useState(72);
+  const [topbarHeight, setTopbarHeight] = useState(65);
   const topbarRef = useRef(null);
 
   const pageTitle = useMemo(() => title || ROUTE_TITLES[router.pathname] || 'El Chalito', [title, router.pathname]);
@@ -31,7 +31,7 @@ export function AdminShellLayout({
     }
   }, [router.pathname]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = topbarRef.current;
     if (!element) return undefined;
 
@@ -51,7 +51,7 @@ export function AdminShellLayout({
       observer.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, []);
+  }, [topbarActions]);
 
   const mainClassName =
     contentVariant === 'fullBleed'

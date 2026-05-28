@@ -1,4 +1,4 @@
-import { Search, Filter, X, Calendar } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -102,29 +102,19 @@ export function VentasFilters({
                             />
                         </div>
 
-                        {/* Fecha desde */}
-                        <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                type="date"
-                                placeholder="Fecha desde"
-                                value={filtros.fecha_desde || ''}
-                                onChange={(e) => onFiltroChange('fecha_desde', e.target.value)}
-                                className="pl-9"
-                            />
-                        </div>
+                        <Input
+                            type="date"
+                            value={filtros.fecha_desde || ''}
+                            onChange={(e) => onFiltroChange('fecha_desde', e.target.value)}
+                            aria-label="Fecha desde"
+                        />
 
-                        {/* Fecha hasta */}
-                        <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                type="date"
-                                placeholder="Fecha hasta"
-                                value={filtros.fecha_hasta || ''}
-                                onChange={(e) => onFiltroChange('fecha_hasta', e.target.value)}
-                                className="pl-9"
-                            />
-                        </div>
+                        <Input
+                            type="date"
+                            value={filtros.fecha_hasta || ''}
+                            onChange={(e) => onFiltroChange('fecha_hasta', e.target.value)}
+                            aria-label="Fecha hasta"
+                        />
 
                         {/* Estado */}
                         <Select
@@ -172,7 +162,7 @@ export function VentasFilters({
                             <Button
                                 variant="default"
                                 onClick={onBuscar}
-                                className="gap-2 flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-700"
+                                className="gap-2 flex-1 sm:flex-initial bg-blue-600 hover:bg-blue-700 text-white"
                             >
                                 <Filter className="h-4 w-4" />
                                 Filtrar

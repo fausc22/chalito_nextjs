@@ -142,7 +142,7 @@ function PedidosColumnComponent({
     return {
       header: 'bg-slate-700 text-white',
       border: 'border-border',
-      bg: 'bg-muted'
+      bg: 'bg-slate-50 dark:bg-card',
     };
   };
 
@@ -156,7 +156,7 @@ function PedidosColumnComponent({
   })();
 
   return (
-    <div className={`h-full rounded-lg border-2 ${columnStyles.border} ${columnStyles.bg} flex flex-col shadow lg:shadow-none lg:overflow-hidden`}>
+    <div className={`h-full rounded-lg border ${columnStyles.border} ${columnStyles.bg} flex flex-col shadow lg:shadow-none lg:overflow-hidden`}>
       <div className={`${columnStyles.header} px-2 sm:px-3 py-2 flex-shrink-0 lg:rounded-t-lg`}>
         <h2 className="text-sm font-bold flex items-center justify-between gap-2 flex-wrap">
           <span>{titulo}</span>
@@ -268,7 +268,7 @@ function PedidosColumnComponent({
       </div>
 
       {/* Paginación - siempre visible en el pie */}
-      <div className="bg-accent border-t border-border px-2 sm:px-3 py-2 flex items-center justify-center flex-shrink-0 overflow-x-auto">
+      <div className="flex flex-shrink-0 items-center justify-center overflow-x-auto border-t border-border bg-card/50 px-2 py-2 sm:px-3">
         {totalPaginas > 1 && (
           <Pagination>
             <PaginationContent className="gap-1 flex-nowrap">

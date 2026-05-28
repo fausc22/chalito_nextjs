@@ -5,6 +5,12 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { useAsistencia } from '@/hooks/empleados/useAsistencia';
 import { EmpleadosFeedback } from '@/components/empleados/EmpleadosFeedback';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  canViewEmployeeEstimatedTotal,
+  canViewEmployeeHourlyRate,
+  canViewEmployeeHoursSummary,
+} from '@/config/empleadosPermissions';
 import { AsistenciaMetricCard } from './AsistenciaMetricCard';
 import { EmpleadoAsistenciaCard } from './EmpleadoAsistenciaCard';
 import { AsistenciaRecentTable } from './AsistenciaRecentTable';
@@ -25,6 +31,7 @@ const formatMoney = (amount) => new Intl.NumberFormat('es-AR', {
 }).format(Number(amount) || 0);
 
 export function AsistenciaSection() {
+  const { userRole } = useAuth();
   const {
     empleadosConEstado,
     actividadReciente,
@@ -38,6 +45,9 @@ export function AsistenciaSection() {
   } = useAsistencia();
   const [searchTerm, setSearchTerm] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState('all');
+  const showHourlyRate = useMemo(() => canViewEmployeeHourlyRate(userRole), [userRole]);
+  const showHoursSummary = useMemo(() => canViewEmployeeHoursSummary(userRole), [userRole]);
+  const showEstimatedTotal = useMemo(() => canViewEmployeeEstimatedTotal(userRole), [userRole]);
 
   useEffect(() => {
     cargarAsistencia();
@@ -105,18 +115,22 @@ export function AsistenciaSection() {
           hint="Con turno abierto en este momento"
           accentClass="text-foreground"
         />
-        <AsistenciaMetricCard
-          label="Horas acumuladas hoy"
-          value={formatHours(metricas.horasAcumuladasHoy)}
-          hint="Suma total de horas trabajadas"
-          accentClass="text-foreground"
-        />
-        <AsistenciaMetricCard
-          label="Total estimado hoy"
-          value={formatMoney(metricas.totalEstimadoHoy)}
-          hint="Estimado por valor hora actual"
-          accentClass="text-foreground"
-        />
+        {showHoursSummary ? (
+          <AsistenciaMetricCard
+            label="Horas acumuladas hoy"
+            value={formatHours(metricas.horasAcumuladasHoy)}
+            hint="Suma total de horas trabajadas"
+            accentClass="text-foreground"
+          />
+        ) : null}
+        {showEstimatedTotal ? (
+          <AsistenciaMetricCard
+            label="Total estimado hoy"
+            value={formatMoney(metricas.totalEstimadoHoy)}
+            hint="Estimado por valor hora actual"
+            accentClass="text-foreground"
+          />
+        ) : null}
       </div>
 
       <div className="rounded-xl border border-border bg-card p-3 shadow-sm">
@@ -174,6 +188,7 @@ export function AsistenciaSection() {
               empleado={empleado}
               onRegistrarIngreso={handleIngreso}
               onRegistrarEgreso={handleEgreso}
+              showHourlyRate={showHourlyRate}
             />
           ))}
         </div>

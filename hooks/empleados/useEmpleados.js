@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { normalizeActivo } from '@/lib/empleados/normalizeActivo';
 import { empleadosService } from '../../services/empleadosService';
 
 const getFirstDefined = (...values) => values.find((value) => value !== undefined && value !== null);
@@ -30,7 +31,7 @@ const normalizeEmpleado = (empleado) => {
     valorHora: toNumber(getFirstDefined(empleado?.valor_hora, empleado?.valorHora, empleado?.hourly_rate, empleado?.tarifa_hora)),
     fechaIngreso: toDate(getFirstDefined(empleado?.fecha_ingreso, empleado?.fechaIngreso, empleado?.ingreso, empleado?.created_at)),
     observaciones: getFirstDefined(empleado?.observaciones, empleado?.notas, ''),
-    activo: getFirstDefined(empleado?.activo, empleado?.active, empleado?.estado === 'ACTIVO', true) !== false,
+    activo: normalizeActivo(getFirstDefined(empleado?.activo, empleado?.active)),
     raw: empleado,
   };
 };

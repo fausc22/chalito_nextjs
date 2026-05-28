@@ -1,4 +1,4 @@
-import { Filter, RotateCcw } from 'lucide-react';
+import { Filter, RefreshCw, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -32,54 +32,57 @@ export function MovimientoFilters({
         Filtros
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr_0.9fr_0.9fr_auto]">
-        <select
-          value={filtros.empleado_id}
-          onChange={(event) => onChange('empleado_id', event.target.value)}
-          className="h-10 min-w-[210px] rounded-md border border-border bg-card px-3 pr-9 text-sm text-foreground outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-        >
-          <option value="all">Todos los empleados</option>
-          {empleados.map((empleado) => (
-            <option key={empleado.id} value={empleado.id}>
-              {empleado.nombreCompleto}
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-col gap-3">
+        <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <select
+            value={filtros.empleado_id}
+            onChange={(event) => onChange('empleado_id', event.target.value)}
+            className="h-10 min-w-0 w-full rounded-md border border-border bg-card px-3 pr-9 text-sm text-foreground outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          >
+            <option value="all">Todos los empleados</option>
+            {empleados.map((empleado) => (
+              <option key={empleado.id} value={empleado.id}>
+                {empleado.nombreCompleto}
+              </option>
+            ))}
+          </select>
 
-        <select
-          value={filtros.tipo}
-          onChange={(event) => onChange('tipo', event.target.value)}
-          className="h-10 min-w-[170px] rounded-md border border-border bg-card px-3 pr-9 text-sm text-foreground outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-        >
-          {TIPO_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+          <select
+            value={filtros.tipo}
+            onChange={(event) => onChange('tipo', event.target.value)}
+            className="h-10 min-w-0 w-full rounded-md border border-border bg-card px-3 pr-9 text-sm text-foreground outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          >
+            {TIPO_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
 
-        <Input
-          type="date"
-          value={filtros.fecha_desde}
-          onChange={(event) => onChange('fecha_desde', event.target.value)}
-          placeholder="Desde"
-        />
+          <Input
+            type="date"
+            value={filtros.fecha_desde}
+            onChange={(event) => onChange('fecha_desde', event.target.value)}
+            aria-label="Fecha desde"
+          />
 
-        <Input
-          type="date"
-          value={filtros.fecha_hasta}
-          onChange={(event) => onChange('fecha_hasta', event.target.value)}
-          placeholder="Hasta"
-        />
+          <Input
+            type="date"
+            value={filtros.fecha_hasta}
+            onChange={(event) => onChange('fecha_hasta', event.target.value)}
+            aria-label="Fecha hasta"
+          />
+        </div>
 
-        <div className="flex justify-end gap-2 xl:justify-self-end">
+        <div className="flex flex-wrap gap-2 sm:justify-end">
           <Button
             type="button"
             variant="outline"
-            className="border-border px-3 text-foreground"
+            className="gap-2 border-border text-foreground flex-1 sm:flex-initial"
             onClick={onRefresh}
             disabled={loading}
           >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'Actualizando...' : 'Actualizar'}
           </Button>
 
@@ -87,12 +90,12 @@ export function MovimientoFilters({
             <Button
               type="button"
               variant="outline"
-              className="border-border px-3 text-foreground"
+              className="gap-2 border-border text-foreground flex-1 sm:flex-initial"
               onClick={onClear}
               disabled={loading}
-              aria-label="Limpiar filtros"
             >
-              <RotateCcw className="h-4 w-4" />
+              <X className="h-4 w-4" />
+              Limpiar
             </Button>
           ) : null}
         </div>

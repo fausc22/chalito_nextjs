@@ -56,7 +56,7 @@ export function CuponesTab() {
             <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
             Actualizar
           </Button>
-          <Button type="button" size="sm" onClick={abrirNuevo} className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Button type="button" size="sm" onClick={abrirNuevo} className="bg-green-600 hover:bg-green-700 text-white">
             <Plus className="h-4 w-4 mr-1" />
             Nuevo cupón
           </Button>

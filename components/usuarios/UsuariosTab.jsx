@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ROLES, ROLE_NAMES } from '@/config/api';
+import { ModuleHeader } from '@/components/layout/ModuleHeader';
 import { UsuariosTable } from './UsuariosTable';
 import { UsuarioFormModal } from './UsuarioFormModal';
 import { ResetPasswordDialog } from './ResetPasswordDialog';
@@ -112,14 +113,24 @@ export function UsuariosTab({
   };
 
   return (
-    <main className="main-content space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold admin-page-heading">Usuarios del sistema</h1>
-        <Button type="button" onClick={() => { setSeleccionado(null); setModalForm(true); }}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo usuario
-        </Button>
-      </div>
+    <div className="space-y-4">
+      <ModuleHeader
+        title="Usuarios del sistema"
+        description="Gestión de cuentas, roles y acceso al panel."
+        actions={
+          <Button
+            type="button"
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => {
+              setSeleccionado(null);
+              setModalForm(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo usuario
+          </Button>
+        }
+      />
 
       <div className="flex flex-wrap gap-2 items-end bg-muted p-4 rounded-lg">
         <div className="flex-1 min-w-[200px]">
@@ -159,7 +170,7 @@ export function UsuariosTab({
             <SelectItem value="0">Inactivos</SelectItem>
           </SelectContent>
         </Select>
-        <Button type="button" variant="secondary" onClick={buscar}>
+        <Button type="button" variant="default" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={buscar}>
           Buscar
         </Button>
       </div>
@@ -241,12 +252,12 @@ export function UsuariosTab({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmarToggle}>
+            <AlertDialogAction className="bg-green-600 hover:bg-green-700 text-white" onClick={confirmarToggle}>
               Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </main>
+    </div>
   );
 }

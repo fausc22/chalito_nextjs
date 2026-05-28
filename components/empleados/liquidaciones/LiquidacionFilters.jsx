@@ -149,7 +149,7 @@ export function LiquidacionFilters({
             type="button"
             onClick={onCalculate}
             disabled={calculando}
-            className="w-full bg-blue-600 text-white hover:bg-blue-700"
+            className="w-full bg-green-600 text-white hover:bg-green-700"
           >
             <Calculator className={`h-4 w-4 ${calculando ? 'animate-pulse' : ''}`} />
             {calculando ? 'Calculando...' : 'Calcular'}

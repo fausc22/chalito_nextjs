@@ -22,8 +22,6 @@ export function Toaster() {
       theme={theme}
       expand={false}
       visibleToasts={4}
-      closeButton
-      richColors
       position="top-right"
       swipeDirections={[]}
       className="chalito-sonner pointer-events-none z-[2147483647]"

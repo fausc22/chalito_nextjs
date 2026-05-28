@@ -14,7 +14,14 @@ const formatDate = (date) => {
   return new Intl.DateTimeFormat('es-AR').format(date);
 };
 
-export function EmpleadoCard({ empleado, isMutating, onEdit, onToggle }) {
+export function EmpleadoCard({
+  empleado,
+  isMutating,
+  onEdit,
+  onToggle,
+  canMutate = true,
+  showHourlyRate = true,
+}) {
   return (
     <Card className="border-border shadow-sm transition-all hover:shadow-md">
       <CardHeader className="pb-3">
@@ -23,9 +30,11 @@ export function EmpleadoCard({ empleado, isMutating, onEdit, onToggle }) {
             <h3 className="text-base font-semibold text-foreground">
               {empleado.nombreCompleto}
             </h3>
-            <p className="text-sm text-muted-foreground">
-              {formatMoney(empleado.valorHora)} / hora
-            </p>
+            {showHourlyRate ? (
+              <p className="text-sm text-muted-foreground">
+                {formatMoney(empleado.valorHora)} / hora
+              </p>
+            ) : null}
           </div>
 
           <Badge
@@ -47,28 +56,30 @@ export function EmpleadoCard({ empleado, isMutating, onEdit, onToggle }) {
           <p><span className="font-medium text-foreground">Ingreso:</span> {formatDate(empleado.fechaIngreso)}</p>
         </div>
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onEdit(empleado)}
-            disabled={isMutating}
-            className="border-border text-foreground"
-          >
-            <Pencil className="h-4 w-4" />
-            Editar
-          </Button>
-          <Button
-            type="button"
-            variant={empleado.activo ? 'outline' : 'default'}
-            onClick={() => onToggle(empleado)}
-            disabled={isMutating}
-            className={empleado.activo ? 'border-amber-300 text-amber-700 hover:bg-amber-500/10' : 'bg-green-600 text-white hover:bg-green-700'}
-          >
-            <Power className="h-4 w-4" />
-            {empleado.activo ? 'Inactivar' : 'Activar'}
-          </Button>
-        </div>
+        {canMutate ? (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onEdit(empleado)}
+              disabled={isMutating}
+              className="border-border text-foreground"
+            >
+              <Pencil className="h-4 w-4" />
+              Editar
+            </Button>
+            <Button
+              type="button"
+              variant={empleado.activo ? 'outline' : 'default'}
+              onClick={() => onToggle(empleado)}
+              disabled={isMutating}
+              className={empleado.activo ? 'border-amber-300 text-amber-700 hover:bg-amber-500/10' : 'bg-green-600 text-white hover:bg-green-700'}
+            >
+              <Power className="h-4 w-4" />
+              {empleado.activo ? 'Inactivar' : 'Activar'}
+            </Button>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

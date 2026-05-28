@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/router';
-import { AlertTriangle, TrendingUp, DollarSign, Receipt, Ban } from 'lucide-react';
+import { AlertTriangle, TrendingUp, DollarSign, Hash, Ban } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,6 +30,7 @@ import { VentasCard } from './VentasCard';
 import { VentaDetalleDrawer } from './VentaDetalleDrawer';
 import { VentasPageSkeleton } from './VentasPageSkeleton';
 import { toast } from '@/hooks/use-toast';
+import { applyDateOrMonthYearParams } from '@/lib/filtros/buildListadoDateParams';
 
 export function VentasTab({
     ventas,
@@ -82,6 +83,27 @@ export function VentasTab({
         };
     }, [router.query, getCurrentDate]);
 
+    const buildVentasParams = useCallback((filters) => {
+        const params = applyDateOrMonthYearParams(
+            {
+                page: filters.page,
+                limit: 20,
+                estado: filters.estado || undefined,
+                medio_pago: filters.medio_pago || undefined,
+                busqueda: filters.busqueda || undefined,
+            },
+            filters
+        );
+
+        Object.keys(params).forEach((key) => {
+            if (params[key] === undefined || params[key] === '') {
+                delete params[key];
+            }
+        });
+
+        return params;
+    }, []);
+
     // Estados locales para UI
     const [drawerDetalle, setDrawerDetalle] = useState(false);
     const [modalAnular, setModalAnular] = useState(false);
@@ -126,26 +148,7 @@ export function VentasTab({
         if (!isInitialized || !router.isReady) return;
         
         const loadVentas = async () => {
-            const params = {
-                month: filtros.month === 'all' ? null : filtros.month,
-                year: filtros.year,
-                page: filtros.page,
-                limit: 20,
-                fecha_desde: filtros.fecha_desde || undefined,
-                fecha_hasta: filtros.fecha_hasta || undefined,
-                estado: filtros.estado || undefined,
-                medio_pago: filtros.medio_pago || undefined,
-                busqueda: filtros.busqueda || undefined
-            };
-            
-            // Limpiar parámetros undefined
-            Object.keys(params).forEach(key => {
-                if (params[key] === undefined || params[key] === '') {
-                    delete params[key];
-                }
-            });
-            
-            await onCargarVentas(params);
+            await onCargarVentas(buildVentasParams(filtros));
         };
         
         loadVentas();
@@ -181,12 +184,11 @@ export function VentasTab({
             query.busqueda = newFilters.busqueda;
         }
         
-        // Fechas solo si no se usa month/year
-        if (newFilters.fecha_desde && !newFilters.month && newFilters.month !== 'all') {
+        if (newFilters.fecha_desde) {
             query.fecha_desde = newFilters.fecha_desde;
         }
-        
-        if (newFilters.fecha_hasta && !newFilters.month && newFilters.month !== 'all') {
+
+        if (newFilters.fecha_hasta) {
             query.fecha_hasta = newFilters.fecha_hasta;
         }
         
@@ -268,15 +270,23 @@ export function VentasTab({
     };
 
     const handleFiltroChange = (campo, valor) => {
-        const newFilters = { ...filtros, [campo]: valor, page: 1 }; // Resetear a página 1 al cambiar filtros
+        const newFilters = { ...filtros, [campo]: valor, page: 1 };
+        if (campo === 'month' || campo === 'year') {
+            newFilters.fecha_desde = '';
+            newFilters.fecha_hasta = '';
+        }
         setFiltros(newFilters);
-        updateURL(newFilters);
+        // Las fechas se sincronizan a la URL al presionar Filtrar (evita que router.query las borre)
+        if (campo !== 'fecha_desde' && campo !== 'fecha_hasta') {
+            updateURL(newFilters);
+        }
     };
 
     const handleBuscar = () => {
         const newFilters = { ...filtros, page: 1 };
         setFiltros(newFilters);
         updateURL(newFilters);
+        onCargarVentas(buildVentasParams(newFilters));
     };
 
     const limpiarFiltros = () => {
@@ -351,8 +361,8 @@ export function VentasTab({
                     <Card>
                         <CardContent className="p-4">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-muted0 rounded-lg">
-                                    <Receipt className="h-5 w-5 text-white" />
+                                <div className="p-2 bg-slate-600 rounded-lg">
+                                    <Hash className="h-5 w-5 text-white" />
                                 </div>
                                 <div>
                                     <p className="text-sm text-muted-foreground">Cantidad</p>

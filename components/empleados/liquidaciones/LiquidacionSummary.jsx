@@ -50,7 +50,7 @@ export function LiquidacionSummary({
             type="button"
             onClick={onGuardar}
             disabled={guardando || !canGuardar}
-            className="bg-blue-600 text-white hover:bg-blue-700"
+            className="bg-green-600 text-white hover:bg-green-700"
           >
             {guardando ? 'Guardando...' : canGuardar ? 'Guardar liquidación' : 'Liquidación guardada'}
           </Button>

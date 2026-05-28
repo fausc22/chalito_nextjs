@@ -3,12 +3,18 @@ import { useRouter } from 'next/router';
 import { toast } from '@/hooks/use-toast';
 import { useEmpleados } from '@/hooks/empleados/useEmpleados';
 import { EmpleadosFeedback } from '@/components/empleados/EmpleadosFeedback';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  canMutateEmployeeMaster,
+  canViewEmployeeHourlyRate,
+} from '@/config/empleadosPermissions';
 import { EmpleadoCard } from './EmpleadoCard';
 import { EmpleadoFormModal } from './EmpleadoFormModal';
 import { EmpleadosFilters } from './EmpleadosFilters';
 
 export function EmpleadosSection() {
   const router = useRouter();
+  const { userRole } = useAuth();
   const {
     empleados,
     loading,
@@ -23,6 +29,8 @@ export function EmpleadosSection() {
   const [estadoFiltro, setEstadoFiltro] = useState('activos');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [empleadoEditando, setEmpleadoEditando] = useState(null);
+  const canMutateEmployees = useMemo(() => canMutateEmployeeMaster(userRole), [userRole]);
+  const canViewHourlyRate = useMemo(() => canViewEmployeeHourlyRate(userRole), [userRole]);
 
   useEffect(() => {
     cargarEmpleados(estadoFiltro);
@@ -31,6 +39,17 @@ export function EmpleadosSection() {
   useEffect(() => {
     if (!router.isReady) return;
     if (router.query.nuevo !== '1') return;
+
+    if (!canMutateEmployees) {
+      const nextQuery = { ...router.query };
+      delete nextQuery.nuevo;
+      router.replace(
+        { pathname: router.pathname, query: nextQuery },
+        undefined,
+        { shallow: true }
+      );
+      return;
+    }
 
     setEmpleadoEditando(null);
     setIsFormOpen(true);
@@ -42,7 +61,7 @@ export function EmpleadosSection() {
       undefined,
       { shallow: true }
     );
-  }, [router]);
+  }, [canMutateEmployees, router]);
 
   const empleadosFiltrados = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -57,11 +76,16 @@ export function EmpleadosSection() {
   }, [empleados, searchTerm]);
 
   const openEditarEmpleado = (empleado) => {
+    if (!canMutateEmployees) return;
     setEmpleadoEditando(empleado);
     setIsFormOpen(true);
   };
 
   const handleSaveEmpleado = async (formData) => {
+    if (!canMutateEmployees) {
+      toast.error('No tienes permisos para modificar empleados');
+      return;
+    }
     const response = empleadoEditando
       ? await actualizarEmpleado(empleadoEditando.id, formData)
       : await crearEmpleado(formData);
@@ -78,6 +102,10 @@ export function EmpleadosSection() {
   };
 
   const handleToggleEstado = async (empleado) => {
+    if (!canMutateEmployees) {
+      toast.error('No tienes permisos para modificar empleados');
+      return;
+    }
     const nextState = !empleado.activo;
     const response = await cambiarEstadoEmpleado(empleado.id, nextState);
     if (!response.success) {
@@ -87,6 +115,10 @@ export function EmpleadosSection() {
 
     toast.success(nextState ? 'Empleado activado' : 'Empleado inactivado');
     await cargarEmpleados(estadoFiltro);
+
+    if (empleadoEditando?.id === empleado.id) {
+      setEmpleadoEditando((prev) => (prev ? { ...prev, activo: nextState } : null));
+    }
   };
 
   if (loading && empleados.length === 0) {
@@ -131,22 +163,27 @@ export function EmpleadosSection() {
               isMutating={isMutating}
               onEdit={openEditarEmpleado}
               onToggle={handleToggleEstado}
+              canMutate={canMutateEmployees}
+              showHourlyRate={canViewHourlyRate}
             />
           ))}
         </div>
       )}
 
-      <EmpleadoFormModal
-        isOpen={isFormOpen}
-        onClose={() => {
-          if (isMutating) return;
-          setIsFormOpen(false);
-          setEmpleadoEditando(null);
-        }}
-        empleado={empleadoEditando}
-        onSubmit={handleSaveEmpleado}
-        isMutating={isMutating}
-      />
+      {canMutateEmployees ? (
+        <EmpleadoFormModal
+          isOpen={isFormOpen}
+          onClose={() => {
+            if (isMutating) return;
+            setIsFormOpen(false);
+            setEmpleadoEditando(null);
+          }}
+          empleado={empleadoEditando}
+          onSubmit={handleSaveEmpleado}
+          onToggleEstado={handleToggleEstado}
+          isMutating={isMutating}
+        />
+      ) : null}
     </div>
   );
 }

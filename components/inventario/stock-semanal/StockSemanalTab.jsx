@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CalendarRange, ChevronDown, ClipboardList, History } from 'lucide-react';
+import { SectionHeader } from '@/components/layout/SectionHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { InsumosSemanalesSection } from './InsumosSemanalesSection';
@@ -46,15 +47,12 @@ export function StockSemanalTab({
 
   return (
     <div className="space-y-10">
-      <header className="border-b border-border pb-6">
-        <div className="flex items-center gap-2 text-foreground">
-          <CalendarRange className="h-5 w-5 shrink-0 text-blue-700" aria-hidden />
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Stock semanal</h2>
-        </div>
-        <p className="text-muted-foreground mt-1 max-w-2xl leading-relaxed">
-          Gestión de stock semanal, insumos e histórico.
-        </p>
-      </header>
+      <SectionHeader
+        title="Stock semanal"
+        description="Semana en curso, insumos e histórico de cierres."
+        icon={CalendarRange}
+        className="border-b border-border pb-6"
+      />
 
       {/* 1. Semana actual — bloque principal */}
       <section aria-labelledby="stock-semanal-semana-actual-heading">
