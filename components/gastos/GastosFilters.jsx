@@ -1,4 +1,4 @@
-import { Search, Filter, X, Calendar } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -106,29 +106,19 @@ export function GastosFilters({
                             />
                         </div>
 
-                        {/* Fecha desde */}
-                        <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                type="date"
-                                placeholder="Fecha desde"
-                                value={filtros.fecha_desde || ''}
-                                onChange={(e) => onFiltroChange('fecha_desde', e.target.value)}
-                                className="pl-9"
-                            />
-                        </div>
+                        <Input
+                            type="date"
+                            value={filtros.fecha_desde || ''}
+                            onChange={(e) => onFiltroChange('fecha_desde', e.target.value)}
+                            aria-label="Fecha desde"
+                        />
 
-                        {/* Fecha hasta */}
-                        <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                type="date"
-                                placeholder="Fecha hasta"
-                                value={filtros.fecha_hasta || ''}
-                                onChange={(e) => onFiltroChange('fecha_hasta', e.target.value)}
-                                className="pl-9"
-                            />
-                        </div>
+                        <Input
+                            type="date"
+                            value={filtros.fecha_hasta || ''}
+                            onChange={(e) => onFiltroChange('fecha_hasta', e.target.value)}
+                            aria-label="Fecha hasta"
+                        />
 
                         {/* Categoría */}
                         <Select

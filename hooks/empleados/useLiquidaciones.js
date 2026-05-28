@@ -140,6 +140,8 @@ const isLikelyNoDataError = (message) => {
   ].some((needle) => normalized.includes(needle));
 };
 
+const isForbiddenStatus = (status) => Number(status) === 403;
+
 const normalizeLiquidacionResult = (payload, defaultFilters = null) => {
   const root = payload?.liquidacion || payload?.resumen ? payload : payload?.data || payload || {};
   const liquidacionId = getFirstDefined(root?.id, root?.liquidacion_id, root?.registro_id, null);
@@ -269,7 +271,11 @@ export const useLiquidaciones = () => {
 
       if (!historialResponse.success) {
         setHistorial([]);
-        setHistorialError(historialResponse.error || null);
+        setHistorialError(
+          isForbiddenStatus(historialResponse.status)
+            ? 'No tienes permisos para ver historial de liquidaciones'
+            : (historialResponse.error || null)
+        );
       } else {
         setHistorial((historialResponse.data || []).map(normalizeHistoryItem).filter((item) => item.id));
       }
@@ -391,7 +397,11 @@ export const useLiquidaciones = () => {
     try {
       const response = await empleadosService.obtenerLiquidaciones(filters);
       if (!response.success) {
-        setHistorialError(response.error || 'No se pudo cargar historial');
+        setHistorialError(
+          isForbiddenStatus(response.status)
+            ? 'No tienes permisos para ver historial de liquidaciones'
+            : (response.error || 'No se pudo cargar historial')
+        );
         setHistorial([]);
         return { success: false, error: response.error };
       }
@@ -412,7 +422,12 @@ export const useLiquidaciones = () => {
     try {
       const response = await empleadosService.obtenerLiquidacionPorId(id);
       if (!response.success) {
-        return { success: false, error: response.error || 'No se pudo obtener el detalle de la liquidacion' };
+        return {
+          success: false,
+          error: isForbiddenStatus(response.status)
+            ? 'No tienes permisos para ver el detalle de liquidaciones'
+            : (response.error || 'No se pudo obtener el detalle de la liquidacion'),
+        };
       }
 
       const normalized = normalizeLiquidacionResult(response.data);

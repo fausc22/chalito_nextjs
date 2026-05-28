@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/router';
-import { Plus, AlertTriangle, TrendingDown, DollarSign } from 'lucide-react';
+import { Plus, AlertTriangle, TrendingDown, Hash, DollarSign } from 'lucide-react';
+import { SectionHeader } from '@/components/layout/SectionHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -28,6 +29,7 @@ import { GastosForm } from './GastosForm';
 import { GastosPageSkeleton } from './GastosPageSkeleton';
 import { GastoDetalleDrawer } from './GastoDetalleDrawer';
 import { toast } from '@/hooks/use-toast';
+import { applyDateOrMonthYearParams } from '@/lib/filtros/buildListadoDateParams';
 
 export function GastosTab({
     gastos,
@@ -79,6 +81,28 @@ export function GastosTab({
         };
     }, [router.query, getCurrentDate]);
 
+    const buildGastosParams = useCallback((filters) => {
+        const params = applyDateOrMonthYearParams(
+            {
+                page: filters.page,
+                limit: 20,
+                categoria_id: filters.categoria_id || undefined,
+                cuenta_id: filters.cuenta_id || undefined,
+                forma_pago: filters.forma_pago || undefined,
+                busqueda: filters.busqueda || undefined,
+            },
+            filters
+        );
+
+        Object.keys(params).forEach((key) => {
+            if (params[key] === undefined || params[key] === '') {
+                delete params[key];
+            }
+        });
+
+        return params;
+    }, []);
+
     // Estados locales para UI
     const [modalAgregar, setModalAgregar] = useState(false);
     const [modalEditar, setModalEditar] = useState(false);
@@ -126,27 +150,7 @@ export function GastosTab({
         if (!isInitialized || !router.isReady) return;
         
         const loadGastos = async () => {
-            const params = {
-                month: filtros.month === 'all' ? null : filtros.month,
-                year: filtros.year,
-                page: filtros.page,
-                limit: 20,
-                fecha_desde: filtros.fecha_desde || undefined,
-                fecha_hasta: filtros.fecha_hasta || undefined,
-                categoria_id: filtros.categoria_id || undefined,
-                cuenta_id: filtros.cuenta_id || undefined,
-                forma_pago: filtros.forma_pago || undefined,
-                busqueda: filtros.busqueda || undefined
-            };
-            
-            // Limpiar parámetros undefined
-            Object.keys(params).forEach(key => {
-                if (params[key] === undefined || params[key] === '') {
-                    delete params[key];
-                }
-            });
-            
-            await onCargarGastos(params);
+            await onCargarGastos(buildGastosParams(filtros));
         };
         
         loadGastos();
@@ -186,12 +190,11 @@ export function GastosTab({
             query.busqueda = newFilters.busqueda;
         }
         
-        // Fechas solo si no se usa month/year
-        if (newFilters.fecha_desde && !newFilters.month && newFilters.month !== 'all') {
+        if (newFilters.fecha_desde) {
             query.fecha_desde = newFilters.fecha_desde;
         }
-        
-        if (newFilters.fecha_hasta && !newFilters.month && newFilters.month !== 'all') {
+
+        if (newFilters.fecha_hasta) {
             query.fecha_hasta = newFilters.fecha_hasta;
         }
         
@@ -295,25 +298,7 @@ export function GastosTab({
                 title: "Gasto registrado",
                 description: resultado.message || "El gasto se registró correctamente"
             });
-            // Recargar con filtros actuales
-            const params = {
-                month: filtros.month === 'all' ? null : filtros.month,
-                year: filtros.year,
-                page: filtros.page,
-                limit: 20,
-                fecha_desde: filtros.fecha_desde || undefined,
-                fecha_hasta: filtros.fecha_hasta || undefined,
-                categoria_id: filtros.categoria_id || undefined,
-                cuenta_id: filtros.cuenta_id || undefined,
-                forma_pago: filtros.forma_pago || undefined,
-                busqueda: filtros.busqueda || undefined
-            };
-            Object.keys(params).forEach(key => {
-                if (params[key] === undefined || params[key] === '') {
-                    delete params[key];
-                }
-            });
-            onCargarGastos(params);
+            onCargarGastos(buildGastosParams(filtros));
         } else {
             toast({
                 variant: "destructive",
@@ -344,25 +329,7 @@ export function GastosTab({
                 title: "Gasto actualizado",
                 description: resultado.message || "El gasto se actualizó correctamente"
             });
-            // Recargar con filtros actuales
-            const params = {
-                month: filtros.month === 'all' ? null : filtros.month,
-                year: filtros.year,
-                page: filtros.page,
-                limit: 20,
-                fecha_desde: filtros.fecha_desde || undefined,
-                fecha_hasta: filtros.fecha_hasta || undefined,
-                categoria_id: filtros.categoria_id || undefined,
-                cuenta_id: filtros.cuenta_id || undefined,
-                forma_pago: filtros.forma_pago || undefined,
-                busqueda: filtros.busqueda || undefined
-            };
-            Object.keys(params).forEach(key => {
-                if (params[key] === undefined || params[key] === '') {
-                    delete params[key];
-                }
-            });
-            onCargarGastos(params);
+            onCargarGastos(buildGastosParams(filtros));
         } else {
             toast({
                 variant: "destructive",
@@ -382,25 +349,7 @@ export function GastosTab({
                 title: "Gasto eliminado",
                 description: resultado.message || "El gasto se eliminó correctamente"
             });
-            // Recargar con filtros actuales
-            const params = {
-                month: filtros.month === 'all' ? null : filtros.month,
-                year: filtros.year,
-                page: filtros.page,
-                limit: 20,
-                fecha_desde: filtros.fecha_desde || undefined,
-                fecha_hasta: filtros.fecha_hasta || undefined,
-                categoria_id: filtros.categoria_id || undefined,
-                cuenta_id: filtros.cuenta_id || undefined,
-                forma_pago: filtros.forma_pago || undefined,
-                busqueda: filtros.busqueda || undefined
-            };
-            Object.keys(params).forEach(key => {
-                if (params[key] === undefined || params[key] === '') {
-                    delete params[key];
-                }
-            });
-            onCargarGastos(params);
+            onCargarGastos(buildGastosParams(filtros));
         } else {
             toast({
                 variant: "destructive",
@@ -446,13 +395,21 @@ export function GastosTab({
     };
 
     const handleFiltroChange = (campo, valor) => {
-        setFiltros(prev => ({ ...prev, [campo]: valor, page: 1 }));
+        setFiltros((prev) => {
+            const next = { ...prev, [campo]: valor, page: 1 };
+            if (campo === 'month' || campo === 'year') {
+                next.fecha_desde = '';
+                next.fecha_hasta = '';
+            }
+            return next;
+        });
     };
 
     const handleBuscar = () => {
         const newFilters = { ...filtros, page: 1 };
         updateURL(newFilters);
         setFiltros(newFilters);
+        onCargarGastos(buildGastosParams(newFilters));
     };
 
     const limpiarFiltros = () => {
@@ -506,26 +463,20 @@ export function GastosTab({
 
     return (
         <div ref={containerRef} className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-center sm:items-center gap-4">
-                <div className="text-center sm:text-left w-full sm:w-auto">
-                    <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center justify-center sm:justify-start gap-2">
-                        <TrendingDown className="h-6 w-6 text-red-500" />
-                        Gestión de Gastos
-                    </h2>
-                    <p className="text-muted-foreground mt-1">
-                        Registra y controla los egresos del negocio
-                    </p>
-                </div>
-
-                <Button 
-                    onClick={() => setModalAgregar(true)} 
-                    className="gap-2 w-[200px] sm:w-auto bg-green-600 hover:bg-green-700 text-white"
-                >
-                    <Plus className="h-4 w-4" />
-                    Nuevo Gasto
-                </Button>
-            </div>
+            <SectionHeader
+                title="Registro de gastos"
+                description="Listado, filtros y altas de egresos del negocio."
+                icon={TrendingDown}
+                actions={
+                    <Button
+                        onClick={() => setModalAgregar(true)}
+                        className="gap-2 w-[200px] bg-green-600 hover:bg-green-700 text-white sm:w-auto"
+                    >
+                        <Plus className="h-4 w-4" />
+                        Nuevo gasto
+                    </Button>
+                }
+            />
 
             {/* Resumen de totales */}
             {metaGastos.total_monto > 0 && (
@@ -548,8 +499,8 @@ export function GastosTab({
                     <Card>
                         <CardContent className="p-4">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-muted0 rounded-lg">
-                                    <TrendingDown className="h-5 w-5 text-white" />
+                                <div className="p-2 bg-slate-600 rounded-lg">
+                                    <Hash className="h-5 w-5 text-white" />
                                 </div>
                                 <div>
                                     <p className="text-sm text-muted-foreground">Cantidad</p>

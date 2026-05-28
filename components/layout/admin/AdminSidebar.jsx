@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getMainNavItems } from './navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { getDefaultRouteForRole } from '@/config/permissions';
 import { Button } from '@/components/ui/button';
 
 export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobileClose }) {
@@ -12,6 +13,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
   const { userRole } = useAuth();
   const [collapsedLogoError, setCollapsedLogoError] = useState(false);
   const navItems = getMainNavItems(userRole);
+  const homeHref = getDefaultRouteForRole(userRole);
 
   const isActiveRoute = (route) =>
     router.pathname === route || router.pathname.startsWith(`${route}/`);
@@ -40,43 +42,45 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
               ) : null}
               <div className={`flex min-w-0 ${collapsed ? 'flex-col items-center gap-2' : 'justify-start'}`}>
                 <Link
-                  href="/"
-                  className={`relative block overflow-hidden transition-all duration-300 ${
+                  href={homeHref}
+                  className={`relative block cursor-pointer overflow-hidden transition-[width,height] duration-300 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300/40 ${
                     collapsed ? 'h-11 w-11 rounded-xl' : 'h-16 w-44 rounded-none'
                   }`}
                   aria-label="Inicio"
                 >
-                  <Image
-                    src="/logo-empresa.png"
-                    alt="El Chalito"
-                    fill
-                    sizes="176px"
-                    className={`object-contain transition-all duration-300 ${
-                      collapsed ? 'pointer-events-none w-0 scale-95 opacity-0' : 'w-full scale-100 opacity-100'
-                    }`}
-                    priority
-                  />
-                  {!collapsedLogoError ? (
+                  <span className="sidebar-logo-hover relative block h-full w-full">
                     <Image
-                      src="/cactus-chalito-logo.png"
-                      alt="Isotipo El Chalito"
+                      src="/logo-empresa.png"
+                      alt="El Chalito"
                       fill
-                      sizes="44px"
-                      className={`object-contain p-1 transition-all duration-300 ${
-                        collapsed ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0'
+                      sizes="176px"
+                      className={`object-contain transition-all duration-300 ${
+                        collapsed ? 'pointer-events-none w-0 scale-95 opacity-0' : 'w-full scale-100 opacity-100'
                       }`}
-                      onError={() => setCollapsedLogoError(true)}
                       priority
                     />
-                  ) : (
-                    <span
-                      className={`absolute inset-0 flex items-center justify-center rounded-full bg-white/20 text-sm font-semibold text-white transition-all duration-300 ${
-                        collapsed ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0'
-                      }`}
-                    >
-                      EC
-                    </span>
-                  )}
+                    {!collapsedLogoError ? (
+                      <Image
+                        src="/cactus-chalito-logo.png"
+                        alt="Isotipo El Chalito"
+                        fill
+                        sizes="44px"
+                        className={`object-contain p-1 transition-all duration-300 ${
+                          collapsed ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0'
+                        }`}
+                        onError={() => setCollapsedLogoError(true)}
+                        priority
+                      />
+                    ) : (
+                      <span
+                        className={`absolute inset-0 flex items-center justify-center rounded-full bg-white/20 text-sm font-semibold text-white transition-all duration-300 ${
+                          collapsed ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0'
+                        }`}
+                      >
+                        EC
+                      </span>
+                    )}
+                  </span>
                 </Link>
                 {collapsed ? (
                   <Button
@@ -98,8 +102,8 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
                 collapsed ? 'px-2 py-5' : 'px-3 py-5'
               }`}
             >
-              {navItems.map(({ href, label, icon: Icon }) => {
-                const active = isActiveRoute(href);
+              {navItems.map(({ href, activeMatch, label, icon: Icon }) => {
+                const active = isActiveRoute(activeMatch ?? href);
                 return (
                   <Link
                     key={href}
@@ -166,16 +170,23 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
         }`}
       >
         <div className="flex h-24 items-center justify-between border-b border-blue-800/70 px-4">
-          <div className="relative h-16 w-44">
-            <Image
-              src="/logo-empresa.png"
-              alt="El Chalito"
-              fill
-              sizes="176px"
-              className="object-contain"
-              priority
-            />
-          </div>
+          <Link
+            href={homeHref}
+            onClick={onMobileClose}
+            className="relative block h-16 w-44 cursor-pointer overflow-hidden rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300/40"
+            aria-label="Inicio"
+          >
+            <span className="sidebar-logo-hover relative block h-full w-full">
+              <Image
+                src="/logo-empresa.png"
+                alt="El Chalito"
+                fill
+                sizes="176px"
+                className="object-contain"
+                priority
+              />
+            </span>
+          </Link>
           <Button
             type="button"
             size="icon"
@@ -188,8 +199,8 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
           </Button>
         </div>
         <nav className="space-y-1 overflow-y-auto px-3 py-4">
-          {navItems.map(({ href, label, icon: Icon }) => {
-            const active = isActiveRoute(href);
+          {navItems.map(({ href, activeMatch, label, icon: Icon }) => {
+            const active = isActiveRoute(activeMatch ?? href);
             return (
               <Link
                 key={href}

@@ -1,7 +1,8 @@
-import { Calendar, Filter, X } from 'lucide-react';
+import { Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -25,7 +26,12 @@ const MONTH_OPTIONS = [
   { value: '12', label: 'Diciembre' },
 ];
 
-const LIMIT_OPTIONS = [5, 10, 20];
+const LIMIT_OPTIONS = [
+  { value: 5, label: '5 productos' },
+  { value: 10, label: '10 productos' },
+  { value: 20, label: '20 productos' },
+];
+
 const PAYMENT_METHOD_OPTIONS = [
   { value: 'EFECTIVO', label: 'Efectivo' },
   { value: 'TRANSFERENCIA', label: 'Transferencia' },
@@ -33,30 +39,13 @@ const PAYMENT_METHOD_OPTIONS = [
   { value: 'CREDITO', label: 'Credito' },
   { value: 'MERCADOPAGO', label: 'MercadoPago' },
 ];
+
 const ORIGIN_OPTIONS = [
-  { value: 'WEB', label: 'WEB' },
-  { value: 'LOCAL', label: 'LOCAL' },
+  { value: 'MOSTRADOR', label: 'Mostrador' },
+  { value: 'TELEFONO', label: 'Teléfono' },
+  { value: 'WHATSAPP', label: 'WhatsApp' },
+  { value: 'WEB', label: 'Web' },
 ];
-
-const getAutoRange = (month, year) => {
-  if (month === 'all') {
-    return {
-      desde: `${year}-01-01`,
-      hasta: `${year}-12-31`,
-    };
-  }
-
-  const parsedMonth = Number(month);
-  const from = new Date(year, parsedMonth - 1, 1);
-  const to = new Date(year, parsedMonth, 0);
-  const fromValue = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-${String(from.getDate()).padStart(2, '0')}`;
-  const toValue = `${to.getFullYear()}-${String(to.getMonth() + 1).padStart(2, '0')}-${String(to.getDate()).padStart(2, '0')}`;
-
-  return {
-    desde: fromValue,
-    hasta: toValue,
-  };
-};
 
 export function ReportesFiltros({
   filtros,
@@ -67,17 +56,6 @@ export function ReportesFiltros({
   onLimpiar,
   loading = false,
 }) {
-  const autoRange = getAutoRange(filtros.month, Number(filtros.year));
-  const hasManualDateRange = filtros.desde !== autoRange.desde || filtros.hasta !== autoRange.hasta;
-  const hayFiltrosActivos =
-    filtros.month === 'all' ||
-    Number(filtros.month) !== new Date().getMonth() + 1 ||
-    Number(filtros.year) !== new Date().getFullYear() ||
-    hasManualDateRange ||
-    Number(filtros.limit) !== 10 ||
-    filtros.medioPago ||
-    filtros.origenPedido;
-
   return (
     <Card className="border-border">
       <CardContent className="p-4">
@@ -120,46 +98,52 @@ export function ReportesFiltros({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="space-y-1.5">
+              <Label htmlFor="filtro-desde">Desde</Label>
               <Input
                 id="filtro-desde"
                 type="date"
-                value={filtros.desde}
-                onChange={(event) => onChangeFiltro('desde', event.target.value)}
-                className="pl-9"
+                value={filtros.desde || ''}
+                onChange={(e) => onChangeFiltro('desde', e.target.value)}
                 disabled={loading}
+                aria-label="Fecha desde"
               />
             </div>
 
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="space-y-1.5">
+              <Label htmlFor="filtro-hasta">Hasta</Label>
               <Input
                 id="filtro-hasta"
                 type="date"
-                value={filtros.hasta}
-                onChange={(event) => onChangeFiltro('hasta', event.target.value)}
-                className="pl-9"
+                value={filtros.hasta || ''}
+                onChange={(e) => onChangeFiltro('hasta', e.target.value)}
                 disabled={loading}
+                aria-label="Fecha hasta"
               />
             </div>
 
-            <Select
-              value={String(filtros.limit)}
-              onValueChange={(value) => onChangeFiltro('limit', Number(value))}
-              disabled={loading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Ranking de productos" />
-              </SelectTrigger>
-              <SelectContent>
-                {LIMIT_OPTIONS.map((limit) => (
-                  <SelectItem key={limit} value={String(limit)}>
-                    Top {limit}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="space-y-1.5">
+              <Label htmlFor="filtro-ranking">Cantidad en el ranking</Label>
+              <Select
+                value={String(filtros.limit)}
+                onValueChange={(value) => onChangeFiltro('limit', Number(value))}
+                disabled={loading}
+              >
+                <SelectTrigger id="filtro-ranking">
+                  <SelectValue placeholder="Productos más vendidos a mostrar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LIMIT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={String(option.value)}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Define cuántos productos aparecen en el ranking de productos más vendidos.
+              </p>
+            </div>
           </div>
 
           {showAdvanced ? (
@@ -213,22 +197,19 @@ export function ReportesFiltros({
               Filtrar
             </Button>
 
-            {hayFiltrosActivos ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onLimpiar}
-                disabled={loading}
-                className="gap-2 flex-1 sm:flex-initial"
-              >
-                <X className="h-4 w-4" />
-                Limpiar
-              </Button>
-            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onLimpiar}
+              disabled={loading}
+              className="gap-2 flex-1 sm:flex-initial"
+            >
+              <X className="h-4 w-4" />
+              Limpiar
+            </Button>
           </div>
         </div>
       </CardContent>
     </Card>
   );
 }
-

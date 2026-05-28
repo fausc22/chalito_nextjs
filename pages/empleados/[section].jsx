@@ -9,9 +9,16 @@ import { AsistenciaSection } from '../../components/empleados/asistencia/Asisten
 import { EmpleadosSection } from '../../components/empleados/empleados/EmpleadosSection';
 import { MovimientosSection } from '../../components/empleados/movimientos/MovimientosSection';
 import { LiquidacionesSection } from '../../components/empleados/liquidaciones/LiquidacionesSection';
+import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 import { Plus } from 'lucide-react';
+import {
+  canMutateEmployeeMaster,
+  canOperateEmployeeMovements,
+  canViewEmployeeLiquidaciones,
+  getAllowedEmpleadosSections,
+  getDefaultEmpleadosSection,
+} from '@/config/empleadosPermissions';
 
 const SECTION_CONTENT = {
   asistencia: {
@@ -30,16 +37,28 @@ const SECTION_CONTENT = {
 
 function EmpleadosSectionContent() {
   const router = useRouter();
+  const { userRole } = useAuth();
   const currentSection = typeof router.query.section === 'string' ? router.query.section : '';
+  const allowedSections = useMemo(() => getAllowedEmpleadosSections(userRole), [userRole]);
+  const defaultAllowedSection = useMemo(() => getDefaultEmpleadosSection(userRole), [userRole]);
   const sectionMeta = useMemo(() => getEmpleadosSection(currentSection), [currentSection]);
+  const hasSectionAccess = useMemo(
+    () => allowedSections.includes(currentSection),
+    [allowedSections, currentSection]
+  );
+  const canMutateEmployees = useMemo(() => canMutateEmployeeMaster(userRole), [userRole]);
+  const canOperateMovements = useMemo(() => canOperateEmployeeMovements(userRole), [userRole]);
+  const canViewLiquidaciones = useMemo(() => canViewEmployeeLiquidaciones(userRole), [userRole]);
 
   useEffect(() => {
     if (!router.isReady) return;
-    if (sectionMeta) return;
-    router.replace('/empleados/asistencia');
-  }, [router, sectionMeta]);
+    if (!defaultAllowedSection) return;
+    if (!sectionMeta || !hasSectionAccess) {
+      router.replace(`/empleados/${defaultAllowedSection}`);
+    }
+  }, [defaultAllowedSection, hasSectionAccess, router, sectionMeta]);
 
-  if (!sectionMeta) {
+  if (!sectionMeta || !hasSectionAccess) {
     return null;
   }
 
@@ -53,26 +72,37 @@ function EmpleadosSectionContent() {
     <Layout title="Empleados">
       <EmpleadosModuleLayout
         activeSection={currentSection}
+        allowedSections={allowedSections}
         headerTitle={sectionMeta.title}
         headerSubtitle={sectionMeta.subtitle}
         headerActions={
           isAsistencia ? (
-            <Button asChild variant="outline" className="border-blue-200 text-blue-700 hover:bg-accent">
-              <a href="#actividad-reciente">Ver historial</a>
+            <Button
+              type="button"
+              className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
+              onClick={() =>
+                document.getElementById('actividad-reciente')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            >
+              Ver historial
             </Button>
-          ) : isEmpleados ? (
-            <Button asChild className="bg-blue-600 text-white hover:bg-blue-700">
-              <Link href="/empleados/empleados?nuevo=1">
-                <Plus className="h-4 w-4" />
-                Nuevo empleado
-              </Link>
+          ) : isEmpleados && canMutateEmployees ? (
+            <Button
+              type="button"
+              className="gap-2 bg-green-600 text-white hover:bg-green-700 hover:text-white"
+              onClick={() => router.push('/empleados/empleados?nuevo=1')}
+            >
+              <Plus className="h-4 w-4" />
+              Nuevo empleado
             </Button>
-          ) : isMovimientos ? (
-            <Button asChild className="bg-blue-600 text-white hover:bg-blue-700">
-              <Link href="/empleados/movimientos?nuevo=1">
-                <Plus className="h-4 w-4" />
-                Nuevo movimiento
-              </Link>
+          ) : isMovimientos && canOperateMovements ? (
+            <Button
+              type="button"
+              className="gap-2 bg-green-600 text-white hover:bg-green-700 hover:text-white"
+              onClick={() => router.push('/empleados/movimientos?nuevo=1')}
+            >
+              <Plus className="h-4 w-4" />
+              Nuevo movimiento
             </Button>
           ) : null
         }
@@ -83,7 +113,7 @@ function EmpleadosSectionContent() {
           <EmpleadosSection />
         ) : isMovimientos ? (
           <MovimientosSection />
-        ) : isLiquidaciones ? (
+        ) : isLiquidaciones && canViewLiquidaciones ? (
           <LiquidacionesSection />
         ) : (
           <EmpleadosSectionPlaceholder

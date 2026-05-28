@@ -131,7 +131,7 @@ export function UsuarioFormModal({ open, onOpenChange, usuario, onSubmit, isSubm
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white" disabled={isSubmitting}>
               {isSubmitting ? 'Guardando...' : isEdit ? 'Guardar' : 'Crear'}
             </Button>
           </DialogFooter>

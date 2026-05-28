@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
+import { Users } from 'lucide-react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Layout } from '@/components/layout/Layout';
+import { ModuleHeader } from '@/components/layout/ModuleHeader';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { clientesService } from '@/services/clientesService';
 import ClientesTable from '@/components/clientes/ClientesTable';
 import ClienteDetalleDrawer from '@/components/clientes/ClienteDetalleDrawer';
+
+const CLIENTES_POR_PAGINA = 10;
 
 function ClientesContent() {
   const [clientes, setClientes] = useState([]);
@@ -18,7 +22,7 @@ function ClientesContent() {
 
   const cargar = async () => {
     setLoading(true);
-    const result = await clientesService.listar({ page, limit: 20, q: query });
+    const result = await clientesService.listar({ page, limit: CLIENTES_POR_PAGINA, q: query });
     if (result.success) {
       setClientes(result.data || []);
       setPagination(result.pagination);
@@ -36,9 +40,11 @@ function ClientesContent() {
   return (
     <Layout title="Clientes">
       <div className="main-content space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold admin-page-heading">Clientes</h1>
-        </div>
+        <ModuleHeader
+          title="Clientes"
+          description="Base de clientes, búsqueda y detalle de contacto."
+          icon={Users}
+        />
 
         <div className="flex gap-2">
           <Input

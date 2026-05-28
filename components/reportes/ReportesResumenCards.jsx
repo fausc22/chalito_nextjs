@@ -1,13 +1,13 @@
-import { DollarSign, ShoppingBag, Percent, TrendingUp, TrendingDown, Receipt } from 'lucide-react';
+import { DollarSign, Hash, Percent, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatCurrencyAr, formatCountAr } from './reportesUtils';
 
 const SECONDARY_ITEMS = [
   {
     key: 'cantidadVentas',
     label: 'Cantidad de ventas',
-    icon: Receipt,
+    icon: Hash,
     formatter: formatCountAr,
-    iconWrapClass: 'rounded-lg bg-muted0 p-2 text-white',
+    iconWrapClass: 'rounded-lg bg-slate-600 p-2 text-white',
     labelClass: 'text-sm text-muted-foreground',
     valueClass: 'text-xl font-bold text-foreground mt-2',
   },
@@ -58,7 +58,7 @@ export function ReportesResumenCards({ resumen = {} }) {
               <div className="flex items-start justify-between gap-2">
                 {isCantidadVentas ? (
                   <div className="flex items-center gap-3">
-                    <span className="rounded-lg bg-muted0 p-2 text-white">
+                    <span className="rounded-lg bg-slate-600 p-2 text-white">
                       <Icon className="h-5 w-5" />
                     </span>
                     <div>

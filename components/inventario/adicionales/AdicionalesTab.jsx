@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Plus, AlertCircle, AlertTriangle, Pencil, Trash2, X, Link2 } from 'lucide-react';
+import { SectionHeader } from '@/components/layout/SectionHeader';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -326,31 +327,26 @@ export function AdicionalesTab({
 
   return (
     <div ref={containerRef} className="space-y-6">
-      {/* Encabezado */}
-      <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4">
-        <div className="text-center sm:text-left w-full sm:w-auto">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center justify-center sm:justify-start gap-2">
-            <Plus className="h-6 w-6" />
-            Gestión de Adicionales
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            Total: {adicionales.length} adicionales
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2 items-center w-full sm:w-auto">
-          <Button onClick={abrirModalCrear} className="gap-2 w-[200px] sm:w-auto bg-green-600 hover:bg-green-700 text-white">
+      <SectionHeader
+        title="Adicionales"
+        description={`Total: ${adicionales.length} adicionales`}
+        icon={Plus}
+        actions={
+          <div className="flex w-full flex-col items-center gap-2 sm:w-auto sm:flex-row">
+          <Button onClick={abrirModalCrear} className="gap-2 w-[200px] bg-green-600 hover:bg-green-700 text-white sm:w-auto">
             <Plus className="h-4 w-4" />
-            Nuevo Adicional
+            Nuevo adicional
           </Button>
           <Button 
             onClick={abrirModalSeleccionarArticulo} 
-            className="gap-2 w-[200px] sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+            className="gap-2 w-[200px] bg-blue-600 hover:bg-blue-700 text-white sm:w-auto"
           >
             <Link2 className="h-4 w-4" />
-            Asignar a Artículo
+            Asignar a artículo
           </Button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {/* Tabs para Adicionales y Artículos con Adicionales */}
       <Tabs defaultValue="adicionales" className="w-full">

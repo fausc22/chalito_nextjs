@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, BarChart3, Inbox, CalendarRange } from 'lucide-react';
 import { ProtectedRoute } from '../../components/auth/ProtectedRoute';
 import { Layout } from '../../components/layout/Layout';
+import { ModuleHeader } from '../../components/layout/ModuleHeader';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -53,7 +54,7 @@ const getDefaultFilters = () => {
 
 function ReportesContent() {
   const { dashboard, loading, error, hasLoaded, cargarDashboard } = useReportes();
-  const hasFetchedOnceRef = useRef(false);
+  const skipAutoApplyRef = useRef(true);
   const [filtros, setFiltros] = useState(() => getDefaultFilters());
   const [manualDateOverride, setManualDateOverride] = useState(false);
   const [activeTab, setActiveTab] = useState('ventas');
@@ -106,7 +107,7 @@ function ReportesContent() {
 
   const resolveDateRange = useCallback(
     (nextFilters, preferManual = manualDateOverride) => {
-      const hasManualDates = Boolean(nextFilters.desde && nextFilters.hasta);
+      const hasManualDates = Boolean(nextFilters.desde || nextFilters.hasta);
 
       if (preferManual && hasManualDates) {
         return {
@@ -155,22 +156,11 @@ function ReportesContent() {
       }));
 
       const payload = {
-        month:
-          resolvedRange.isManual || normalizedFilters.month === 'all'
-            ? undefined
-            : Number(normalizedFilters.month),
-        year: normalizedFilters.year ? Number(normalizedFilters.year) : undefined,
-        date_from: normalizedFilters.desde,
-        date_to: normalizedFilters.hasta,
-        ranking_limit: Number(normalizedFilters.limit) || 10,
-        payment_method: normalizedFilters.medioPago || undefined,
-        origin: normalizedFilters.origenPedido || undefined,
-        // Mantener compatibilidad mientras backend migra.
         desde: normalizedFilters.desde,
         hasta: normalizedFilters.hasta,
         limit: Number(normalizedFilters.limit) || 10,
-        medioPago: normalizedFilters.medioPago || undefined,
-        origenPedido: normalizedFilters.origenPedido || undefined,
+        medio_pago: normalizedFilters.medioPago || undefined,
+        origen_pedido: normalizedFilters.origenPedido || undefined,
       };
 
       Object.keys(payload).forEach((key) => {
@@ -234,45 +224,44 @@ function ReportesContent() {
   }, []);
 
   const handleAplicarClick = useCallback(() => {
-    aplicarFiltros(filtros);
-  }, [aplicarFiltros, filtros]);
+    const useManualRange = manualDateOverride || Boolean(filtros.desde || filtros.hasta);
+    aplicarFiltros(filtros, useManualRange);
+  }, [aplicarFiltros, filtros, manualDateOverride]);
 
   const handleLimpiar = useCallback(() => {
     const nextDefaultFilters = getDefaultFilters();
     setManualDateOverride(false);
     setFiltros(nextDefaultFilters);
-    aplicarFiltros(nextDefaultFilters, false);
-  }, [aplicarFiltros]);
+  }, []);
 
   useEffect(() => {
-    if (hasFetchedOnceRef.current) return;
-    hasFetchedOnceRef.current = true;
+    if (skipAutoApplyRef.current) {
+      skipAutoApplyRef.current = false;
+      aplicarFiltros(filtros, false);
+      return;
+    }
+
     aplicarFiltros(filtros, false);
-  }, [aplicarFiltros, filtros]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtros.month, filtros.year, filtros.limit, filtros.medioPago, filtros.origenPedido]);
 
   return (
     <Layout title="Reportes y estadísticas">
       <div className="main-content">
-        <div className="mb-5 sm:mb-6 rounded-2xl border border-border bg-gradient-to-br from-white to-slate-50 p-4 sm:p-6">
-          <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <h1 className="text-[1.65rem] sm:text-[2rem] font-semibold admin-page-heading mb-1.5 flex items-center gap-2">
-                <BarChart3 className="h-7 w-7 sm:h-8 sm:w-8" />
-                Reportes y estadísticas
-              </h1>
-              <p className="text-muted-foreground text-sm sm:text-base">
-                Analizá ventas, demanda, productos destacados y rendimiento general del negocio.
-              </p>
-            </div>
+        <ModuleHeader
+          title="Reportes y estadísticas"
+          description="Analizá ventas, demanda, productos destacados y rendimiento general del negocio."
+          icon={BarChart3}
+          rightSlot={
             <div className="rounded-lg border border-blue-100 bg-primary/10 px-3 py-2">
-              <p className="text-xs uppercase tracking-wide text-blue-700 font-semibold">Rango seleccionado</p>
-              <p className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-blue-900">
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Rango seleccionado</p>
+              <p className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-blue-900 dark:text-blue-100">
                 <CalendarRange className="h-4 w-4" />
                 {rangeLabel}
               </p>
             </div>
-          </div>
-        </div>
+          }
+        />
 
         <div className="space-y-5">
           <ReportesFiltros

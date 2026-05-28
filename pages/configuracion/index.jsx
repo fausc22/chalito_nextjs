@@ -6,6 +6,7 @@ import { IntegracionesTab } from '@/components/configuracion/IntegracionesTab';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { Layout } from '@/components/layout/Layout';
+import { ModuleHeader } from '@/components/layout/ModuleHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,14 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNotification } from '@/contexts/NotificationContext';
 import { configuracionService } from '@/services/configuracionService';
+
+const PAGE_TITLE = 'Configuraci\u00f3n del sistema';
+const PAGE_DESCRIPTION =
+  'Par\u00e1metros globales del negocio. Los cambios aplican a todo el panel y operaci\u00f3n.';
+const TAB_OPERACION = 'Operaci\u00f3n';
+const LOAD_ERROR_TITLE = 'No se pudo cargar la configuraci\u00f3n';
+const OPERACION_DESCRIPTION = 'Edita solo las claves permitidas para operaci\u00f3n diaria.';
+const SAVE_OPERACION_LABEL = 'Guardar operaci\u00f3n';
 
 function ConfiguracionContent() {
   const notification = useNotification();
@@ -33,7 +42,7 @@ function ConfiguracionContent() {
     const result = await configuracionService.getConfiguracionSistema();
 
     if (!result.success) {
-      const message = result.message || 'No se pudo cargar la configuracion';
+      const message = result.message || 'No se pudo cargar la configuraci\u00f3n';
       setLoadError(message);
       notification.showError(message);
       setLoading(false);
@@ -69,16 +78,16 @@ function ConfiguracionContent() {
       const item = operationConfig[key];
       const valueAsText = String(item?.value ?? '').trim();
       if (!valueAsText) {
-        notification.showError(`Valor inválido para ${item?.label || key}`);
+        notification.showError(`Valor inv\u00e1lido para ${item?.label || key}`);
         return false;
       }
       const numericValue = Number(valueAsText);
       if (!Number.isInteger(numericValue)) {
-        notification.showError(`${item?.label || key} debe ser un número entero`);
+        notification.showError(`${item?.label || key} debe ser un n\u00famero entero`);
         return false;
       }
       if (!Number.isFinite(item?.min) || !Number.isFinite(item?.max)) {
-        notification.showError(`Configuración inválida para ${item?.label || key}`);
+        notification.showError(`Configuraci\u00f3n inv\u00e1lida para ${item?.label || key}`);
         return false;
       }
       if (numericValue < item.min || numericValue > item.max) {
@@ -104,28 +113,27 @@ function ConfiguracionContent() {
     setSavingOperation(false);
 
     if (!result.success) {
-      notification.showError(result.message || 'No se pudo guardar la configuracion');
+      notification.showError(result.message || 'No se pudo guardar la configuraci\u00f3n');
       return;
     }
 
-    notification.showSuccess(result.message || 'Configuracion guardada correctamente');
+    notification.showSuccess(result.message || 'Configuraci\u00f3n guardada correctamente');
   };
 
   return (
-    <Layout title="Configuración del sistema">
+    <Layout title={PAGE_TITLE}>
       <div className="main-content">
-        <div className="mb-6">
-          <h1 className="admin-page-heading mb-2">Configuración del sistema</h1>
-          <p className="page-subtitle">
-            Parámetros globales del negocio. Los cambios aplican a todo el panel y operación.
-          </p>
-        </div>
+        <ModuleHeader
+          title={PAGE_TITLE}
+          description={PAGE_DESCRIPTION}
+          icon={Cog}
+        />
 
         {loadError ? (
           <Card className="mb-6 border-red-200">
             <CardContent className="pt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="font-semibold text-red-700">No se pudo cargar la configuración</p>
+                <p className="font-semibold text-red-700">{LOAD_ERROR_TITLE}</p>
                 <p className="text-sm text-muted-foreground mt-1">{loadError}</p>
               </div>
               <Button type="button" variant="outline" onClick={loadData} disabled={loading}>
@@ -142,7 +150,7 @@ function ConfiguracionContent() {
                 value="operacion"
                 className="rounded-lg px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none"
               >
-                Operación
+                {TAB_OPERACION}
               </TabsTrigger>
               <TabsTrigger
                 value="tienda-online"
@@ -170,10 +178,10 @@ function ConfiguracionContent() {
               <CardHeader>
                 <CardTitle className="text-xl flex items-center gap-2">
                   <Cog className="h-5 w-5 text-blue-700" />
-                  Operación
+                  {TAB_OPERACION}
                 </CardTitle>
                 <CardDescription>
-                  Edita solo las claves permitidas para operación diaria.
+                  {OPERACION_DESCRIPTION}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -218,7 +226,7 @@ function ConfiguracionContent() {
                       className="bg-green-600 hover:bg-green-700 text-white"
                     >
                       <Save className="h-4 w-4 mr-2" />
-                      {savingOperation ? 'Guardando...' : 'Guardar operación'}
+                      {savingOperation ? 'Guardando...' : SAVE_OPERACION_LABEL}
                     </Button>
                   </div>
                 </form>

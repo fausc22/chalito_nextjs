@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Clock, Plus, Search, X, ChevronLeft, ChevronRight, ClipboardCheck, Store, LayoutGrid, List, ChefHat, Volume2, VolumeX } from 'lucide-react';
+import { Plus, Search, X, ChevronLeft, ChevronRight, ClipboardCheck, Store, LayoutGrid, List, ChefHat, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -7,11 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { useConnectionStatus, CONNECTION_STATUS } from '../../contexts/ConnectionStatusContext';
 import { PrinterStatusIndicator } from './PrinterStatusIndicator';
 
-const TOPBAR_OFFSET = 'var(--admin-topbar-height, 72px)';
-
 export function PedidosSidebar({
-  demoraCocina,
-  setDemoraCocina,
   onNuevoPedido,
   onVerPedidosEntregados,
   busquedaPedidos,
@@ -62,8 +58,7 @@ export function PedidosSidebar({
     <>
       {isMobile && isOpen && (
         <div
-          className="fixed bottom-0 left-0 right-0 z-40 bg-black/50"
-          style={{ top: TOPBAR_OFFSET }}
+          className="pointer-events-auto absolute inset-0 z-40 bg-black/50"
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -72,8 +67,8 @@ export function PedidosSidebar({
         className={`
           ${
             isMobile
-              ? `fixed left-0 z-50 w-56 transform transition-transform duration-300 ease-out ${
-                  isOpen ? 'translate-x-0' : '-translate-x-full'
+              ? `absolute inset-y-0 left-0 z-50 h-full w-56 transform transition-transform duration-300 ease-out ${
+                  isOpen ? 'pointer-events-auto translate-x-0' : 'pointer-events-none -translate-x-full'
                 }`
               : 'h-full transition-all duration-500 ease-out'
           }
@@ -85,14 +80,6 @@ export function PedidosSidebar({
           flex-shrink-0
           relative
         `}
-        style={
-          isMobile
-            ? {
-                top: TOPBAR_OFFSET,
-                height: `calc(100vh - ${TOPBAR_OFFSET})`,
-              }
-            : undefined
-        }
       >
         <div className="relative flex h-16 flex-shrink-0 flex-col justify-between p-2">
           {isOpen ? (
@@ -240,30 +227,6 @@ export function PedidosSidebar({
                 PEDIDOS ENTREGADOS
               </Button>
             </div>
-
-            <div className="flex-shrink-0 border-t border-slate-700 p-2">
-              <div className="flex justify-center">
-                <Card className="w-fit border-slate-600 bg-slate-700 p-2">
-                  <div className="space-y-1.5">
-                    <label className="block text-center text-[10px] font-semibold text-slate-300">
-                      DEMORA COCINA
-                    </label>
-                    <div className="flex items-center justify-center gap-1.5">
-                      <Clock className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="number"
-                          value={demoraCocina}
-                          onChange={(e) => setDemoraCocina(parseInt(e.target.value, 10) || 0)}
-                          className="h-7 w-12 rounded border border-slate-600 bg-slate-800 px-1.5 py-0.5 text-center text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                        <span className="text-xs font-bold text-slate-300">MIN</span>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-            </div>
           </>
         )}
 
@@ -332,17 +295,6 @@ export function PedidosSidebar({
               >
                 <ClipboardCheck className="h-4 w-4" />
               </Button>
-            </div>
-
-            <div className="flex-shrink-0 border-t border-slate-700 p-2">
-              <div className="flex justify-center">
-                <div className="min-w-[32px] rounded border border-slate-600 bg-slate-700 px-2 py-1.5">
-                  <div className="text-center">
-                    <div className="text-xs font-bold text-white">{demoraCocina}</div>
-                    <div className="mt-0.5 text-[8px] text-muted-foreground">MIN</div>
-                  </div>
-                </div>
-              </div>
             </div>
           </>
         )}

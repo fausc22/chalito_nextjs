@@ -21,6 +21,11 @@ const rolBadgeClass = (rol) => {
   return map[rol] || 'bg-muted text-foreground';
 };
 
+const getEstadoBadgeClass = (activo) =>
+  activo
+    ? 'bg-green-100 text-green-800 border-green-200 pointer-events-none'
+    : 'bg-red-100 text-red-800 border-red-200 pointer-events-none';
+
 export function UsuariosTable({ usuarios, onEditar, onResetPassword, onToggleActivo }) {
   if (!usuarios?.length) {
     return (
@@ -53,7 +58,7 @@ export function UsuariosTable({ usuarios, onEditar, onResetPassword, onToggleAct
               <Badge className={rolBadgeClass(u.rol)}>{ROLE_NAMES[u.rol] || u.rol}</Badge>
             </TableCell>
             <TableCell>
-              <Badge variant={u.activo ? 'default' : 'secondary'}>
+              <Badge className={getEstadoBadgeClass(u.activo)}>
                 {u.activo ? 'Activo' : 'Inactivo'}
               </Badge>
             </TableCell>

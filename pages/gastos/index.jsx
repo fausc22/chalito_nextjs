@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { TrendingDown, Tag } from 'lucide-react';
+import { TrendingDown, Tag, Wallet } from 'lucide-react';
 import { ProtectedRoute } from '../../components/auth/ProtectedRoute';
 import { Layout } from '../../components/layout/Layout';
+import { ModuleHeader } from '../../components/layout/ModuleHeader';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GastosTab } from '../../components/gastos/GastosTab';
@@ -49,15 +50,11 @@ function GastosContent() {
     return (
         <Layout title="Gastos">
             <div className="main-content">
-                {/* Header */}
-                <div className="mb-8 pb-6 border-b-2 border-border">
-                    <h1 className="text-[2rem] font-semibold admin-page-heading mb-2 flex items-center gap-2">
-                        💸 Módulo de Gastos
-                    </h1>
-                    <p className="text-muted-foreground text-base">
-                        Registra y controla los egresos económicos del negocio
-                    </p>
-                </div>
+                <ModuleHeader
+                    title="Gastos"
+                    description="Registrá y controlá los egresos económicos del negocio."
+                    icon={Wallet}
+                />
 
                 {/* Tabs */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

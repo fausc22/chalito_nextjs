@@ -46,7 +46,6 @@ function isPedidosDesktopViewport() {
 }
 
 export function PedidosPageContent() {
-  const [demoraCocina, setDemoraCocina] = useState(20);
   const [sidebarOpen, setSidebarOpen] = useState(isPedidosDesktopViewport);
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
   const [pedidoCancelar, setPedidoCancelar] = useState(null);
@@ -480,12 +479,10 @@ export function PedidosPageContent() {
         />
       }
     >
-      <div className="flex min-h-0 flex-1 flex-row overflow-hidden bg-muted">
+      <div className="relative flex min-h-0 flex-1 flex-row overflow-hidden bg-background">
           {/* Sidebar desktop - dentro del flujo del documento */}
           <div className="hidden xl:block flex-shrink-0">
             <PedidosSidebar
-              demoraCocina={demoraCocina}
-              setDemoraCocina={setDemoraCocina}
               onNuevoPedido={handleNuevoPedido}
               onVerPedidosEntregados={() => setModalPedidosEntregados(true)}
               busquedaPedidos={busquedaPedidos}
@@ -495,26 +492,6 @@ export function PedidosPageContent() {
               isOpen={sidebarOpen}
               setIsOpen={setSidebarOpen}
               isMobile={false}
-              vistaTabla={vistaTabla}
-              onCambiarVista={handleCambiarVista}
-              onOpenPrinterHelp={() => setModalAyudaImpresora(true)}
-            />
-          </div>
-
-          {/* Sidebar móvil - overlay fixed */}
-          <div className="xl:hidden w-0 min-w-0 overflow-visible flex-shrink-0">
-            <PedidosSidebar
-              demoraCocina={demoraCocina}
-              setDemoraCocina={setDemoraCocina}
-              onNuevoPedido={handleNuevoPedido}
-              onVerPedidosEntregados={() => setModalPedidosEntregados(true)}
-              busquedaPedidos={busquedaPedidos}
-              setBusquedaPedidos={setBusquedaPedidos}
-              soundEnabled={soundEnabled}
-              onSoundToggle={setSoundEnabled}
-              isOpen={sidebarOpen}
-              setIsOpen={setSidebarOpen}
-              isMobile={true}
               vistaTabla={vistaTabla}
               onCambiarVista={handleCambiarVista}
               onOpenPrinterHelp={() => setModalAyudaImpresora(true)}
@@ -604,6 +581,24 @@ export function PedidosPageContent() {
                 ) : null}
               </DragOverlay>
             </DndContext>
+          </div>
+
+          {/* Sidebar móvil: absolute dentro del área bajo la topbar (evita desfase con fixed + CSS var) */}
+          <div className="pointer-events-none absolute inset-0 z-30 xl:hidden">
+            <PedidosSidebar
+              onNuevoPedido={handleNuevoPedido}
+              onVerPedidosEntregados={() => setModalPedidosEntregados(true)}
+              busquedaPedidos={busquedaPedidos}
+              setBusquedaPedidos={setBusquedaPedidos}
+              soundEnabled={soundEnabled}
+              onSoundToggle={setSoundEnabled}
+              isOpen={sidebarOpen}
+              setIsOpen={setSidebarOpen}
+              isMobile={true}
+              vistaTabla={vistaTabla}
+              onCambiarVista={handleCambiarVista}
+              onOpenPrinterHelp={() => setModalAyudaImpresora(true)}
+            />
           </div>
       </div>
 

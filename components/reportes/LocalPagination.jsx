@@ -10,28 +10,20 @@ export function LocalPagination({
   const isPreviousDisabled = page <= 1;
   const isNextDisabled = page >= totalPages;
 
-  if (totalPages <= 1) return null;
-
   return (
-    <div
-      className={`mt-4 flex items-center justify-between gap-3 rounded-lg border border-border bg-muted px-3 py-2 ${className}`}
-    >
+    <div className={`flex items-center justify-end gap-2 ${className}`}>
       <Button
         type="button"
         variant="outline"
-        size="sm"
         onClick={onPrevious}
         disabled={isPreviousDisabled}
       >
         Anterior
       </Button>
-      <p className="text-sm font-medium text-foreground">
-        Página {page} de {totalPages}
-      </p>
+      <span className="text-sm text-muted-foreground">Página {page}</span>
       <Button
         type="button"
         variant="outline"
-        size="sm"
         onClick={onNext}
         disabled={isNextDisabled}
       >

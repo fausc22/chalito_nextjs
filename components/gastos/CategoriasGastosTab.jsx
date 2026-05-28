@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, AlertTriangle, Tag, Edit, Trash2, Check, X } from 'lucide-react';
+import { SectionHeader } from '@/components/layout/SectionHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -193,26 +194,20 @@ export function CategoriasGastosTab({
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-center sm:items-center gap-4">
-                <div className="text-center sm:text-left w-full sm:w-auto">
-                    <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center justify-center sm:justify-start gap-2">
-                        <Tag className="h-6 w-6 text-amber-500" />
-                        Categorías de Gastos
-                    </h2>
-                    <p className="text-muted-foreground mt-1">
-                        Organiza los gastos por tipo o concepto
-                    </p>
-                </div>
-
-                <Button 
-                    onClick={() => setModalAgregar(true)} 
-                    className="gap-2 w-[200px] sm:w-auto bg-green-600 hover:bg-green-700 text-white"
-                >
-                    <Plus className="h-4 w-4" />
-                    Nueva Categoría
-                </Button>
-            </div>
+            <SectionHeader
+                title="Categorías"
+                description="Organizá los gastos por tipo o concepto."
+                icon={Tag}
+                actions={
+                    <Button
+                        onClick={() => setModalAgregar(true)}
+                        className="gap-2 w-[200px] bg-green-600 hover:bg-green-700 text-white sm:w-auto"
+                    >
+                        <Plus className="h-4 w-4" />
+                        Nueva categoría
+                    </Button>
+                }
+            />
 
             {/* Tabla Desktop */}
             <div className="hidden md:block bg-card rounded-xl border border-border overflow-hidden">

@@ -30,7 +30,7 @@ export const clientesService = {
     }
   },
 
-  listar: async ({ page = 1, limit = 20, q = '' } = {}) => {
+  listar: async ({ page = 1, limit = 10, q = '' } = {}) => {
     try {
       const params = new URLSearchParams();
       params.set('page', String(page));

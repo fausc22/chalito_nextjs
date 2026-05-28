@@ -139,17 +139,19 @@ export const ventasService = {
         try {
             const params = new URLSearchParams();
             
-            // Filtros de mes/año (prioritarios)
-            if (filtros.month !== null && filtros.month !== undefined) {
-                params.append('month', filtros.month === 'all' ? 'all' : String(filtros.month));
+            const hasCustomDates = Boolean(filtros.fecha_desde || filtros.fecha_hasta);
+
+            if (hasCustomDates) {
+                if (filtros.fecha_desde) params.append('fecha_desde', filtros.fecha_desde);
+                if (filtros.fecha_hasta) params.append('fecha_hasta', filtros.fecha_hasta);
+            } else {
+                if (filtros.month !== null && filtros.month !== undefined) {
+                    params.append('month', filtros.month === 'all' ? 'all' : String(filtros.month));
+                }
+                if (filtros.year !== null && filtros.year !== undefined) {
+                    params.append('year', String(filtros.year));
+                }
             }
-            if (filtros.year !== null && filtros.year !== undefined) {
-                params.append('year', String(filtros.year));
-            }
-            
-            // Filtros de fecha (si no se usa month/year)
-            if (filtros.fecha_desde) params.append('fecha_desde', filtros.fecha_desde);
-            if (filtros.fecha_hasta) params.append('fecha_hasta', filtros.fecha_hasta);
             
             // Otros filtros
             if (filtros.estado) params.append('estado', filtros.estado);

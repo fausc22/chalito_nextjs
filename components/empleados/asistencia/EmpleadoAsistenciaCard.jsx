@@ -35,7 +35,12 @@ const formatCurrency = (value) => {
   }).format(amount);
 };
 
-export function EmpleadoAsistenciaCard({ empleado, onRegistrarIngreso, onRegistrarEgreso }) {
+export function EmpleadoAsistenciaCard({
+  empleado,
+  onRegistrarIngreso,
+  onRegistrarEgreso,
+  showHourlyRate = true,
+}) {
   const estadoUi = ESTADO_UI[empleado.estado] || ESTADO_UI.sin_ingreso;
   const ingresoDisponible = empleado.estado !== 'en_turno';
   const egresoDisponible = empleado.estado === 'en_turno';
@@ -48,9 +53,11 @@ export function EmpleadoAsistenciaCard({ empleado, onRegistrarIngreso, onRegistr
             <h3 className="text-base font-semibold text-foreground">
               {empleado.nombre}
             </h3>
-            <p className="text-sm text-foreground">
-              Valor hora: {formatCurrency(empleado.valorHora)}
-            </p>
+            {showHourlyRate ? (
+              <p className="text-sm text-foreground">
+                Valor hora: {formatCurrency(empleado.valorHora)}
+              </p>
+            ) : null}
           </div>
           <Badge variant="outline" className={estadoUi.badgeClass}>
             {estadoUi.label}

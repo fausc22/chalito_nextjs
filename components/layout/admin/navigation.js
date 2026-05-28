@@ -43,6 +43,7 @@ const buildNavItems = (userRole, moduleList) =>
     .map((m) => ({
       module: m,
       href: MODULE_HREF_OVERRIDES[m] || MODULE_ROUTES[m],
+      activeMatch: MODULE_ROUTES[m],
       label: NAV_META[m].label,
       icon: NAV_META[m].icon,
     }))

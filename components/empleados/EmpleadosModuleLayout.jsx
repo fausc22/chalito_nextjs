@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { CalendarCheck, Users, ArrowLeftRight, FileText } from 'lucide-react';
+import { ModuleHeader } from '@/components/layout/ModuleHeader';
 import { cn } from '@/lib/utils';
 
 const SECTION_CONFIG = {
@@ -58,8 +59,19 @@ function SidebarItem({ sectionKey, activeSection }) {
   );
 }
 
-export function EmpleadosModuleLayout({ activeSection, children, headerTitle, headerSubtitle, headerActions }) {
+export function EmpleadosModuleLayout({
+  activeSection,
+  children,
+  headerTitle,
+  headerSubtitle,
+  headerActions,
+  allowedSections = SECTION_ORDER,
+}) {
   const activeSectionData = useMemo(() => SECTION_CONFIG[activeSection], [activeSection]);
+  const sectionsToRender = useMemo(
+    () => SECTION_ORDER.filter((sectionKey) => allowedSections.includes(sectionKey)),
+    [allowedSections]
+  );
 
   if (!activeSectionData) {
     return null;
@@ -76,7 +88,7 @@ export function EmpleadosModuleLayout({ activeSection, children, headerTitle, he
               </p>
             </div>
             <nav className="flex flex-col gap-2">
-              {SECTION_ORDER.map((sectionKey) => (
+              {sectionsToRender.map((sectionKey) => (
                 <SidebarItem key={sectionKey} sectionKey={sectionKey} activeSection={activeSection} />
               ))}
             </nav>
@@ -91,7 +103,7 @@ export function EmpleadosModuleLayout({ activeSection, children, headerTitle, he
               </p>
             </div>
             <nav className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-              {SECTION_ORDER.map((sectionKey) => {
+              {sectionsToRender.map((sectionKey) => {
                 const section = SECTION_CONFIG[sectionKey];
                 const Icon = section.icon;
                 const isActive = sectionKey === activeSection;
@@ -115,22 +127,14 @@ export function EmpleadosModuleLayout({ activeSection, children, headerTitle, he
             </nav>
           </div>
 
-          <header className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold admin-page-heading sm:text-[2rem]">
-                {headerTitle || activeSectionData.title}
-              </h1>
-              <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-                {headerSubtitle || activeSectionData.subtitle}
-              </p>
-            </div>
-
-            {headerActions ? (
-              <div className="flex items-center gap-2 self-start">
-                {headerActions}
-              </div>
-            ) : null}
-          </header>
+          <ModuleHeader
+            title={headerTitle || activeSectionData.title}
+            description={headerSubtitle || activeSectionData.subtitle}
+            icon={activeSectionData.icon}
+            actions={headerActions}
+            showDivider
+            className="mb-4"
+          />
 
           <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-8">
             {children}
