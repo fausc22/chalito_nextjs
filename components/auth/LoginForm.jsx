@@ -90,8 +90,8 @@ export function LoginForm() {
 
   return (
     <div className="w-full animate-fade-in">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-foreground mb-2">Iniciar Sesión</h2>
+      <div className="mb-5 text-center">
+        <h2 className="text-2xl font-bold text-foreground mb-1.5">Iniciar Sesión</h2>
         <p className="text-muted-foreground text-sm">Ingresa tus credenciales para acceder al sistema</p>
       </div>
 
@@ -181,7 +181,7 @@ export function LoginForm() {
         <Button
           type="submit"
           disabled={isLoading || !formData.usuario.trim() || !formData.password.trim()}
-          className="w-full"
+          className="w-full font-semibold"
           size="lg"
         >
           {isLoading ? (
@@ -197,20 +197,20 @@ export function LoginForm() {
 
       {/* Credenciales de prueba - solo desarrollo */}
       {process.env.NODE_ENV === 'development' && (
-        <div className="mt-6 pt-6 border-t border-border">
-          <h4 className="text-sm font-semibold text-foreground mb-3">Credenciales de prueba:</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-            <div className="bg-muted px-3 py-2 rounded">
-              <strong>Admin:</strong> admin / admin123
+        <div className="mt-4 pt-4 border-t border-border">
+          <p className="text-[11px] font-medium text-muted-foreground mb-2">Credenciales de prueba</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] leading-snug text-muted-foreground">
+            <div className="bg-muted/80 px-2.5 py-1.5 rounded-md">
+              <span className="font-semibold text-foreground">Admin:</span> admin / admin123
             </div>
-            <div className="bg-muted px-3 py-2 rounded">
-              <strong>Gerente:</strong> gerente / gerente123
+            <div className="bg-muted/80 px-2.5 py-1.5 rounded-md">
+              <span className="font-semibold text-foreground">Gerente:</span> gerente / gerente123
             </div>
-            <div className="bg-muted px-3 py-2 rounded">
-              <strong>Cajero:</strong> cajero / cajero123
+            <div className="bg-muted/80 px-2.5 py-1.5 rounded-md">
+              <span className="font-semibold text-foreground">Cajero:</span> cajero / cajero123
             </div>
-            <div className="bg-muted px-3 py-2 rounded">
-              <strong>Chef:</strong> chef / cocina123
+            <div className="bg-muted/80 px-2.5 py-1.5 rounded-md">
+              <span className="font-semibold text-foreground">Chef:</span> chef / cocina123
             </div>
           </div>
         </div>
