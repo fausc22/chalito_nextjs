@@ -20,7 +20,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
 
   return (
     <>
-      <div className={`hidden shrink-0 transition-all duration-300 ease-in-out lg:block ${collapsed ? 'w-20' : 'w-64'}`}>
+      <div className={`hidden h-full shrink-0 transition-all duration-300 ease-in-out lg:block ${collapsed ? 'w-20' : 'w-64'}`}>
         <aside className="flex h-full w-full overflow-x-hidden border-r border-blue-900/50 bg-gradient-to-b from-blue-950 via-blue-900 to-blue-900 text-white">
           <div className="flex h-full w-full min-w-0 flex-col overflow-x-hidden">
             <div
@@ -98,8 +98,8 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
             </div>
 
             <nav
-              className={`flex-1 space-y-2 overflow-x-hidden overflow-y-auto transition-all duration-300 ${
-                collapsed ? 'px-2 py-5' : 'px-3 py-5'
+              className={`min-h-0 flex-1 space-y-2 overflow-x-hidden overflow-y-hidden transition-all duration-300 ${
+                collapsed ? 'px-2 py-4' : 'px-3 py-4'
               }`}
             >
               {navItems.map(({ href, activeMatch, label, icon: Icon }) => {
@@ -134,13 +134,13 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
             </nav>
 
             <div
-              className={`border-t border-blue-800/70 transition-all duration-300 ${
-                collapsed ? 'px-2 py-4 overflow-x-hidden' : 'px-4 py-4'
+              className={`shrink-0 border-t border-blue-800/70 transition-all duration-300 ${
+                collapsed ? 'px-2 py-1.5 overflow-x-hidden' : 'px-3 py-1.5'
               }`}
             >
               <div
-                className={`flex h-9 items-center rounded-lg text-xs text-blue-200 transition-all duration-300 ${
-                  collapsed ? 'justify-center' : 'justify-start px-2'
+                className={`flex h-5 items-center text-[10px] leading-none text-blue-200/80 transition-all duration-300 ${
+                  collapsed ? 'justify-center' : 'justify-start px-1'
                 }`}
               >
                 <span
@@ -151,7 +151,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
                 >
                   Sistema v2
                 </span>
-                {collapsed ? <span className="h-2 w-2 rounded-full bg-blue-200/80" /> : null}
+                {collapsed ? <span className="h-1.5 w-1.5 rounded-full bg-blue-200/70" /> : null}
               </div>
             </div>
           </div>

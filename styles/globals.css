@@ -6,7 +6,7 @@
 /* shadcn/ui Variables */
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 210 40% 98%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -129,6 +129,12 @@ body {
 body {
   background-color: var(--app-bg);
   color: var(--app-text);
+}
+
+html.admin-shell-active,
+html.admin-shell-active body {
+  overflow: hidden;
+  height: 100%;
 }
 
 /* Sonner: shell transparente; diseño visual en ToastBody (use-toast.js) */
