@@ -65,7 +65,7 @@ export const AdminTopbar = forwardRef(function AdminTopbar(
   return (
     <header
       ref={ref}
-      className="sticky top-0 z-30 shrink-0 border-b border-border bg-background/95 text-foreground shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/85"
+      className="z-30 shrink-0 border-b border-border bg-card/95 text-foreground shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/85"
     >
       <div className="relative flex h-16 items-center justify-between gap-2 px-4 sm:h-[72px] sm:gap-3 sm:px-6 lg:px-8">
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">

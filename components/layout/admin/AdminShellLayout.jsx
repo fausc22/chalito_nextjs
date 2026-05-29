@@ -31,6 +31,13 @@ export function AdminShellLayout({
     }
   }, [router.pathname]);
 
+  useEffect(() => {
+    document.documentElement.classList.add('admin-shell-active');
+    return () => {
+      document.documentElement.classList.remove('admin-shell-active');
+    };
+  }, []);
+
   useLayoutEffect(() => {
     const element = topbarRef.current;
     if (!element) return undefined;
@@ -56,7 +63,7 @@ export function AdminShellLayout({
   const mainClassName =
     contentVariant === 'fullBleed'
       ? 'flex min-h-0 flex-1 flex-col overflow-hidden p-0'
-      : 'flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-6';
+      : 'min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-6';
 
   return (
     <>
@@ -66,25 +73,23 @@ export function AdminShellLayout({
       </Head>
 
       <div
-        className="min-h-screen bg-background text-foreground"
+        className="flex h-dvh overflow-hidden bg-background text-foreground"
         style={{ '--admin-topbar-height': `${topbarHeight}px` }}
       >
-        <div className="flex min-h-screen overflow-hidden">
-          <AdminSidebar
-            collapsed={sidebarCollapsed}
-            onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
-            mobileOpen={mobileSidebarOpen}
-            onMobileClose={() => setMobileSidebarOpen(false)}
+        <AdminSidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+          mobileOpen={mobileSidebarOpen}
+          onMobileClose={() => setMobileSidebarOpen(false)}
+        />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <AdminTopbar
+            ref={topbarRef}
+            title={pageTitle}
+            onMobileMenuOpen={() => setMobileSidebarOpen(true)}
+            actions={topbarActions}
           />
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-            <AdminTopbar
-              ref={topbarRef}
-              title={pageTitle}
-              onMobileMenuOpen={() => setMobileSidebarOpen(true)}
-              actions={topbarActions}
-            />
-            <main className={mainClassName}>{children}</main>
-          </div>
+          <main className={mainClassName}>{children}</main>
         </div>
       </div>
     </>
