@@ -157,7 +157,7 @@ export function ArticulosTab({
   const [errors, setErrors] = useState({});
   const [controlaStockEditadoManualmente, setControlaStockEditadoManualmente] = useState(false);
 
-  // Estado para la imagen (para subida a Cloudinary)
+  // Estado para la imagen (subida al file server al guardar)
   const [imagenFile, setImagenFile] = useState(null);
 
   // Paginación para vista móvil
@@ -273,7 +273,7 @@ export function ArticulosTab({
   const construirPayloadArticulo = (categoria_id) => ({
     ...formulario,
     categoria_id,
-    imagenFile: imagenFile, // Incluir archivo de imagen para subir a Cloudinary
+    imagenFile: imagenFile,
     imagen_url: articuloSeleccionado?.imagen_url || null // Mantener URL existente al editar
   });
 

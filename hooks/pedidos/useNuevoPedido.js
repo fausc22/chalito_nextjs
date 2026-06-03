@@ -167,7 +167,7 @@ export const useNuevoPedido = () => {
                 nombre: p.nombre,
                 precio: parseFloat(p.precio) || 0,
                 categoria: p.categoria_id,
-                imagen_url: p.imagen_url, // ✅ Usar imagen_url para Cloudinary
+                imagen_url: p.imagen_url,
                 extrasDisponibles: extrasDisponibles
               };
             })

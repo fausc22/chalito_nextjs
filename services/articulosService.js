@@ -16,8 +16,8 @@ const normalizarArticulo = (articulo = {}) => ({
 });
 
 export const articulosService = {
-  // ==================== SUBIR IMAGEN A CLOUDINARY ====================
-  // Sube una imagen al backend que la procesa con Cloudinary
+  // ==================== SUBIR IMAGEN AL FILE SERVER ====================
+  // Sube una imagen al backend que la guarda en files.elchalito.com
   subirImagenArticulo: async (imagenFile) => {
     try {
       // Validar que hay archivo
@@ -32,7 +32,7 @@ export const articulosService = {
       const formData = new FormData();
       formData.append('imagen', imagenFile);
 
-      // Subir al backend (que sube a Cloudinary)
+      // Subir al backend (file server)
       const response = await apiRequest.post(
         API_CONFIG.ENDPOINTS.ARTICULOS.UPLOAD_IMAGEN,
         formData,
@@ -51,7 +51,7 @@ export const articulosService = {
         };
       }
 
-      // Retornar URL de Cloudinary
+      // Retornar URL pública del file server
       return {
         success: true,
         imagen_url: response.data.imagen_url || response.data.data?.imagen_url,
@@ -209,12 +209,12 @@ export const articulosService = {
   // Crear nuevo artículo
   crearArticulo: async (articuloData) => {
     try {
-      // ==================== SUBIDA DE IMAGEN A CLOUDINARY ====================
+      // ==================== SUBIDA DE IMAGEN AL FILE SERVER ====================
       let imagen_url = null;
 
       // Si hay una imagen seleccionada, subirla primero
       if (articuloData.imagenFile) {
-        console.log('📸 Subiendo imagen a Cloudinary...');
+        console.log('📸 Subiendo imagen al file server...');
         const uploadResult = await articulosService.subirImagenArticulo(articuloData.imagenFile);
         
         if (uploadResult.success) {
@@ -244,7 +244,7 @@ export const articulosService = {
         stock_actual: controlaStock && articuloData.stock_actual ? parseInt(articuloData.stock_actual, 10) : 0,
         stock_minimo: controlaStock && articuloData.stock_minimo ? parseInt(articuloData.stock_minimo, 10) : 0,
         tipo: articuloData.tipo || 'OTRO',
-        imagen_url: imagen_url, // URL de Cloudinary o null
+        imagen_url: imagen_url,
         ingredientes: articuloData.tipo === 'ELABORADO' ? (articuloData.ingredientes || []) : []
       };
 
@@ -306,19 +306,18 @@ export const articulosService = {
   // Actualizar artículo existente
   actualizarArticulo: async (id, articuloData) => {
     try {
-      // ==================== ACTUALIZACIÓN DE IMAGEN CON CLOUDINARY ====================
+      // ==================== ACTUALIZACIÓN DE IMAGEN EN FILE SERVER ====================
       let imagen_url = articuloData.imagen_url; // Mantener URL existente por defecto
 
       // Si hay una nueva imagen seleccionada, subirla
       if (articuloData.imagenFile) {
-        console.log('📸 Subiendo nueva imagen a Cloudinary...');
+        console.log('📸 Subiendo nueva imagen al file server...');
         const uploadResult = await articulosService.subirImagenArticulo(articuloData.imagenFile);
         
         if (uploadResult.success) {
           imagen_url = uploadResult.imagen_url;
           console.log('✅ Imagen actualizada correctamente:', imagen_url);
-          // NOTA: Si se desea eliminar la imagen anterior de Cloudinary,
-          // se puede hacer aquí usando el public_id de la imagen anterior
+          // La imagen anterior se elimina en el backend al actualizar el artículo
         } else {
           console.warn('⚠️ No se pudo subir la nueva imagen:', uploadResult.error);
           // Mantener la imagen anterior si falla la subida

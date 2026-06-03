@@ -82,7 +82,7 @@ export const ArticulosForm = ({
   // Cargar imagen existente cuando se edita un artículo
   useEffect(() => {
     if (isOpen && isEditing && formulario.imagen_url && !imagenFile) {
-      // Si está editando y tiene imagen_url, mostrar preview de la imagen de Cloudinary
+      // Si está editando y tiene imagen_url, mostrar preview de la imagen existente
       setImagenPreview(formulario.imagen_url);
     } else if (isOpen && !isEditing) {
       // Si es crear nuevo, limpiar preview
@@ -160,9 +160,7 @@ export const ArticulosForm = ({
     };
     reader.readAsDataURL(file);
 
-    // FUTURO: Aquí se subirá la imagen a Cloudinary
-    // const uploadedUrl = await uploadToCloudinary(file);
-    // setFormulario(prev => ({ ...prev, imagen_url: uploadedUrl }));
+    // La imagen se sube al guardar el artículo (ver articulosService.crearArticulo / actualizarArticulo)
   };
 
   // Handler para eliminar imagen seleccionada
