@@ -21,6 +21,10 @@ import {
   sanitizeNumeroAltura,
   sanitizedDireccionFieldsFromStored,
 } from '@/lib/pedidoFormDireccion';
+import {
+  applyClienteFieldUpdate,
+  clienteFormMatchesSeleccion,
+} from '@/lib/clienteAutocompleteUtils';
 import { toast } from '@/hooks/use-toast';
 
 // Mapear estado del pedido a texto legible
@@ -224,21 +228,12 @@ export function ModalEditarPedido({
 
   const updateClienteField = (fieldPath, value) => {
     setCliente((prev) => {
-      if (fieldPath.startsWith('direccion.')) {
-        const nestedField = fieldPath.replace('direccion.', '');
-        return {
-          ...prev,
-          direccion: {
-            ...prev.direccion,
-            [nestedField]: value,
-          },
-        };
-      }
-
-      return {
-        ...prev,
-        [fieldPath]: value,
-      };
+      const next = applyClienteFieldUpdate(prev, fieldPath, value);
+      setClienteSeleccionado((sel) => {
+        if (!sel) return null;
+        return clienteFormMatchesSeleccion(next, sel, tipoEntrega) ? sel : null;
+      });
+      return next;
     });
 
     clearInlineError(fieldPath);
@@ -262,6 +257,7 @@ export function ModalEditarPedido({
 
   const handleClose = (open) => {
     if (!open) {
+      setClienteSeleccionado(null);
       resetearModal();
       onClose();
     }

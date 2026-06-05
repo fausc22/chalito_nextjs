@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useClienteAutocomplete } from '@/hooks/pedidos/useClienteAutocomplete';
+import { CLIENTE_AUTOCOMPLETE_MIN_CHARS } from '@/lib/clienteAutocompleteUtils';
 
 export function ClienteAutocomplete({
   value,
@@ -34,18 +35,21 @@ export function ClienteAutocomplete({
   }, []);
 
   const trimmedQuery = (value ?? query ?? '').trim();
-  const showNoMatchHint =
-    trimmedQuery.length >= 2 && !isLoading && !error && items.length === 0;
+  const canSearch = trimmedQuery.length >= CLIENTE_AUTOCOMPLETE_MIN_CHARS;
 
   const shouldShowList = useMemo(
-    () => open && (isLoading || Boolean(error) || items.length > 0),
-    [open, isLoading, error, items.length]
+    () =>
+      open &&
+      canSearch &&
+      (isLoading || Boolean(error) || items.length > 0),
+    [open, canSearch, isLoading, error, items.length]
   );
 
   const handleChange = (nextValue) => {
     onInputChange?.(nextValue);
     setQuery(nextValue);
-    setOpen(true);
+    const trimmed = String(nextValue || '').trim();
+    setOpen(trimmed.length >= CLIENTE_AUTOCOMPLETE_MIN_CHARS);
   };
 
   const handleBlur = () => {
@@ -58,11 +62,13 @@ export function ClienteAutocomplete({
     if (blurTimeoutRef.current) {
       clearTimeout(blurTimeoutRef.current);
     }
-    setOpen(true);
+    if (canSearch || isLoading || items.length > 0 || error) {
+      setOpen(true);
+    }
   };
 
   return (
-    <div className="relative space-y-2">
+    <div className="relative">
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -74,10 +80,6 @@ export function ClienteAutocomplete({
           className="pl-9"
         />
       </div>
-
-      {showNoMatchHint ? (
-        <p className="text-xs text-muted-foreground">No hay coincidencias para la búsqueda.</p>
-      ) : null}
 
       {shouldShowList && (
         <div className="absolute z-50 mt-1 max-h-72 w-full overflow-auto rounded-md border bg-card p-2 shadow-lg">

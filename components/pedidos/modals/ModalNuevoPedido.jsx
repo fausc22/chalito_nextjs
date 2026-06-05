@@ -21,6 +21,10 @@ import {
   sanitizeNumeroAltura,
   sanitizedDireccionFieldsFromStored,
 } from '@/lib/pedidoFormDireccion';
+import {
+  applyClienteFieldUpdate,
+  clienteFormMatchesSeleccion,
+} from '@/lib/clienteAutocompleteUtils';
 
 const CartSummaryMobile = ({
   carrito,
@@ -219,21 +223,12 @@ export function ModalNuevoPedido({
 
   const updateClienteField = (fieldPath, value) => {
     setCliente((prev) => {
-      if (fieldPath.startsWith('direccion.')) {
-        const nestedField = fieldPath.replace('direccion.', '');
-        return {
-          ...prev,
-          direccion: {
-            ...prev.direccion,
-            [nestedField]: value,
-          },
-        };
-      }
-
-      return {
-        ...prev,
-        [fieldPath]: value,
-      };
+      const next = applyClienteFieldUpdate(prev, fieldPath, value);
+      setClienteSeleccionado((sel) => {
+        if (!sel) return null;
+        return clienteFormMatchesSeleccion(next, sel, tipoEntrega) ? sel : null;
+      });
+      return next;
     });
 
     clearInlineError(fieldPath);
@@ -257,6 +252,7 @@ export function ModalNuevoPedido({
 
   const handleClose = (open) => {
     if (!open) {
+      setClienteSeleccionado(null);
       resetearModal();
       onClose();
     }

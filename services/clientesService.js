@@ -1,11 +1,12 @@
 import { apiRequest } from './api';
 import { API_CONFIG } from '../config/api';
+import { CLIENTE_AUTOCOMPLETE_MIN_CHARS } from '@/lib/clienteAutocompleteUtils';
 
 export const clientesService = {
   buscarSugerencias: async (q) => {
     try {
       const query = String(q || '').trim();
-      if (query.length < 2) {
+      if (query.length < CLIENTE_AUTOCOMPLETE_MIN_CHARS) {
         return { success: true, data: [] };
       }
 
