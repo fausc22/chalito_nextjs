@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { clientesService } from '@/services/clientesService';
+import { CLIENTE_AUTOCOMPLETE_MIN_CHARS } from '@/lib/clienteAutocompleteUtils';
+
+export { CLIENTE_AUTOCOMPLETE_MIN_CHARS };
 
 export function useClienteAutocomplete({ debounceMs = 300 } = {}) {
   const [query, setQuery] = useState('');
@@ -18,7 +21,7 @@ export function useClienteAutocomplete({ debounceMs = 300 } = {}) {
 
   const buscar = useCallback(async (value) => {
     const q = String(value || '').trim();
-    if (q.length < 2) {
+    if (q.length < CLIENTE_AUTOCOMPLETE_MIN_CHARS) {
       requestSeqRef.current += 1;
       clear();
       return;
