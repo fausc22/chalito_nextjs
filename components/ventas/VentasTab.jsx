@@ -41,6 +41,7 @@ export function VentasTab({
     mediosPago,
     onCargarVentas,
     onAnularVenta,
+    onSolicitarFactura,
     onObtenerVentaPorId,
     ventaDetalle,
     loadingDetalle,
@@ -109,6 +110,7 @@ export function VentasTab({
     const [modalAnular, setModalAnular] = useState(false);
     const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
     const [motivoAnulacion, setMotivoAnulacion] = useState('');
+    const [facturandoId, setFacturandoId] = useState(null);
 
     // Estados locales para filtros (inicializados desde URL)
     const [filtros, setFiltros] = useState(() => initializeFilters());
@@ -232,6 +234,32 @@ export function VentasTab({
         setVentaSeleccionada(venta);
         setMotivoAnulacion('');
         setModalAnular(true);
+    };
+
+    const handleFacturar = async (venta) => {
+        if (!onSolicitarFactura || !venta?.id) return;
+
+        setFacturandoId(venta.id);
+        const resultado = await onSolicitarFactura(venta.id);
+
+        if (resultado.success) {
+            toast({
+                title: 'Factura solicitada',
+                description: resultado.message || 'Se procesó la solicitud de factura ARCA'
+            });
+            await onCargarVentas(buildVentasParams(filtros));
+            if (drawerDetalle && ventaSeleccionada?.id === venta.id) {
+                await onObtenerVentaPorId(venta.id);
+            }
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Error al facturar',
+                description: resultado.error
+            });
+        }
+
+        setFacturandoId(null);
     };
 
     const handleConfirmarAnulacion = async () => {
@@ -408,6 +436,8 @@ export function VentasTab({
                     ventas={ventas}
                     onVerDetalle={handleVerDetalle}
                     onAnular={handleAnular}
+                    onFacturar={handleFacturar}
+                    facturandoId={facturandoId}
                 />
                 
                 {/* Paginación Desktop */}
@@ -494,6 +524,8 @@ export function VentasTab({
                                     venta={venta}
                                     onVerDetalle={handleVerDetalle}
                                     onAnular={handleAnular}
+                                    onFacturar={handleFacturar}
+                                    facturandoId={facturandoId}
                                 />
                             ))}
                         </div>
@@ -538,6 +570,8 @@ export function VentasTab({
                 onClose={handleCloseDrawer}
                 ventaDetalle={ventaDetalle}
                 loading={loadingDetalle}
+                onFacturar={handleFacturar}
+                facturandoId={facturandoId}
             />
 
             {/* AlertDialog Anular */}

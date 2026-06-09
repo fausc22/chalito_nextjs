@@ -16,7 +16,7 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
   const [medioPago, setMedioPago] = useState('efectivo');
   const [loading, setLoading] = useState(false);
 
-  const mediosConArca = ['mercadopago', 'debito', 'credito'];
+  const mediosConArca = ['mercadopago', 'debito', 'credito', 'transferencia_facturada'];
   const requiereFacturaElectronica = mediosConArca.includes(medioPago);
   const [pedidoCompleto, setPedidoCompleto] = useState(null);
   const [descuentoPorcentaje, setDescuentoPorcentaje] = useState(0);
@@ -330,7 +330,7 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
           {requiereFacturaElectronica ? (
             <Alert className="border-blue-200 bg-primary/10">
               <AlertDescription className="text-sm text-blue-900">
-                Este medio emite Factura B electrónica (ARCA). El CAE se generará automáticamente.
+                Este medio emite Factura C electrónica (ARCA) al entregar el pedido.
               </AlertDescription>
             </Alert>
           ) : (
@@ -375,7 +375,15 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
                 onClick={() => setMedioPago('transferencia')}
               >
                 <Building2 className="h-4 w-4 mr-1.5" />
-                Transferencia
+                Transferencia (sin factura)
+              </Button>
+              <Button
+                variant={medioPago === 'transferencia_facturada' ? 'default' : 'outline'}
+                className={`h-12 text-sm font-medium ${medioPago === 'transferencia_facturada' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                onClick={() => setMedioPago('transferencia_facturada')}
+              >
+                <Building2 className="h-4 w-4 mr-1.5" />
+                Transferencia (con factura)
               </Button>
               <Button
                 variant={medioPago === 'mercadopago' ? 'default' : 'outline'}

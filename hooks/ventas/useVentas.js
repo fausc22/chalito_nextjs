@@ -93,6 +93,25 @@ export const useVentas = () => {
         setVentaDetalle(null);
     }, []);
 
+    // Solicitar factura ARCA manualmente
+    const solicitarFactura = async (id) => {
+        setIsMutatingVentas(true);
+
+        try {
+            const response = await ventasService.solicitarFactura(id);
+
+            if (response.success) {
+                return { success: true, data: response.data, message: response.message };
+            }
+            return { success: false, error: response.error };
+        } catch (error) {
+            console.error(error);
+            return { success: false, error: 'Error al solicitar factura ARCA' };
+        } finally {
+            setIsMutatingVentas(false);
+        }
+    };
+
     // Anular venta
     const anularVenta = async (id, motivo = '') => {
         setIsMutatingVentas(true);
@@ -166,6 +185,7 @@ export const useVentas = () => {
         // Acciones - VENTAS
         cargarVentas,
         anularVenta,
+        solicitarFactura,
 
         // Estados - DETALLE
         ventaDetalle,

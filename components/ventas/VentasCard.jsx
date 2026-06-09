@@ -1,9 +1,10 @@
-import { Eye, Ban, CheckCircle, XCircle, User, Phone, CreditCard, Calendar } from 'lucide-react';
+import { Eye, Ban, CheckCircle, XCircle, User, Phone, CreditCard, Calendar, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { getCaeEstadoBadgeProps, puedeSolicitarFacturaArca } from '@/lib/ventasCaeUi';
 
-export function VentasCard({ venta, onVerDetalle, onAnular }) {
+export function VentasCard({ venta, onVerDetalle, onAnular, onFacturar, facturandoId }) {
     // Formatear moneda
     const formatMonto = (monto) => {
         return new Intl.NumberFormat('es-AR', {
@@ -24,6 +25,7 @@ export function VentasCard({ venta, onVerDetalle, onAnular }) {
     };
 
     const isAnulada = venta.estado === 'ANULADA';
+    const caeBadge = getCaeEstadoBadgeProps(venta.cae_estado);
 
     return (
         <Card className={`transition-all ${isAnulada ? 'bg-destructive/10/50 border-red-200' : 'hover:shadow-md'}`}>
@@ -79,10 +81,13 @@ export function VentasCard({ venta, onVerDetalle, onAnular }) {
                 )}
 
                 {/* Medio de pago */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     <CreditCard className="h-4 w-4 text-muted-foreground" />
                     <Badge variant="outline" className="font-normal">
                         {venta.medio_pago}
+                    </Badge>
+                    <Badge className={`${caeBadge.className} font-normal`}>
+                        {caeBadge.label}
                     </Badge>
                 </div>
 
@@ -103,7 +108,7 @@ export function VentasCard({ venta, onVerDetalle, onAnular }) {
                 )}
 
                 {/* Acciones */}
-                <div className="flex gap-2 pt-2 border-t">
+                <div className="flex gap-2 pt-2 border-t flex-wrap">
                     <Button
                         variant="outline"
                         size="sm"
@@ -113,6 +118,18 @@ export function VentasCard({ venta, onVerDetalle, onAnular }) {
                         <Eye className="h-4 w-4" />
                         Ver Detalle
                     </Button>
+                    {!isAnulada && puedeSolicitarFacturaArca(venta) && onFacturar && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onFacturar(venta)}
+                            disabled={facturandoId === venta.id}
+                            className="gap-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                        >
+                            <FileText className="h-4 w-4" />
+                            {facturandoId === venta.id ? 'Facturando...' : 'Facturar'}
+                        </Button>
+                    )}
                     {!isAnulada && (
                         <Button
                             variant="outline"

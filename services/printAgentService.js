@@ -20,6 +20,8 @@ export const AGENT_ERROR_MESSAGES = {
   INVALID_PAYLOAD: 'Datos de impresión inválidos.',
   VPS_FETCH_FAILED: 'No se pudieron obtener los datos del pedido. Revisá la conexión.',
   PEDIDO_NOT_PAID: 'El pedido debe estar cobrado para imprimir el ticket.',
+  PEDIDO_NO_ENTREGADO: 'El pedido debe estar ENTREGADO para imprimir la factura ARCA.',
+  CAE_PENDIENTE: 'La factura ARCA todavía no fue emitida. Reintentá en un minuto.',
   NO_SALE_FOR_TICKET: 'No hay venta asociada. Cobrá el pedido primero.',
   PEDIDO_NOT_FOUND: 'Pedido no encontrado.',
   UNKNOWN: 'Error al imprimir. Copiá el reporte para soporte.'

@@ -68,6 +68,7 @@ export const API_CONFIG = {
       CREATE: '/ventas',
       BY_ID: (id) => `/ventas/${id}`,
       ANULAR: (id) => `/ventas/${id}/anular`,
+      SOLICITAR_FACTURA: (id) => `/ventas/${id}/solicitar-factura`,
       RESUMEN: '/ventas/resumen',
       MEDIOS_PAGO: '/ventas/medios-pago',
     },

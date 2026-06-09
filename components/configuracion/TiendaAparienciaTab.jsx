@@ -48,7 +48,7 @@ export function TiendaAparienciaTab() {
                 <Input
                   id="tienda-color-primario-picker"
                   type="color"
-                  value={HEX_REGEX.test(apariencia.colorPrimario) ? apariencia.colorPrimario : '#1D4ED8'}
+                  value={HEX_REGEX.test(apariencia.colorPrimario) ? apariencia.colorPrimario : '#0D0D0D'}
                   onChange={(e) => handleColorChange('colorPrimario', e.target.value)}
                   disabled={loading || guardando}
                 />
@@ -66,7 +66,7 @@ export function TiendaAparienciaTab() {
                 <Input
                   id="tienda-color-secundario-picker"
                   type="color"
-                  value={HEX_REGEX.test(apariencia.colorSecundario) ? apariencia.colorSecundario : '#88E1F2'}
+                  value={HEX_REGEX.test(apariencia.colorSecundario) ? apariencia.colorSecundario : '#EA580C'}
                   onChange={(e) => handleColorChange('colorSecundario', e.target.value)}
                   disabled={loading || guardando}
                 />

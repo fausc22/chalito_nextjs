@@ -14,6 +14,7 @@ const mapearMedioPagoFrontendABackend = (medioPagoFrontend) => {
         debito: 'DEBITO',
         credito: 'CREDITO',
         transferencia: 'TRANSFERENCIA',
+        transferencia_facturada: 'TRANSFERENCIA_FACTURADA',
         mercadopago: 'MERCADOPAGO'
     };
 
@@ -290,6 +291,32 @@ export const ventasService = {
             return {
                 success: false,
                 error: error.response?.data?.message || 'Error al obtener resumen'
+            };
+        }
+    },
+
+    /**
+     * Solicitar factura ARCA manualmente
+     */
+    solicitarFactura: async (id) => {
+        try {
+            const response = await apiRequest.post(API_CONFIG.ENDPOINTS.VENTAS.SOLICITAR_FACTURA(id));
+            if (response.data?.success === false) {
+                return {
+                    success: false,
+                    error: response.data?.message || 'Error al solicitar factura ARCA'
+                };
+            }
+            return {
+                success: true,
+                data: response.data?.data,
+                message: response.data?.message || 'Factura solicitada'
+            };
+        } catch (error) {
+            console.error('❌ Error al solicitar factura:', error);
+            return {
+                success: false,
+                error: error.response?.data?.message || 'Error al solicitar factura ARCA'
             };
         }
     },

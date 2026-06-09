@@ -1,5 +1,5 @@
 import { 
-    X, User, Phone, Mail, MapPin, Calendar, CreditCard, 
+    User, Phone, Mail, MapPin, Calendar, CreditCard, 
     FileText, CheckCircle, XCircle, Package, Loader2 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,12 +19,15 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { getCaeEstadoBadgeProps, puedeSolicitarFacturaArca } from '@/lib/ventasCaeUi';
 
 export function VentaDetalleDrawer({ 
     isOpen, 
     onClose, 
     ventaDetalle, 
-    loading 
+    loading,
+    onFacturar,
+    facturandoId
 }) {
     // Formatear moneda
     const formatMonto = (monto) => {
@@ -49,6 +52,7 @@ export function VentaDetalleDrawer({
     const venta = ventaDetalle?.venta;
     const articulos = ventaDetalle?.articulos || [];
     const isAnulada = venta?.estado === 'ANULADA';
+    const caeBadge = getCaeEstadoBadgeProps(venta?.cae_estado);
 
     return (
         <Sheet open={isOpen} onOpenChange={onClose}>
@@ -155,7 +159,9 @@ export function VentaDetalleDrawer({
                                 {venta.cae_estado && (
                                     <div>
                                         <p className="text-xs text-muted-foreground">Estado CAE</p>
-                                        <p className="font-medium">{venta.cae_estado}</p>
+                                        <Badge className={`${caeBadge.className} font-normal mt-1`}>
+                                            {caeBadge.label}
+                                        </Badge>
                                     </div>
                                 )}
                                 {venta.cae_id && (
@@ -257,14 +263,26 @@ export function VentaDetalleDrawer({
                             </div>
                         )}
 
-                        {/* Botón cerrar */}
-                        <Button 
-                            variant="outline" 
-                            onClick={onClose}
-                            className="w-full"
-                        >
-                            Cerrar
-                        </Button>
+                        {/* Botones de acción */}
+                        <div className="flex flex-col gap-2">
+                            {!isAnulada && puedeSolicitarFacturaArca(venta) && onFacturar && (
+                                <Button
+                                    onClick={() => onFacturar(venta)}
+                                    disabled={facturandoId === venta.id}
+                                    className="w-full bg-emerald-600 hover:bg-emerald-700"
+                                >
+                                    <FileText className="h-4 w-4 mr-2" />
+                                    {facturandoId === venta.id ? 'Facturando...' : 'Facturar (ARCA)'}
+                                </Button>
+                            )}
+                            <Button 
+                                variant="outline" 
+                                onClick={onClose}
+                                className="w-full"
+                            >
+                                Cerrar
+                            </Button>
+                        </div>
                     </div>
                 ) : (
                     <div className="flex items-center justify-center h-64 text-muted-foreground">

@@ -38,10 +38,10 @@ export function ModalImprimir({ pedido, open, onOpenChange }) {
     }
   }, [open]);
 
-  const canPrintTicket = useMemo(
-    () => pedido?.paymentStatus === 'paid' || pedido?.estado_pago === 'PAGADO',
-    [pedido?.paymentStatus, pedido?.estado_pago]
-  );
+  const pedidoEntregado = useMemo(() => {
+    const estado = String(pedido?.estado || pedido?.status || '').trim().toUpperCase();
+    return estado === 'ENTREGADO';
+  }, [pedido?.estado, pedido?.status]);
 
   const phaseLabel = useMemo(() => {
     if (phase === 'fetching') return 'Obteniendo datos del pedido…';
@@ -58,9 +58,9 @@ export function ModalImprimir({ pedido, open, onOpenChange }) {
   const runThermalPrint = async (kind) => {
     if (!pedido) return;
 
-    if (kind === 'customer' && !canPrintTicket) {
-      toast.error('No se puede imprimir el ticket', {
-        description: 'El pedido debe estar cobrado para imprimir el ticket.'
+    if (kind === 'customer' && !pedidoEntregado) {
+      toast.error('No se puede imprimir la factura', {
+        description: 'El pedido debe estar ENTREGADO para imprimir la factura ARCA.'
       });
       return;
     }
@@ -84,7 +84,7 @@ export function ModalImprimir({ pedido, open, onOpenChange }) {
       if (result.success) {
         setPhase('success');
         setLastPayload(result.payload);
-        toast.success(kind === 'kitchen' ? 'Comanda impresa' : 'Ticket impreso', {
+        toast.success(kind === 'kitchen' ? 'Ticket impreso' : 'Factura impresa', {
           description: 'Enviado a la ticketera'
         });
         setTimeout(() => onOpenChange(false), 600);
@@ -164,7 +164,7 @@ export function ModalImprimir({ pedido, open, onOpenChange }) {
         <DialogHeader>
           <DialogTitle>Imprimir Pedido #{pedido.id}</DialogTitle>
           <DialogDescription>
-            Impresión automática en ticketera 58mm. Si falla, podés reintentar o usar el navegador.
+            Ticket para comandera/cliente (siempre) o factura ARCA (solo pedido entregado con CAE).
           </DialogDescription>
         </DialogHeader>
 
@@ -220,22 +220,24 @@ export function ModalImprimir({ pedido, open, onOpenChange }) {
           >
             <Printer className="h-5 w-5 shrink-0" />
             <div className="flex flex-col items-start text-left">
-              <span className="font-semibold">Imprimir Comanda (cocina)</span>
-              <span className="text-xs text-muted-foreground">Sin precios — para preparación</span>
+              <span className="font-semibold">Imprimir Ticket</span>
+              <span className="text-xs text-muted-foreground">Comandera y cliente — disponible desde que se crea el pedido</span>
             </div>
           </Button>
 
           <Button
             onClick={() => runThermalPrint('customer')}
-            disabled={isBusy || !canPrintTicket}
+            disabled={isBusy || !pedidoEntregado}
             className="w-full justify-start gap-3 h-auto py-4"
             variant="outline"
           >
             <Receipt className="h-5 w-5 shrink-0" />
             <div className="flex flex-col items-start text-left">
-              <span className="font-semibold">Imprimir Ticket / Factura</span>
+              <span className="font-semibold">Imprimir Factura</span>
               <span className="text-xs text-muted-foreground">
-                {canPrintTicket ? 'Con precios — pedido cobrado' : 'El pedido debe estar cobrado'}
+                {pedidoEntregado
+                  ? 'Comprobante oficial ARCA con CAE y QR'
+                  : 'Requiere pedido ENTREGADO y CAE emitido'}
               </span>
             </div>
           </Button>

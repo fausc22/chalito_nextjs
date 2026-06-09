@@ -104,6 +104,7 @@ const mapearMedioPagoFrontendABackend = (medioPagoFrontend) => {
     debito: 'DEBITO',
     credito: 'CREDITO',
     transferencia: 'TRANSFERENCIA',
+    transferencia_facturada: 'TRANSFERENCIA_FACTURADA',
     mercadopago: 'MERCADOPAGO',
   };
 
@@ -131,7 +132,7 @@ const transformarPedidoBackendAFrontend = (pedidoBackend, articulos = []) => {
   const mapearMedioPagoBackendAFrontend = (medio) => {
     if (!medio || typeof medio !== 'string') return null;
     const m = medio.toUpperCase();
-    const map = { 'EFECTIVO': 'efectivo', 'DEBITO': 'debito', 'CREDITO': 'credito', 'TRANSFERENCIA': 'transferencia', 'MERCADOPAGO': 'mercadopago' };
+    const map = { 'EFECTIVO': 'efectivo', 'DEBITO': 'debito', 'CREDITO': 'credito', 'TRANSFERENCIA': 'transferencia', 'TRANSFERENCIA_FACTURADA': 'transferencia_facturada', 'MERCADOPAGO': 'mercadopago' };
     return map[m] || medio.toLowerCase();
   };
 

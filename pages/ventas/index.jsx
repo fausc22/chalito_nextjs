@@ -18,6 +18,7 @@ function VentasContent() {
         isMutatingVentas,
         cargarVentas,
         anularVenta,
+        solicitarFactura,
         
         // Detalle
         ventaDetalle,
@@ -55,6 +56,7 @@ function VentasContent() {
                         mediosPago={mediosPago}
                         onCargarVentas={cargarVentas}
                         onAnularVenta={anularVenta}
+                        onSolicitarFactura={solicitarFactura}
                         onObtenerVentaPorId={obtenerVentaPorId}
                         ventaDetalle={ventaDetalle}
                         loadingDetalle={loadingDetalle}

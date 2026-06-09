@@ -1,4 +1,4 @@
-import { Eye, Ban, CheckCircle, XCircle } from 'lucide-react';
+import { Eye, Ban, CheckCircle, XCircle, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Table,
@@ -10,8 +10,9 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { getCaeEstadoBadgeProps, puedeSolicitarFacturaArca } from '@/lib/ventasCaeUi';
 
-export function VentasTable({ ventas, onVerDetalle, onAnular }) {
+export function VentasTable({ ventas, onVerDetalle, onAnular, onFacturar, facturandoId }) {
     // Formatear moneda
     const formatMonto = (monto) => {
         return new Intl.NumberFormat('es-AR', {
@@ -29,6 +30,16 @@ export function VentasTable({ ventas, onVerDetalle, onAnular }) {
             hour: '2-digit',
             minute: '2-digit'
         });
+    };
+
+    // Badge de estado CAE
+    const getCaeBadge = (venta) => {
+        const { label, className } = getCaeEstadoBadgeProps(venta.cae_estado);
+        return (
+            <Badge className={`${className} font-normal`}>
+                {label}
+            </Badge>
+        );
     };
 
     // Badge de estado
@@ -75,7 +86,8 @@ export function VentasTable({ ventas, onVerDetalle, onAnular }) {
                                 <TableHead className="text-right">Total</TableHead>
                                 <TableHead>Medio Pago</TableHead>
                                 <TableHead>Estado</TableHead>
-                                <TableHead className="text-center w-[120px]">Acciones</TableHead>
+                                <TableHead>Facturación ARCA</TableHead>
+                                <TableHead className="text-center w-[160px]">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -118,7 +130,10 @@ export function VentasTable({ ventas, onVerDetalle, onAnular }) {
                                         {getEstadoBadge(venta.estado)}
                                     </TableCell>
                                     <TableCell>
-                                        <div className="flex items-center justify-center gap-1">
+                                        {getCaeBadge(venta)}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center justify-center gap-1 flex-wrap">
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
@@ -128,6 +143,19 @@ export function VentasTable({ ventas, onVerDetalle, onAnular }) {
                                             >
                                                 <Eye className="h-4 w-4" />
                                             </Button>
+                                            {puedeSolicitarFacturaArca(venta) && onFacturar && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => onFacturar(venta)}
+                                                    disabled={facturandoId === venta.id}
+                                                    title="Facturar (ARCA)"
+                                                    className="h-8 px-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50"
+                                                >
+                                                    <FileText className="h-4 w-4 mr-1" />
+                                                    {facturandoId === venta.id ? '...' : 'Facturar'}
+                                                </Button>
+                                            )}
                                             {venta.estado === 'FACTURADA' && (
                                                 <Button
                                                     variant="ghost"

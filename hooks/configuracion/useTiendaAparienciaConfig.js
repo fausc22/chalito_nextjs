@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { tiendaOnlineService } from '@/services/tiendaOnlineService';
 
 const EMPTY = {
-  colorPrimario: '#1D4ED8',
-  colorSecundario: '#88E1F2',
+  colorPrimario: '#0D0D0D',
+  colorSecundario: '#EA580C',
   nombreNegocio: '',
   logoUrl: null,
 };
