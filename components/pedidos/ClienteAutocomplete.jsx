@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, Search, Phone } from 'lucide-react';
+import { Loader2, Search, Phone, UserPlus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useClienteAutocomplete } from '@/hooks/pedidos/useClienteAutocomplete';
 import { CLIENTE_AUTOCOMPLETE_MIN_CHARS } from '@/lib/clienteAutocompleteUtils';
 
+const BLUR_CLOSE_DELAY_MS = 250;
+
 export function ClienteAutocomplete({
   value,
   onInputChange,
   onSelectCliente,
+  onCreateCliente,
   placeholder = 'Nombre del cliente',
 }) {
   const [open, setOpen] = useState(false);
@@ -20,11 +23,9 @@ export function ClienteAutocomplete({
     items,
     isLoading,
     error,
+    isEmptyResult,
+    reset,
   } = useClienteAutocomplete({ debounceMs: 300 });
-
-  useEffect(() => {
-    setQuery(value ?? '');
-  }, [value, setQuery]);
 
   useEffect(() => {
     return () => {
@@ -34,15 +35,21 @@ export function ClienteAutocomplete({
     };
   }, []);
 
-  const trimmedQuery = (value ?? query ?? '').trim();
-  const canSearch = trimmedQuery.length >= CLIENTE_AUTOCOMPLETE_MIN_CHARS;
+  useEffect(() => {
+    if (!String(value || '').trim()) {
+      reset();
+    }
+  }, [value, reset]);
+
+  const trimmedValue = String(value ?? '').trim();
+  const canSearch = trimmedValue.length >= CLIENTE_AUTOCOMPLETE_MIN_CHARS;
 
   const shouldShowList = useMemo(
     () =>
       open &&
       canSearch &&
-      (isLoading || Boolean(error) || items.length > 0),
-    [open, canSearch, isLoading, error, items.length]
+      (isLoading || Boolean(error) || items.length > 0 || isEmptyResult),
+    [open, canSearch, isLoading, error, items.length, isEmptyResult]
   );
 
   const handleChange = (nextValue) => {
@@ -55,16 +62,31 @@ export function ClienteAutocomplete({
   const handleBlur = () => {
     blurTimeoutRef.current = setTimeout(() => {
       setOpen(false);
-    }, 150);
+    }, BLUR_CLOSE_DELAY_MS);
   };
 
   const handleFocus = () => {
     if (blurTimeoutRef.current) {
       clearTimeout(blurTimeoutRef.current);
     }
-    if (canSearch || isLoading || items.length > 0 || error) {
+    if (canSearch || isLoading || items.length > 0 || error || isEmptyResult) {
       setOpen(true);
     }
+  };
+
+  const handleSelectExisting = (cliente) => {
+    onSelectCliente?.(cliente);
+    onInputChange?.(cliente.nombre || '');
+    setQuery(cliente.nombre || '');
+    setOpen(false);
+  };
+
+  const handleCreateNew = () => {
+    const nombre = trimmedValue;
+    if (!nombre) return;
+    onCreateCliente?.(nombre);
+    setQuery('');
+    setOpen(false);
   };
 
   return (
@@ -81,7 +103,7 @@ export function ClienteAutocomplete({
         />
       </div>
 
-      {shouldShowList && (
+      {shouldShowList ? (
         <div className="absolute z-50 mt-1 max-h-72 w-full overflow-auto rounded-md border bg-card p-2 shadow-lg">
           {isLoading ? (
             <div className="flex items-center gap-2 p-2 text-sm text-muted-foreground">
@@ -103,12 +125,7 @@ export function ClienteAutocomplete({
                   variant="ghost"
                   className="h-auto w-full justify-start px-2 py-2"
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    onSelectCliente?.(cliente);
-                    onInputChange?.(cliente.nombre || '');
-                    setQuery(cliente.nombre || '');
-                    setOpen(false);
-                  }}
+                  onClick={() => handleSelectExisting(cliente)}
                 >
                   <div className="flex w-full flex-col items-start gap-1">
                     <div className="flex items-center gap-2">
@@ -128,8 +145,27 @@ export function ClienteAutocomplete({
               ))}
             </div>
           ) : null}
+
+          {!isLoading && !error && isEmptyResult ? (
+            <div className="space-y-2 p-2">
+              <p className="text-sm text-muted-foreground">
+                Sin resultados para &quot;{trimmedValue}&quot;
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-auto w-full justify-start gap-2 py-2"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={handleCreateNew}
+              >
+                <UserPlus className="h-4 w-4 shrink-0" />
+                Crear nuevo cliente
+              </Button>
+            </div>
+          ) : null}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

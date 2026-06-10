@@ -27,7 +27,8 @@ export function VentaDetalleDrawer({
     ventaDetalle, 
     loading,
     onFacturar,
-    facturandoId
+    facturandoId,
+    puedeOperarVentas = true
 }) {
     // Formatear moneda
     const formatMonto = (monto) => {
@@ -265,7 +266,7 @@ export function VentaDetalleDrawer({
 
                         {/* Botones de acción */}
                         <div className="flex flex-col gap-2">
-                            {!isAnulada && puedeSolicitarFacturaArca(venta) && onFacturar && (
+                            {!isAnulada && puedeOperarVentas && puedeSolicitarFacturaArca(venta) && onFacturar && (
                                 <Button
                                     onClick={() => onFacturar(venta)}
                                     disabled={facturandoId === venta.id}

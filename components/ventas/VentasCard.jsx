@@ -4,7 +4,14 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getCaeEstadoBadgeProps, puedeSolicitarFacturaArca } from '@/lib/ventasCaeUi';
 
-export function VentasCard({ venta, onVerDetalle, onAnular, onFacturar, facturandoId }) {
+export function VentasCard({
+    venta,
+    onVerDetalle,
+    onAnular,
+    onFacturar,
+    facturandoId,
+    puedeOperarVentas = true
+}) {
     // Formatear moneda
     const formatMonto = (monto) => {
         return new Intl.NumberFormat('es-AR', {
@@ -118,7 +125,7 @@ export function VentasCard({ venta, onVerDetalle, onAnular, onFacturar, facturan
                         <Eye className="h-4 w-4" />
                         Ver Detalle
                     </Button>
-                    {!isAnulada && puedeSolicitarFacturaArca(venta) && onFacturar && (
+                    {!isAnulada && puedeOperarVentas && puedeSolicitarFacturaArca(venta) && onFacturar && (
                         <Button
                             variant="outline"
                             size="sm"
@@ -130,7 +137,7 @@ export function VentasCard({ venta, onVerDetalle, onAnular, onFacturar, facturan
                             {facturandoId === venta.id ? 'Facturando...' : 'Facturar'}
                         </Button>
                     )}
-                    {!isAnulada && (
+                    {!isAnulada && puedeOperarVentas && onAnular && (
                         <Button
                             variant="outline"
                             size="sm"

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { ShoppingCart, ChevronRight, ChevronLeft, Check, Search, Package, Edit, Trash2, Store, Truck, Phone, MessageSquare, Globe, Clock, Banknote, CreditCard, Building2, Smartphone, XCircle, CheckCircle, Settings, ChevronUp, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -209,6 +209,7 @@ export function ModalNuevoPedido({
 }) {
   const [carritoExpandidoMobile, setCarritoExpandidoMobile] = useState(true);
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
+  const telefonoInputRef = useRef(null);
 
   const clearInlineError = (fieldPath) => {
     if (typeof clearFieldError === 'function') {
@@ -256,6 +257,13 @@ export function ModalNuevoPedido({
       resetearModal();
       onClose();
     }
+  };
+
+  const handleCreateCliente = (nombre) => {
+    setClienteSeleccionado(null);
+    updateClienteField('nombre', sanitizeNombre(nombre));
+    clearInlineError('nombre');
+    window.setTimeout(() => telefonoInputRef.current?.focus(), 0);
   };
 
   const handleSelectCliente = (clienteData) => {
@@ -608,6 +616,7 @@ export function ModalNuevoPedido({
                     value={cliente.nombre}
                     onInputChange={(nextValue) => updateClienteField('nombre', sanitizeNombre(nextValue))}
                     onSelectCliente={handleSelectCliente}
+                    onCreateCliente={handleCreateCliente}
                     placeholder="Ej: Juan Pérez"
                   />
                   <FieldError error={fieldErrors?.nombre} id="nombre-error" />
@@ -616,6 +625,7 @@ export function ModalNuevoPedido({
                 <div>
                   <Label className="text-xs font-medium">Teléfono *</Label>
                   <Input
+                    ref={telefonoInputRef}
                     type="tel"
                     value={cliente.telefono}
                     onChange={(e) => updateClienteField('telefono', sanitizeTelefono(e.target.value))}

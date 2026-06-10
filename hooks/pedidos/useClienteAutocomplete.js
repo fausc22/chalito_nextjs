@@ -9,21 +9,28 @@ export function useClienteAutocomplete({ debounceMs = 300 } = {}) {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedCliente, setSelectedCliente] = useState(null);
+  const [lastSearchQuery, setLastSearchQuery] = useState('');
   const debounceRef = useRef(null);
   const requestSeqRef = useRef(0);
 
-  const clear = useCallback(() => {
+  const clearResults = useCallback(() => {
     setItems([]);
     setError('');
     setIsLoading(false);
+    setLastSearchQuery('');
   }, []);
+
+  const reset = useCallback(() => {
+    requestSeqRef.current += 1;
+    setQuery('');
+    clearResults();
+  }, [clearResults]);
 
   const buscar = useCallback(async (value) => {
     const q = String(value || '').trim();
     if (q.length < CLIENTE_AUTOCOMPLETE_MIN_CHARS) {
       requestSeqRef.current += 1;
-      clear();
+      clearResults();
       return;
     }
 
@@ -40,12 +47,14 @@ export function useClienteAutocomplete({ debounceMs = 300 } = {}) {
       setError(result.error || 'No se pudieron cargar sugerencias');
       setItems([]);
       setIsLoading(false);
+      setLastSearchQuery(q);
       return;
     }
 
     setItems(result.data || []);
     setIsLoading(false);
-  }, [clear]);
+    setLastSearchQuery(q);
+  }, [clearResults]);
 
   useEffect(() => {
     if (debounceRef.current) {
@@ -62,18 +71,28 @@ export function useClienteAutocomplete({ debounceMs = 300 } = {}) {
     };
   }, [buscar, debounceMs, query]);
 
-  const selectCliente = useCallback((cliente) => {
-    setSelectedCliente(cliente || null);
-  }, []);
+  const isEmptyResult = useMemo(() => {
+    const q = String(query || '').trim();
+    return (
+      !isLoading &&
+      !error &&
+      q.length >= CLIENTE_AUTOCOMPLETE_MIN_CHARS &&
+      items.length === 0 &&
+      lastSearchQuery === q
+    );
+  }, [query, isLoading, error, items.length, lastSearchQuery]);
 
-  return useMemo(() => ({
-    query,
-    setQuery,
-    items,
-    isLoading,
-    error,
-    selectedCliente,
-    selectCliente,
-    clear,
-  }), [query, items, isLoading, error, selectedCliente, selectCliente, clear]);
+  return useMemo(
+    () => ({
+      query,
+      setQuery,
+      items,
+      isLoading,
+      error,
+      isEmptyResult,
+      reset,
+      clearResults,
+    }),
+    [query, items, isLoading, error, isEmptyResult, reset, clearResults]
+  );
 }

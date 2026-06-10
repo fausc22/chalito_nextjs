@@ -7,7 +7,14 @@ import { getSufijoPresentacionCocina, getExtrasSinPresentacion } from '../../lib
 import { pedidosService } from '../../services/pedidosService';
 import { getPollingRemainingMs, isPollingBlocked, setPollingBlocked } from '../../services/rateLimitManager';
 
-export function ModoCocina({ isOpen, onClose, modoCocina = true, onPedidoActualizado }) {
+export function ModoCocina({
+  isOpen,
+  onClose,
+  modoCocina = true,
+  onPedidoActualizado,
+  className = 'h-screen',
+  showThemeToggle = true
+}) {
   const [comandas, setComandas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -366,10 +373,12 @@ export function ModoCocina({ isOpen, onClose, modoCocina = true, onPedidoActuali
   }, [currentTime]);
 
   return (
-      <div className="relative w-full h-screen bg-background p-4 overflow-y-auto">
-        <div className="absolute right-4 top-4 z-50">
-          <ThemeToggle className="bg-card border border-border shadow-sm" />
-        </div>
+      <div className={`relative w-full bg-background p-4 overflow-y-auto ${className}`}>
+        {showThemeToggle ? (
+          <div className="absolute right-4 top-4 z-50">
+            <ThemeToggle className="bg-card border border-border shadow-sm" />
+          </div>
+        ) : null}
         {/* Header simple para cocina */}
         <div className="mb-4 pb-3 border-b-2 border-border flex items-center justify-between pr-14">
           <h1 className="text-2xl font-bold text-foreground">COMANDAS EN PREPARACIÓN</h1>

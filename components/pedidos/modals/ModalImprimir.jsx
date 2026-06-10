@@ -160,7 +160,7 @@ export function ModalImprimir({ pedido, open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-0.75rem)] sm:w-full sm:max-w-md">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Imprimir Pedido #{pedido.id}</DialogTitle>
           <DialogDescription>

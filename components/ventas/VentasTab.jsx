@@ -45,7 +45,8 @@ export function VentasTab({
     onObtenerVentaPorId,
     ventaDetalle,
     loadingDetalle,
-    onLimpiarVentaDetalle
+    onLimpiarVentaDetalle,
+    puedeOperarVentas = true
 }) {
     const router = useRouter();
     const containerRef = useRef(null);
@@ -368,8 +369,8 @@ export function VentasTab({
     return (
         <div ref={containerRef} className="space-y-6">
 
-            {/* Resumen de totales */}
-            {metaVentas.total_registros > 0 && (
+            {/* Resumen de totales (solo roles con operación en ventas) */}
+            {puedeOperarVentas && metaVentas.total_registros > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
                         <CardContent className="p-4">
@@ -421,6 +422,24 @@ export function VentasTab({
                 </div>
             )}
 
+            {!puedeOperarVentas && metaVentas.total_registros > 0 && (
+                <Card>
+                    <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-slate-600 rounded-lg">
+                                <Hash className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Resultados del filtro</p>
+                                <p className="text-xl font-bold text-foreground">
+                                    {metaVentas.total_registros} ventas
+                                </p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Filtros */}
             <VentasFilters
                 filtros={filtros}
@@ -435,9 +454,10 @@ export function VentasTab({
                 <VentasTable
                     ventas={ventas}
                     onVerDetalle={handleVerDetalle}
-                    onAnular={handleAnular}
-                    onFacturar={handleFacturar}
+                    onAnular={puedeOperarVentas ? handleAnular : undefined}
+                    onFacturar={puedeOperarVentas ? handleFacturar : undefined}
                     facturandoId={facturandoId}
+                    puedeOperarVentas={puedeOperarVentas}
                 />
                 
                 {/* Paginación Desktop */}
@@ -523,9 +543,10 @@ export function VentasTab({
                                     key={venta.id}
                                     venta={venta}
                                     onVerDetalle={handleVerDetalle}
-                                    onAnular={handleAnular}
-                                    onFacturar={handleFacturar}
+                                    onAnular={puedeOperarVentas ? handleAnular : undefined}
+                                    onFacturar={puedeOperarVentas ? handleFacturar : undefined}
                                     facturandoId={facturandoId}
+                                    puedeOperarVentas={puedeOperarVentas}
                                 />
                             ))}
                         </div>
@@ -570,8 +591,9 @@ export function VentasTab({
                 onClose={handleCloseDrawer}
                 ventaDetalle={ventaDetalle}
                 loading={loadingDetalle}
-                onFacturar={handleFacturar}
+                onFacturar={puedeOperarVentas ? handleFacturar : undefined}
                 facturandoId={facturandoId}
+                puedeOperarVentas={puedeOperarVentas}
             />
 
             {/* AlertDialog Anular */}

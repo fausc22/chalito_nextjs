@@ -6,8 +6,12 @@ import { ModuleHeader } from '../../components/layout/ModuleHeader';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
 import { VentasTab } from '../../components/ventas/VentasTab';
 import { useVentas } from '../../hooks/ventas/useVentas';
+import { useAuth } from '../../contexts/AuthContext';
+import { MODULES, canWrite } from '../../config/permissions';
 
 function VentasContent() {
+    const { userRole } = useAuth();
+    const puedeOperarVentas = canWrite(userRole, MODULES.VENTAS);
     // Hook de ventas
     const {
         // Ventas
@@ -37,11 +41,15 @@ function VentasContent() {
     }, [cargarMediosPago]);
 
     return (
-        <Layout title="Ventas">
+        <Layout title={puedeOperarVentas ? 'Ventas' : 'Consulta de ventas'}>
             <div className="main-content">
                 <ModuleHeader
-                    title="Ventas"
-                    description="Consultá el historial de ventas y gestioná los ingresos del negocio."
+                    title={puedeOperarVentas ? 'Ventas' : 'Consulta de ventas'}
+                    description={
+                        puedeOperarVentas
+                            ? 'Consultá el historial de ventas y gestioná los ingresos del negocio.'
+                            : 'Consultá el historial de ventas, filtros y detalle de cada operación.'
+                    }
                     icon={CreditCard}
                 />
 
@@ -61,6 +69,7 @@ function VentasContent() {
                         ventaDetalle={ventaDetalle}
                         loadingDetalle={loadingDetalle}
                         onLimpiarVentaDetalle={limpiarVentaDetalle}
+                        puedeOperarVentas={puedeOperarVentas}
                     />
                 </div>
             </div>
