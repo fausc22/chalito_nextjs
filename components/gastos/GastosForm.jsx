@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,7 +32,6 @@ export function GastosForm({
     formulario,
     setFormulario,
     categorias,
-    cuentas,
     onSubmit,
     isEditing,
     loading
@@ -52,7 +50,6 @@ export function GastosForm({
         if (!formulario.categoria_id) nextErrors.categoria_id = 'La categoría es obligatoria';
         if (!formulario.descripcion?.trim()) nextErrors.descripcion = 'La descripción es obligatoria';
         if (!formulario.monto || parseFloat(formulario.monto) <= 0) nextErrors.monto = 'El monto debe ser mayor a 0';
-        if (!formulario.cuenta_id) nextErrors.cuenta_id = 'La cuenta de fondos es obligatoria';
 
         setErrors(nextErrors);
 
@@ -62,9 +59,6 @@ export function GastosForm({
 
         onSubmit();
     };
-
-    // Encontrar la cuenta seleccionada para mostrar el saldo
-    const cuentaSeleccionada = cuentas.find(c => c.id.toString() === formulario.cuenta_id?.toString());
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -162,46 +156,9 @@ export function GastosForm({
                                 ))}
                             </SelectContent>
                         </Select>
-                    </div>
-
-                    {/* Cuenta de Fondos */}
-                    <div>
-                        <Label htmlFor="cuenta_id" className="text-sm font-medium">
-                            Cuenta de Fondos <span className="text-red-500">*</span>
-                        </Label>
-                        <Select
-                            value={formulario.cuenta_id?.toString() || ''}
-                            onValueChange={(value) => handleChange('cuenta_id', value)}
-                            required
-                        >
-                            <SelectTrigger className="mt-1" error={Boolean(errors.cuenta_id)} aria-invalid={Boolean(errors.cuenta_id)}>
-                                <SelectValue placeholder="Seleccionar cuenta de fondos" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {cuentas.filter(c => c.activa).map((cuenta) => (
-                                    <SelectItem key={cuenta.id} value={cuenta.id.toString()}>
-                                        {cuenta.nombre} - Saldo: ${parseFloat(cuenta.saldo).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        {cuentaSeleccionada && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                                Saldo actual: <span className={`font-semibold ${
-                                    parseFloat(cuentaSeleccionada.saldo) >= 0
-                                        ? 'text-green-600'
-                                        : 'text-red-600'
-                                }`}>
-                                    ${parseFloat(cuentaSeleccionada.saldo).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                                </span>
-                                {formulario.monto && parseFloat(formulario.monto) > parseFloat(cuentaSeleccionada.saldo) && (
-                                    <span className="text-amber-600 ml-2">
-                                        (Quedará en negativo)
-                                    </span>
-                                )}
-                            </p>
-                        )}
-                        <FieldError error={errors.cuenta_id} />
+                        <p className="text-xs text-muted-foreground mt-1">
+                            El gasto se descuenta del total operativo del negocio.
+                        </p>
                     </div>
 
                     {/* Observaciones */}
@@ -244,4 +201,3 @@ export function GastosForm({
         </Dialog>
     );
 }
-

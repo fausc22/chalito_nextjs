@@ -1,6 +1,7 @@
 import { Palette, Save } from 'lucide-react';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTiendaAparienciaConfig } from '@/hooks/configuracion/useTiendaAparienciaConfig';
+import { CarouselManager } from '@/components/configuracion/carousel/CarouselManager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -37,10 +38,6 @@ export function TiendaAparienciaTab() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-xs text-muted-foreground">
-            El carrusel de la página de inicio usa imágenes fijas del sitio (no configurable en esta fase).
-          </p>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="tienda-color-primario">Color primario web</Label>
@@ -96,6 +93,8 @@ export function TiendaAparienciaTab() {
           </div>
         </CardContent>
       </Card>
+
+      <CarouselManager notification={notification} />
     </div>
   );
 }

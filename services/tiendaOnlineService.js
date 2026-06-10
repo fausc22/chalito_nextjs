@@ -180,4 +180,109 @@ export const tiendaOnlineService = {
       };
     }
   },
+
+  async getCarousel() {
+    try {
+      const response = await apiRequest.get(API_CONFIG.ENDPOINTS.TIENDA_ONLINE.CAROUSEL);
+      if (!response.data?.success) {
+        return {
+          success: false,
+          message: getApiErrorMessage(response, 'Error al obtener carrusel'),
+        };
+      }
+      return { success: true, data: response.data.data };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Error al obtener carrusel',
+      };
+    }
+  },
+
+  async updateCarousel(payload) {
+    try {
+      const response = await apiRequest.put(API_CONFIG.ENDPOINTS.TIENDA_ONLINE.CAROUSEL, payload);
+      if (!response.data?.success) {
+        return {
+          success: false,
+          message: getApiErrorMessage(response, 'Error al guardar carrusel'),
+        };
+      }
+      return {
+        success: true,
+        message: response.data.message,
+        data: response.data.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Error al guardar carrusel',
+      };
+    }
+  },
+
+  async uploadCarouselSlide({ file, alt, width, height, focalX, focalY, zoom }) {
+    try {
+      if (!file) {
+        return { success: false, message: 'No se seleccionó ninguna imagen' };
+      }
+
+      const formData = new FormData();
+      formData.append('imagen', file);
+      if (alt) formData.append('alt', alt);
+      if (width) formData.append('width', String(width));
+      if (height) formData.append('height', String(height));
+      if (focalX !== undefined) formData.append('focalX', String(focalX));
+      if (focalY !== undefined) formData.append('focalY', String(focalY));
+      if (zoom !== undefined) formData.append('zoom', String(zoom));
+
+      const response = await apiRequest.post(
+        API_CONFIG.ENDPOINTS.TIENDA_ONLINE.CAROUSEL_UPLOAD,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+
+      if (!response.data?.success) {
+        return {
+          success: false,
+          message: getApiErrorMessage(response, 'Error al subir imagen'),
+        };
+      }
+
+      return {
+        success: true,
+        message: response.data.message,
+        data: response.data.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Error al subir imagen',
+      };
+    }
+  },
+
+  async deleteCarouselSlide(slideId) {
+    try {
+      const response = await apiRequest.delete(
+        API_CONFIG.ENDPOINTS.TIENDA_ONLINE.CAROUSEL_SLIDE(slideId)
+      );
+      if (!response.data?.success) {
+        return {
+          success: false,
+          message: getApiErrorMessage(response, 'Error al eliminar slide'),
+        };
+      }
+      return {
+        success: true,
+        message: response.data.message,
+        data: response.data.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Error al eliminar slide',
+      };
+    }
+  },
 };

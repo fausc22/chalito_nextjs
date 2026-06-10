@@ -27,12 +27,6 @@ export const useGastos = () => {
     const [errorCategorias, setErrorCategorias] = useState(null);
 
     // ==========================================
-    // ESTADOS - CUENTAS DE FONDOS
-    // ==========================================
-    const [cuentas, setCuentas] = useState([]);
-    const [loadingCuentas, setLoadingCuentas] = useState(false);
-
-    // ==========================================
     // ESTADOS - RESUMEN
     // ==========================================
     const [resumen, setResumen] = useState(null);
@@ -231,27 +225,6 @@ export const useGastos = () => {
     };
 
     // ==========================================
-    // FUNCIONES - CUENTAS
-    // ==========================================
-
-    // Cargar cuentas de fondos
-    const cargarCuentas = useCallback(async () => {
-        setLoadingCuentas(true);
-
-        try {
-            const response = await gastosService.obtenerCuentas();
-
-            if (response.success) {
-                setCuentas(response.data);
-            }
-        } catch (error) {
-            console.error('Error al cargar cuentas:', error);
-        } finally {
-            setLoadingCuentas(false);
-        }
-    }, []);
-
-    // ==========================================
     // FUNCIONES - RESUMEN
     // ==========================================
 
@@ -297,13 +270,6 @@ export const useGastos = () => {
         crearCategoria,
         editarCategoria,
         eliminarCategoria,
-
-        // Estados - CUENTAS
-        cuentas,
-        loadingCuentas,
-
-        // Acciones - CUENTAS
-        cargarCuentas,
 
         // Estados - RESUMEN
         resumen,

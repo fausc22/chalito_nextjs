@@ -38,7 +38,6 @@ export function GastosTab({
     metaGastos,
     isMutatingGastos,
     categorias,
-    cuentas,
     onCargarGastos,
     onCrearGasto,
     onEditarGasto,
@@ -75,7 +74,6 @@ export function GastosTab({
             fecha_desde: query.fecha_desde || '',
             fecha_hasta: query.fecha_hasta || '',
             categoria_id: query.categoria_id || '',
-            cuenta_id: query.cuenta_id || '',
             forma_pago: query.forma_pago || '',
             busqueda: query.busqueda || ''
         };
@@ -87,7 +85,6 @@ export function GastosTab({
                 page: filters.page,
                 limit: 20,
                 categoria_id: filters.categoria_id || undefined,
-                cuenta_id: filters.cuenta_id || undefined,
                 forma_pago: filters.forma_pago || undefined,
                 busqueda: filters.busqueda || undefined,
             },
@@ -155,7 +152,7 @@ export function GastosTab({
         
         loadGastos();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filtros.month, filtros.year, filtros.page, filtros.categoria_id, filtros.cuenta_id, filtros.forma_pago, filtros.busqueda, isInitialized, router.isReady]);
+    }, [filtros.month, filtros.year, filtros.page, filtros.categoria_id, filtros.forma_pago, filtros.busqueda, isInitialized, router.isReady]);
 
     // Actualizar URL cuando cambian los filtros
     const updateURL = useCallback((newFilters) => {
@@ -176,10 +173,6 @@ export function GastosTab({
         // Otros filtros opcionales
         if (newFilters.categoria_id) {
             query.categoria_id = newFilters.categoria_id;
-        }
-        
-        if (newFilters.cuenta_id) {
-            query.cuenta_id = newFilters.cuenta_id;
         }
         
         if (newFilters.forma_pago) {
@@ -213,19 +206,8 @@ export function GastosTab({
         descripcion: '',
         monto: '',
         forma_pago: 'EFECTIVO',
-        cuenta_id: '',
         observaciones: ''
     });
-
-    // Pre-seleccionar primera cuenta cuando se cargan las cuentas
-    useEffect(() => {
-        if (cuentas.length > 0 && !formulario.cuenta_id) {
-            setFormulario(prev => ({
-                ...prev,
-                cuenta_id: cuentas[0].id
-            }));
-        }
-    }, [cuentas]);
 
     // Paginación para vista móvil (basada en datos del servidor)
     const totalPagesMobile = useMemo(
@@ -254,7 +236,6 @@ export function GastosTab({
             descripcion: '',
             monto: '',
             forma_pago: 'EFECTIVO',
-            cuenta_id: cuentas.length > 0 ? cuentas[0].id : '',
             observaciones: ''
         });
     };
@@ -269,9 +250,6 @@ export function GastosTab({
         }
         if (!formulario.monto || parseFloat(formulario.monto) <= 0) {
             return 'El monto debe ser mayor a 0';
-        }
-        if (!formulario.cuenta_id) {
-            return 'La cuenta de fondos es obligatoria';
         }
         
         return null;
@@ -366,7 +344,6 @@ export function GastosTab({
             descripcion: gasto.descripcion || '',
             monto: gasto.monto?.toString() || '',
             forma_pago: gasto.forma_pago || 'EFECTIVO',
-            cuenta_id: gasto.cuenta_id?.toString() || (cuentas.length > 0 ? cuentas[0].id.toString() : ''),
             observaciones: gasto.observaciones || ''
         });
         setModalEditar(true);
@@ -421,7 +398,6 @@ export function GastosTab({
             fecha_desde: '',
             fecha_hasta: '',
             categoria_id: '',
-            cuenta_id: '',
             forma_pago: '',
             busqueda: ''
         };
@@ -535,7 +511,6 @@ export function GastosTab({
             <GastosFilters
                 filtros={filtros}
                 categorias={categorias}
-                cuentas={cuentas}
                 onFiltroChange={handleFiltroChange}
                 onLimpiarFiltros={limpiarFiltros}
                 onBuscar={handleBuscar}
@@ -618,7 +593,6 @@ export function GastosTab({
                 formulario={formulario}
                 setFormulario={setFormulario}
                 categorias={categorias}
-                cuentas={cuentas}
                 onSubmit={modalAgregar ? handleCrearGasto : handleActualizarGasto}
                 isEditing={modalEditar}
                 loading={isMutatingGastos}
@@ -644,9 +618,7 @@ export function GastosTab({
                                             {formatMonto(gastoSeleccionado.monto)}
                                         </p>
                                         <p className="text-sm text-muted-foreground mt-1">
-                                            {gastoSeleccionado.cuenta_id 
-                                                ? 'El monto será devuelto a la cuenta de fondos.' 
-                                                : 'Este gasto no tiene cuenta asociada.'}
+                                            El monto será revertido en el registro operativo.
                                         </p>
                                     </div>
                                 )}

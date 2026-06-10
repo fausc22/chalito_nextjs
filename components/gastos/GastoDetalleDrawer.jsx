@@ -1,5 +1,5 @@
 import { 
-    X, Calendar, CreditCard, FileText, Wallet, Tag, User, Loader2 
+    X, Calendar, CreditCard, FileText, Tag, User, Loader2 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -95,15 +95,6 @@ export function GastoDetalleDrawer({
                                         <p className="font-medium">{gasto.forma_pago || 'EFECTIVO'}</p>
                                     </div>
                                 </div>
-                                {gasto.cuenta_nombre && (
-                                    <div className="flex items-center gap-3">
-                                        <Wallet className="h-4 w-4 text-muted-foreground" />
-                                        <div className="flex-1">
-                                            <p className="text-xs text-muted-foreground">Cuenta de Fondos</p>
-                                            <p className="font-medium">{gasto.cuenta_nombre}</p>
-                                        </div>
-                                    </div>
-                                )}
                                 {gasto.usuario_nombre && (
                                     <div className="flex items-center gap-3">
                                         <User className="h-4 w-4 text-muted-foreground" />

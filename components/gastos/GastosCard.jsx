@@ -1,4 +1,4 @@
-import { Edit, Trash2, Eye, Calendar, CreditCard, Building } from 'lucide-react';
+import { Edit, Trash2, Eye, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -61,12 +61,6 @@ export function GastosCard({ gasto, onVer, onEditar, onEliminar }) {
                         <Calendar className="h-4 w-4" />
                         <span>{formatFecha(gasto.fecha)}</span>
                     </div>
-                    {gasto.cuenta_nombre && (
-                        <div className="flex items-center gap-2">
-                            <Building className="h-4 w-4" />
-                            <span>{gasto.cuenta_nombre}</span>
-                        </div>
-                    )}
                     {gasto.observaciones && (
                         <p className="text-xs text-muted-foreground mt-2 italic">
                             {gasto.observaciones}

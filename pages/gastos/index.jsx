@@ -34,18 +34,13 @@ function GastosContent() {
         crearCategoria,
         editarCategoria,
         eliminarCategoria,
-        
-        // Cuentas
-        cuentas,
-        cargarCuentas
     } = useGastos();
 
     // Cargar datos iniciales
     useEffect(() => {
         cargarGastos();
         cargarCategorias();
-        cargarCuentas();
-    }, [cargarGastos, cargarCategorias, cargarCuentas]);
+    }, [cargarGastos, cargarCategorias]);
 
     return (
         <Layout title="Gastos">
@@ -83,7 +78,6 @@ function GastosContent() {
                             metaGastos={metaGastos}
                             isMutatingGastos={isMutatingGastos}
                             categorias={categorias}
-                            cuentas={cuentas}
                             onCargarGastos={cargarGastos}
                             onCrearGasto={crearGasto}
                             onEditarGasto={editarGasto}

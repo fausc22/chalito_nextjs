@@ -33,7 +33,6 @@ export const gastosService = {
             
             // Otros filtros
             if (filtros.categoria_id) params.append('categoria_id', filtros.categoria_id);
-            if (filtros.cuenta_id) params.append('cuenta_id', filtros.cuenta_id);
             if (filtros.forma_pago) params.append('forma_pago', filtros.forma_pago);
             if (filtros.busqueda) params.append('busqueda', filtros.busqueda);
             
@@ -108,7 +107,6 @@ export const gastosService = {
                 descripcion: gastoData.descripcion,
                 monto: parseFloat(gastoData.monto),
                 forma_pago: gastoData.forma_pago || 'EFECTIVO',
-                cuenta_id: gastoData.cuenta_id ? parseInt(gastoData.cuenta_id) : null,
                 observaciones: gastoData.observaciones || null
             };
             
@@ -159,9 +157,6 @@ export const gastosService = {
             }
             if (gastoData.forma_pago !== undefined) {
                 payload.forma_pago = gastoData.forma_pago;
-            }
-            if (gastoData.cuenta_id !== undefined) {
-                payload.cuenta_id = gastoData.cuenta_id ? parseInt(gastoData.cuenta_id) : null;
             }
             if (gastoData.observaciones !== undefined) {
                 payload.observaciones = gastoData.observaciones;
@@ -357,35 +352,8 @@ export const gastosService = {
     },
 
     // =====================================================
-    // AUXILIARES
+    // RESUMEN
     // =====================================================
-
-    /**
-     * Obtener cuentas de fondos disponibles
-     */
-    obtenerCuentas: async () => {
-        try {
-            const response = await apiRequest.get(API_CONFIG.ENDPOINTS.GASTOS.CUENTAS);
-            
-            if (response.data?.success === false) {
-                return {
-                    success: false,
-                    error: response.data?.message || 'Error al obtener cuentas'
-                };
-            }
-            
-            return {
-                success: true,
-                data: response.data?.data || []
-            };
-        } catch (error) {
-            console.error('❌ Error al obtener cuentas:', error);
-            return {
-                success: false,
-                error: error.response?.data?.message || 'Error al obtener cuentas'
-            };
-        }
-    },
 
     /**
      * Obtener resumen de gastos

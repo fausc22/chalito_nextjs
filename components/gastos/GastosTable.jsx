@@ -129,7 +129,6 @@ export function GastosTable({ gastos, onEditar, onEliminar, onVer, scrollRef }) 
                             Monto <SortIcon columnKey="monto" />
                         </TableHead>
                         <TableHead>Forma Pago</TableHead>
-                        <TableHead>Cuenta</TableHead>
                         <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -157,9 +156,6 @@ export function GastosTable({ gastos, onEditar, onEliminar, onVer, scrollRef }) 
                                     <Badge className={formaPago.color}>
                                         {formaPago.label}
                                     </Badge>
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                    {gasto.cuenta_nombre || '-'}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">

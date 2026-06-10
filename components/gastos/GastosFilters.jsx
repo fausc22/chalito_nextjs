@@ -21,7 +21,6 @@ const FORMAS_PAGO = [
 export function GastosFilters({
     filtros,
     categorias = [],
-    cuentas = [],
     onFiltroChange,
     onLimpiarFiltros,
     onBuscar
@@ -139,27 +138,9 @@ export function GastosFilters({
                         </Select>
                     </div>
 
-                    {/* Segunda fila - Cuenta, Forma de pago y acciones */}
+                    {/* Segunda fila - Forma de pago y acciones */}
                     <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
                         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            {/* Cuenta */}
-                            <Select
-                                value={filtros.cuenta_id || 'all'}
-                                onValueChange={(value) => onFiltroChange('cuenta_id', value === 'all' ? '' : value)}
-                            >
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Cuenta" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Todas las cuentas</SelectItem>
-                                    {cuentas.filter(c => c.activa).map((cuenta) => (
-                                        <SelectItem key={cuenta.id} value={cuenta.id.toString()}>
-                                            {cuenta.nombre}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
                             {/* Forma de pago */}
                             <Select
                                 value={filtros.forma_pago || 'all'}

@@ -46,6 +46,9 @@ export const API_CONFIG = {
       SETTINGS: '/configuracion/tienda-online/settings',
       ESTADO: '/configuracion/tienda-online/estado',
       APARIENCIA: '/configuracion/tienda-online/apariencia',
+      CAROUSEL: '/configuracion/tienda-online/carousel',
+      CAROUSEL_UPLOAD: '/configuracion/tienda-online/carousel/upload',
+      CAROUSEL_SLIDE: (slideId) => `/configuracion/tienda-online/carousel/${slideId}`,
     },
     MERCADOPAGO: {
       ESTADO: '/configuracion/mercadopago/estado',
@@ -152,7 +155,6 @@ export const API_CONFIG = {
       DELETE: (id) => `/gastos/${id}`,
       CATEGORIAS: '/gastos/categorias',
       CATEGORIA_BY_ID: (id) => `/gastos/categorias/${id}`,
-      CUENTAS: '/gastos/cuentas',
       RESUMEN: '/gastos/resumen',
     },
     EMPLEADOS: {
