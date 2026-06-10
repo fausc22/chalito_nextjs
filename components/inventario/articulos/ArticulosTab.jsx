@@ -153,6 +153,7 @@ export function ArticulosTab({
     stock_actual: '',
     stock_minimo: '',
     activo: true,
+    visible_carta: true,
     ingredientes: []
   });
   const [errors, setErrors] = useState({});
@@ -193,6 +194,7 @@ export function ArticulosTab({
       stock_actual: '',
       stock_minimo: '',
       activo: true,
+      visible_carta: true,
       ingredientes: []
     });
     setImagenFile(null); // Limpiar imagen seleccionada
@@ -421,6 +423,7 @@ export function ArticulosTab({
           stock_actual: articuloCompleto.stock_actual !== undefined && articuloCompleto.stock_actual !== null ? articuloCompleto.stock_actual.toString() : '',
           stock_minimo: articuloCompleto.stock_minimo !== undefined && articuloCompleto.stock_minimo !== null ? articuloCompleto.stock_minimo.toString() : '',
           activo: articuloCompleto.activo,
+          visible_carta: articuloCompleto.visible_carta !== false && articuloCompleto.visible_carta !== 0,
           imagen_url: articuloCompleto.imagen_url || null, // ✅ Agregar imagen_url para preview
           ingredientes: articuloCompleto.contenido || articuloCompleto.ingredientes || []
         });

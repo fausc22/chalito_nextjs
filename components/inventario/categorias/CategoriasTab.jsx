@@ -42,6 +42,7 @@ export function CategoriasTab({
     nombre: '',
     descripcion: '',
     activo: true,
+    visible_carta: true,
   });
   const [errors, setErrors] = useState({});
 
@@ -102,6 +103,7 @@ export function CategoriasTab({
       nombre: '',
       descripcion: '',
       activo: true,
+      visible_carta: true,
     });
     setErrors({});
     setModalAbierto(true);
@@ -114,6 +116,7 @@ export function CategoriasTab({
       nombre: categoria.nombre,
       descripcion: categoria.descripcion || '',
       activo: (categoria.activo === 1 || categoria.activo === "1" || categoria.activo === true) ? 1 : 0,
+      visible_carta: (categoria.visible_carta === undefined || categoria.visible_carta === 1 || categoria.visible_carta === "1" || categoria.visible_carta === true) ? 1 : 0,
     });
     setErrors({});
     setModalAbierto(true);
@@ -127,6 +130,7 @@ export function CategoriasTab({
       nombre: '',
       descripcion: '',
       activo: true,
+      visible_carta: true,
     });
     setErrors({});
   };

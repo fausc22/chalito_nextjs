@@ -49,7 +49,8 @@ export const categoriasService = {
       const dataToSend = {
         nombre: categoriaData.nombre,
         descripcion: categoriaData.descripcion || null,
-        activo: categoriaData.activo ? 1 : 0
+        activo: categoriaData.activo ? 1 : 0,
+        visible_carta: categoriaData.visible_carta !== false && categoriaData.visible_carta !== 0 ? 1 : 0
       };
 
       const response = await apiRequest.post(
@@ -86,7 +87,8 @@ export const categoriasService = {
       const dataToSend = {
         nombre: categoriaData.nombre,
         descripcion: categoriaData.descripcion || null,
-        activo: categoriaData.activo ? 1 : 0
+        activo: categoriaData.activo ? 1 : 0,
+        visible_carta: categoriaData.visible_carta !== false && categoriaData.visible_carta !== 0 ? 1 : 0
       };
 
       const response = await apiRequest.put(

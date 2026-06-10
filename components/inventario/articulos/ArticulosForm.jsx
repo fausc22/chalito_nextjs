@@ -648,6 +648,32 @@ export const ArticulosForm = ({
             </div>
           )}
 
+          {formulario.visible_carta === 0 || formulario.visible_carta === false ? (
+            <div className="flex items-center gap-3 p-4 bg-amber-500/10 border-2 border-amber-500 rounded-lg cursor-pointer hover:bg-amber-100 transition-colors">
+              <Checkbox
+                id="visible_carta"
+                checked={formulario.visible_carta !== 0 && formulario.visible_carta !== false}
+                onCheckedChange={(checked) => handleChange('visible_carta', checked ? 1 : 0)}
+                className="w-5 h-5 border-2"
+              />
+              <Label htmlFor="visible_carta" className="cursor-pointer text-amber-900 font-semibold">
+                Mostrar en carta online
+              </Label>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 p-4 bg-muted border-2 border-border rounded-lg cursor-pointer hover:bg-muted transition-colors">
+              <Checkbox
+                id="visible_carta"
+                checked={formulario.visible_carta !== 0 && formulario.visible_carta !== false}
+                onCheckedChange={(checked) => handleChange('visible_carta', checked ? 1 : 0)}
+                className="w-5 h-5 border-2"
+              />
+              <Label htmlFor="visible_carta" className="cursor-pointer font-medium text-foreground">
+                Visible en carta online
+              </Label>
+            </div>
+          )}
+
         </form>
 
         <DialogFooter className="gap-2 flex-shrink-0 pt-4 border-t">

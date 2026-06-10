@@ -9,6 +9,12 @@ const normalizarArticulo = (articulo = {}) => ({
     articulo.activo === 1 ||
     articulo.activo === '1' ||
     articulo.activo === 'true',
+  visible_carta:
+    articulo.visible_carta === undefined ||
+    articulo.visible_carta === true ||
+    articulo.visible_carta === 1 ||
+    articulo.visible_carta === '1' ||
+    articulo.visible_carta === 'true',
   categoria: articulo.categoria ?? articulo.categoria_nombre ?? '',
   codigo: articulo.codigo ?? articulo.codigo_barra ?? '',
   controla_stock: resolveControlaStock(articulo),
@@ -245,6 +251,7 @@ export const articulosService = {
         stock_minimo: controlaStock && articuloData.stock_minimo ? parseInt(articuloData.stock_minimo, 10) : 0,
         tipo: articuloData.tipo || 'OTRO',
         imagen_url: imagen_url,
+        visible_carta: articuloData.visible_carta !== false && articuloData.visible_carta !== 0 ? 1 : 0,
         ingredientes: articuloData.tipo === 'ELABORADO' ? (articuloData.ingredientes || []) : []
       };
 
@@ -341,6 +348,7 @@ export const articulosService = {
         stock_minimo: controlaStock && articuloData.stock_minimo !== undefined && articuloData.stock_minimo !== '' ? parseInt(articuloData.stock_minimo, 10) : 0,
         tipo: articuloData.tipo || 'OTRO',
         activo: articuloData.activo ? 1 : 0,
+        visible_carta: articuloData.visible_carta !== false && articuloData.visible_carta !== 0 ? 1 : 0,
         imagen_url: imagen_url, // URL actualizada o existente
         ingredientes: articuloData.tipo === 'ELABORADO' ? (articuloData.ingredientes || []) : []
       };

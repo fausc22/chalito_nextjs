@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
  */
 export const CategoriaCard = ({ categoria, onEditar, onEliminar }) => {
   const estaActiva = categoria.activo === 1 || categoria.activo === "1" || categoria.activo === true;
+  const estaEnCarta = categoria.visible_carta === undefined || categoria.visible_carta === 1 || categoria.visible_carta === "1" || categoria.visible_carta === true;
 
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col rounded-t-xl rounded-b-none overflow-hidden">
@@ -17,16 +18,28 @@ export const CategoriaCard = ({ categoria, onEditar, onEliminar }) => {
             <Tag className="h-5 w-5 text-primary flex-shrink-0" />
             <CardTitle className="text-lg break-words overflow-hidden">{categoria.nombre}</CardTitle>
           </div>
-          <Badge
-            variant={estaActiva ? 'default' : 'secondary'}
-            className={`flex-shrink-0 pointer-events-none ${
-              estaActiva
-                ? 'bg-green-100 text-green-800 border-green-200'
-                : 'bg-red-100 text-red-800 border-red-200'
-            }`}
-          >
-            {estaActiva ? 'Activa' : 'Inactiva'}
-          </Badge>
+          <div className="flex flex-col gap-1 items-end flex-shrink-0">
+            <Badge
+              variant={estaActiva ? 'default' : 'secondary'}
+              className={`pointer-events-none ${
+                estaActiva
+                  ? 'bg-green-100 text-green-800 border-green-200'
+                  : 'bg-red-100 text-red-800 border-red-200'
+              }`}
+            >
+              {estaActiva ? 'Activa' : 'Inactiva'}
+            </Badge>
+            <Badge
+              variant={estaEnCarta ? 'default' : 'secondary'}
+              className={`pointer-events-none ${
+                estaEnCarta
+                  ? 'bg-blue-100 text-blue-800 border-blue-200'
+                  : 'bg-gray-100 text-gray-700 border-gray-200'
+              }`}
+            >
+              {estaEnCarta ? 'En carta' : 'Oculta en carta'}
+            </Badge>
+          </div>
         </div>
         {categoria.descripcion && (
           <CardDescription className="mt-2 break-words overflow-hidden">
