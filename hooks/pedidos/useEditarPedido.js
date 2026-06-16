@@ -148,7 +148,8 @@ export const useEditarPedido = () => {
                   extrasDisponibles = adicionalesResponse.data.map(adicional => ({
                     id: adicional.id || adicional.adicional_id,
                     nombre: adicional.nombre || adicional.adicional_nombre,
-                    precio: parseFloat(adicional.precio_extra || adicional.precio || 0)
+                    precio: parseFloat(adicional.precio_extra || adicional.precio || 0),
+                    permiteCantidad: Boolean(adicional.permite_cantidad ?? adicional.permiteCantidad),
                   }));
                 }
               } catch (error) {
@@ -247,6 +248,8 @@ export const useEditarPedido = () => {
             cantidad: cantidad,
             extras: extras,
             extrasSeleccionados: extras,
+            personalizaciones: item.personalizaciones ?? null,
+            extrasTotalSnapshot: extrasTotal,
             subtotalSnapshot: subtotalLinea,
             observaciones: item.observaciones || '',
             observacion: item.observaciones || null,
@@ -690,7 +693,10 @@ export const useEditarPedido = () => {
         const precioBase = parseFloat(item.price ?? item.precio) || 0;
         const cantidad = parseInt(item.quantity ?? item.cantidad, 10) || 1;
         const extras = item.extras ?? item.extrasSeleccionados ?? [];
-        const precioExtras = extras.reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
+        const precioExtras = extras.reduce(
+          (s, e) => s + (parseFloat(e.precio) || 0) * (Math.max(1, parseInt(e.cantidad, 10) || 1)),
+          0
+        );
         const subtotalItem = (precioBase + precioExtras) * cantidad;
 
         return {

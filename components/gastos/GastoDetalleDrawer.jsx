@@ -9,6 +9,7 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
+import { formatFechaGasto, formatFechaModificacion } from '@/lib/gastos/formatGastoFecha';
 
 export function GastoDetalleDrawer({ 
     isOpen, 
@@ -22,18 +23,6 @@ export function GastoDetalleDrawer({
             style: 'currency',
             currency: 'ARS'
         }).format(monto);
-    };
-
-    // Formatear fecha
-    const formatFecha = (fecha) => {
-        return new Date(fecha).toLocaleDateString('es-AR', {
-            weekday: 'long',
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
     };
 
     return (
@@ -64,7 +53,7 @@ export function GastoDetalleDrawer({
                             </div>
                             <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
                                 <Calendar className="h-4 w-4" />
-                                {formatFecha(gasto.fecha)}
+                                {formatFechaGasto(gasto.fecha, { long: true })}
                             </div>
                         </div>
 
@@ -134,7 +123,7 @@ export function GastoDetalleDrawer({
                         {/* Fecha de modificación */}
                         {gasto.fecha_modificacion && gasto.fecha_modificacion !== gasto.fecha && (
                             <div className="text-xs text-muted-foreground">
-                                Última modificación: {formatFecha(gasto.fecha_modificacion)}
+                                Última modificación: {formatFechaModificacion(gasto.fecha_modificacion)}
                             </div>
                         )}
 

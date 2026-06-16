@@ -18,6 +18,7 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination';
+import { formatFechaGasto } from '@/lib/gastos/formatGastoFecha';
 
 const FORMAS_PAGO_LABELS = {
     'EFECTIVO': { label: 'Efectivo', color: 'bg-green-100 text-green-800' },
@@ -73,17 +74,6 @@ export function GastosTable({ gastos, onEditar, onEliminar, onVer, scrollRef }) 
         scrollRef?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
-    const formatFecha = (fechaStr) => {
-        const fecha = new Date(fechaStr);
-        return fecha.toLocaleDateString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
-
     const formatMonto = (monto) => {
         return new Intl.NumberFormat('es-AR', {
             style: 'currency',
@@ -123,7 +113,7 @@ export function GastosTable({ gastos, onEditar, onEliminar, onVer, scrollRef }) 
                         <TableHead>Categoría</TableHead>
                         <TableHead>Descripción</TableHead>
                         <TableHead 
-                            className="cursor-pointer hover:bg-muted text-right"
+                            className="cursor-pointer hover:bg-muted"
                             onClick={() => handleSort('monto')}
                         >
                             Monto <SortIcon columnKey="monto" />
@@ -139,7 +129,7 @@ export function GastosTable({ gastos, onEditar, onEliminar, onVer, scrollRef }) 
                         return (
                             <TableRow key={gasto.id} className="hover:bg-muted">
                                 <TableCell className="font-medium">
-                                    {formatFecha(gasto.fecha)}
+                                    {formatFechaGasto(gasto.fecha)}
                                 </TableCell>
                                 <TableCell>
                                     <Badge variant="outline" className="bg-destructive/10 text-red-700 border-red-200">

@@ -3,7 +3,8 @@ const normalizeText = (value) => (value ?? '').toString().trim();
 const normalizeExtra = (extra = {}) => ({
   id: extra.id ?? extra.adicional_id ?? null,
   nombre: (extra.nombre ?? extra.adicional_nombre ?? '').toString(),
-  precio: Number.parseFloat(extra.precio ?? extra.precio_extra ?? 0) || 0
+  precio: Number.parseFloat(extra.precio ?? extra.precio_extra ?? 0) || 0,
+  cantidad: Math.max(1, Number.parseInt(extra.cantidad, 10) || 1),
 });
 
 const sortExtras = (extras = []) =>
@@ -14,6 +15,7 @@ const sortExtras = (extras = []) =>
       const idB = b.id == null ? '' : String(b.id);
       if (idA !== idB) return idA.localeCompare(idB);
       if (a.nombre !== b.nombre) return a.nombre.localeCompare(b.nombre);
+      if (a.cantidad !== b.cantidad) return a.cantidad - b.cantidad;
       return a.precio - b.precio;
     });
 

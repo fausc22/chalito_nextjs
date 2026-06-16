@@ -107,7 +107,8 @@ export const gastosService = {
                 descripcion: gastoData.descripcion,
                 monto: parseFloat(gastoData.monto),
                 forma_pago: gastoData.forma_pago || 'EFECTIVO',
-                observaciones: gastoData.observaciones || null
+                observaciones: gastoData.observaciones || null,
+                fecha: gastoData.fecha
             };
             
             const response = await apiRequest.post(API_CONFIG.ENDPOINTS.GASTOS.CREATE, payload);
@@ -160,6 +161,9 @@ export const gastosService = {
             }
             if (gastoData.observaciones !== undefined) {
                 payload.observaciones = gastoData.observaciones;
+            }
+            if (gastoData.fecha !== undefined) {
+                payload.fecha = gastoData.fecha;
             }
             
             const response = await apiRequest.put(API_CONFIG.ENDPOINTS.GASTOS.UPDATE(id), payload);

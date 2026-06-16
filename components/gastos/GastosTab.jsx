@@ -31,6 +31,19 @@ import { GastoDetalleDrawer } from './GastoDetalleDrawer';
 import { toast } from '@/hooks/use-toast';
 import { applyDateOrMonthYearParams } from '@/lib/filtros/buildListadoDateParams';
 
+const toInputDate = (value) => {
+    if (!value) return '';
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+};
+
+const getTodayInputDate = () => toInputDate(new Date());
+
 export function GastosTab({
     gastos,
     loadingGastos,
@@ -202,6 +215,7 @@ export function GastosTab({
 
     // Estado del formulario
     const [formulario, setFormulario] = useState({
+        fecha: getTodayInputDate(),
         categoria_id: '',
         descripcion: '',
         monto: '',
@@ -232,6 +246,7 @@ export function GastosTab({
     // Limpiar formulario
     const limpiarFormulario = () => {
         setFormulario({
+            fecha: getTodayInputDate(),
             categoria_id: '',
             descripcion: '',
             monto: '',
@@ -240,8 +255,23 @@ export function GastosTab({
         });
     };
 
+    const handleAbrirNuevoGasto = () => {
+        setFormulario({
+            fecha: getTodayInputDate(),
+            categoria_id: '',
+            descripcion: '',
+            monto: '',
+            forma_pago: 'EFECTIVO',
+            observaciones: ''
+        });
+        setModalAgregar(true);
+    };
+
     // Validación
     const validarCamposObligatorios = () => {
+        if (!formulario.fecha) {
+            return 'La fecha del gasto es obligatoria';
+        }
         if (!formulario.categoria_id) {
             return 'La categoría es obligatoria';
         }
@@ -340,6 +370,7 @@ export function GastosTab({
     const handleEditar = (gasto) => {
         setGastoSeleccionado(gasto);
         setFormulario({
+            fecha: toInputDate(gasto.fecha),
             categoria_id: gasto.categoria_id?.toString() || '',
             descripcion: gasto.descripcion || '',
             monto: gasto.monto?.toString() || '',
@@ -445,7 +476,7 @@ export function GastosTab({
                 icon={TrendingDown}
                 actions={
                     <Button
-                        onClick={() => setModalAgregar(true)}
+                        onClick={handleAbrirNuevoGasto}
                         className="gap-2 w-[200px] bg-green-600 hover:bg-green-700 text-white sm:w-auto"
                     >
                         <Plus className="h-4 w-4" />

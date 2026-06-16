@@ -1,12 +1,11 @@
-import { Check, Package } from 'lucide-react';
+import { Check, Package, Minus, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { separarPresentacionYExtras } from '@/lib/extrasUtils';
+import { separarPresentacionYExtras, getExtraCantidad, formatExtraNombre, getExtraLineTotal, CANTIDAD_EXTRA_MAX } from '@/lib/extrasUtils';
 
 export function ModalExtras({
   isOpen,
@@ -57,18 +56,49 @@ export function ModalExtras({
     }
   };
 
+  const extraPermiteCantidad = (extra) =>
+    Boolean(extra?.permiteCantidad ?? extra?.permite_cantidad);
+
   const toggleExtra = (extra) => {
     const existe = extrasSeleccionados.find((e) => e.id === extra.id);
     if (existe) {
       setExtrasSeleccionados(extrasSeleccionados.filter((e) => e.id !== extra.id));
     } else {
-      setExtrasSeleccionados([...extrasSeleccionados, extra]);
+      const nuevo = extraPermiteCantidad(extra) ? { ...extra, cantidad: 1 } : { ...extra };
+      setExtrasSeleccionados([...extrasSeleccionados, nuevo]);
     }
   };
 
+  const incrementarExtra = (extraId) => {
+    setExtrasSeleccionados((prev) =>
+      prev.map((e) => {
+        if (e.id !== extraId) return e;
+        const qty = getExtraCantidad(e);
+        if (qty >= CANTIDAD_EXTRA_MAX) return e;
+        return { ...e, cantidad: qty + 1 };
+      })
+    );
+  };
+
+  const decrementarExtra = (extraId) => {
+    setExtrasSeleccionados((prev) => {
+      const extra = prev.find((e) => e.id === extraId);
+      if (!extra) return prev;
+      const qty = getExtraCantidad(extra);
+      if (qty <= 1) {
+        return prev.filter((e) => e.id !== extraId);
+      }
+      return prev.map((e) => (e.id === extraId ? { ...e, cantidad: qty - 1 } : e));
+    });
+  };
+
   const calcularTotalUnidad = () => {
-    const precioBase = producto.precio * (editandoItemCarrito ? cantidadProducto : 1);
-    const precioExtras = extrasSeleccionados.reduce((sum, e) => sum + e.precio, 0) * (editandoItemCarrito ? cantidadProducto : 1);
+    const qtyProducto = editandoItemCarrito ? cantidadProducto : 1;
+    const precioBase = producto.precio * qtyProducto;
+    const precioExtras = extrasSeleccionados.reduce(
+      (sum, e) => sum + getExtraLineTotal(e) * qtyProducto,
+      0
+    );
     return precioBase + precioExtras;
   };
 
@@ -202,25 +232,68 @@ export function ModalExtras({
                   <h4 className="font-semibold text-foreground mb-2">Extras:</h4>
                   <div className="space-y-2">
                     {extrasNormales.map((extra) => {
-                      const isSelected = extrasSeleccionados.find((e) => e.id === extra.id);
+                      const seleccionado = extrasSeleccionados.find((e) => e.id === extra.id);
+                      const isSelected = Boolean(seleccionado);
+                      const qty = seleccionado ? getExtraCantidad(seleccionado) : 0;
+                      const permiteCantidad = extraPermiteCantidad(extra);
+                      const precioUnit = extra.precio || 0;
+                      const precioMostrado =
+                        permiteCantidad && isSelected ? precioUnit * qty : precioUnit;
+
                       return (
                         <div
                           key={extra.id}
-                          className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                             isSelected ? 'bg-primary/10 border-blue-300' : 'bg-card border-border hover:border-border'
                           }`}
-                          onClick={() => toggleExtra(extra)}
                         >
                           <Checkbox
-                            checked={!!isSelected}
+                            checked={isSelected}
                             onCheckedChange={() => toggleExtra(extra)}
-                            className="border-2"
+                            className="border-2 shrink-0"
                           />
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             <p className="font-semibold text-foreground">{extra.nombre}</p>
-                            <p className="text-sm text-muted-foreground">+${(extra.precio || 0).toLocaleString('es-AR')}</p>
+                            {!permiteCantidad && (
+                              <p className="text-sm text-muted-foreground">+${precioUnit.toLocaleString('es-AR')}</p>
+                            )}
                           </div>
-                          {isSelected && <Badge className="bg-green-600 text-white">Seleccionado</Badge>}
+                          <div
+                            className="flex shrink-0 items-center gap-2"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {permiteCantidad && isSelected && (
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => decrementarExtra(extra.id)}
+                                  aria-label={`Menos ${extra.nombre}`}
+                                >
+                                  <Minus className="h-3.5 w-3.5" />
+                                </Button>
+                                <span className="min-w-[1.5rem] text-center text-sm font-semibold tabular-nums">
+                                  {qty}
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => incrementarExtra(extra.id)}
+                                  disabled={qty >= CANTIDAD_EXTRA_MAX}
+                                  aria-label={`Más ${extra.nombre}`}
+                                >
+                                  <Plus className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            )}
+                            <span className="min-w-[4.5rem] text-right text-sm font-semibold tabular-nums text-foreground">
+                              +${precioMostrado.toLocaleString('es-AR')}
+                            </span>
+                          </div>
                         </div>
                       );
                     })}
@@ -272,17 +345,19 @@ export function ModalExtras({
                 <>
                   <div className="border-t border-border pt-1 mt-1">
                     <p className="font-medium text-foreground mb-1">Extras seleccionados:</p>
-                    {extrasSeleccionados.map(extra => (
-                      <div key={extra.id} className="flex justify-between text-xs ml-2">
-                        <span className="text-muted-foreground">+ {extra.nombre} {editandoItemCarrito ? `x ${cantidadProducto}` : 'x 1'}:</span>
-                        <span className="text-foreground">
-                          ${editandoItemCarrito
-                            ? (extra.precio * cantidadProducto).toLocaleString('es-AR')
-                            : extra.precio.toLocaleString('es-AR')
-                          }
-                        </span>
-                      </div>
-                    ))}
+                    {extrasSeleccionados.map((extra, index) => {
+                      const qtyProducto = editandoItemCarrito ? cantidadProducto : 1;
+                      const lineTotal = getExtraLineTotal(extra) * qtyProducto;
+                      return (
+                        <div key={`${extra.id}-${getExtraCantidad(extra)}-${index}`} className="flex justify-between text-xs ml-2">
+                          <span className="text-muted-foreground">
+                            + {formatExtraNombre(extra)}
+                            {qtyProducto > 1 ? ` (×${qtyProducto} u.)` : ''}:
+                          </span>
+                          <span className="text-foreground">${lineTotal.toLocaleString('es-AR')}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </>
               )}

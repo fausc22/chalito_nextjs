@@ -2,6 +2,7 @@ import { Edit, Trash2, Eye, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { formatFechaGasto } from '@/lib/gastos/formatGastoFecha';
 
 const FORMAS_PAGO_LABELS = {
     'EFECTIVO': { label: 'Efectivo', color: 'bg-green-100 text-green-800' },
@@ -12,17 +13,6 @@ const FORMAS_PAGO_LABELS = {
 };
 
 export function GastosCard({ gasto, onVer, onEditar, onEliminar }) {
-    const formatFecha = (fechaStr) => {
-        const fecha = new Date(fechaStr);
-        return fecha.toLocaleDateString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
-
     const formatMonto = (monto) => {
         return new Intl.NumberFormat('es-AR', {
             style: 'currency',
@@ -59,7 +49,7 @@ export function GastosCard({ gasto, onVer, onEditar, onEliminar }) {
                 <div className="space-y-1 text-sm text-muted-foreground mb-4">
                     <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
-                        <span>{formatFecha(gasto.fecha)}</span>
+                        <span>{formatFechaGasto(gasto.fecha)}</span>
                     </div>
                     {gasto.observaciones && (
                         <p className="text-xs text-muted-foreground mt-2 italic">

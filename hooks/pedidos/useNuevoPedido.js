@@ -7,6 +7,7 @@ import { toast } from '@/hooks/use-toast';
 import { crearItemCarrito, mergeItemEnCarrito, reagruparCarrito } from './cartUtils';
 import { formatDireccionEntrega } from '../../lib/formatters';
 import { calculateCartSubtotal } from '../../lib/pedidoTotals';
+import { getExtraLineTotal } from '../../lib/extrasUtils';
 import { setFieldError, zodIssuesToErrors } from '@/lib/form-errors';
 import { clienteSchema, carritoSchema, pedidoSchema } from './pedidoFormSchemas';
 
@@ -155,7 +156,8 @@ export const useNuevoPedido = () => {
                   extrasDisponibles = adicionalesResponse.data.map(adicional => ({
                     id: adicional.id || adicional.adicional_id,
                     nombre: adicional.nombre || adicional.adicional_nombre,
-                    precio: parseFloat(adicional.precio_extra || adicional.precio || 0)
+                    precio: parseFloat(adicional.precio_extra || adicional.precio || 0),
+                    permiteCantidad: Boolean(adicional.permite_cantidad ?? adicional.permiteCantidad),
                   }));
                 }
               } catch (error) {
@@ -620,7 +622,7 @@ export const useNuevoPedido = () => {
         const precioBase = parseFloat(item.price ?? item.precio) || 0;
         const cantidad = parseInt(item.quantity ?? item.cantidad, 10) || 1;
         const extras = item.extras ?? item.extrasSeleccionados ?? [];
-        const precioExtras = extras.reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
+        const precioExtras = extras.reduce((s, e) => s + getExtraLineTotal(e), 0);
         const subtotalItem = (precioBase + precioExtras) * cantidad;
 
         return {
@@ -666,7 +668,7 @@ export const useNuevoPedido = () => {
             const precioBase = parseFloat(item.price ?? item.precio) || 0;
             const cantidad = parseInt(item.quantity ?? item.cantidad, 10) || 1;
             const extras = item.extras ?? item.extrasSeleccionados ?? [];
-            const precioExtras = extras.reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
+            const precioExtras = extras.reduce((s, e) => s + getExtraLineTotal(e), 0);
             const subtotalItem = (precioBase + precioExtras) * cantidad;
             
             return {

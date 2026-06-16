@@ -188,7 +188,8 @@ const transformarPedidoBackendAFrontend = (pedidoBackend, articulos = []) => {
         extras: extrasArray.map(e => ({
           id: e.id || e.adicional_id,
           nombre: e.nombre || e.adicional_nombre || e.name,
-          precio: parseFloat(e.precio_extra ?? e.precio ?? 0) || 0
+          precio: parseFloat(e.precio_extra ?? e.precio ?? 0) || 0,
+          cantidad: Math.max(1, parseInt(e.cantidad, 10) || 1),
         })),
         personalizaciones,
         observaciones: art.observaciones || null
@@ -254,7 +255,10 @@ const transformarPedidoFrontendABackend = (pedidoFrontend) => {
   const subtotalItems = pedidoFrontend.items?.reduce((sum, item) => {
     const precioBase = parseFloat(item.price ?? item.precio) || 0;
     const cantidad = parseInt(item.quantity ?? item.cantidad, 10) || 1;
-    const precioExtras = (item.extras || item.extrasSeleccionados || []).reduce((s, e) => s + (parseFloat(e.precio) || 0), 0);
+    const precioExtras = (item.extras || item.extrasSeleccionados || []).reduce(
+      (s, e) => s + (parseFloat(e.precio) || 0) * (Math.max(1, parseInt(e.cantidad, 10) || 1)),
+      0
+    );
     const subtotalItem = (precioBase + precioExtras) * cantidad;
     return sum + subtotalItem;
   }, 0) || 0;

@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FieldError } from '@/components/ui/field-error';
 import { ProductCard } from '../ProductCard';
 import ClienteAutocomplete from '../ClienteAutocomplete';
-import { getItemExtras, getSufijoPresentacion, getExtrasSinPresentacion } from '@/lib/extrasUtils';
+import { getItemExtras, getSufijoPresentacion, getExtrasSinPresentacion, formatExtraNombre, getExtraLineTotal } from '@/lib/extrasUtils';
 import { clearFieldError as clearErrorByPath, getInputErrorProps } from '@/lib/form-errors';
 import { formatDireccionEntrega } from '@/lib/formatters';
 import {
@@ -533,7 +533,7 @@ export function ModalEditarPedido({
                               return extras.length > 0 && (
                                 <div className="mt-2 pt-2 border-t border-border text-xs text-foreground space-y-0.5">
                                   {extrasLista.map((extra, idx) => (
-                                    <p key={idx} className="font-medium">• {extra.nombre}  +${((extra.precio ?? extra.precio_extra ?? 0) * qty).toLocaleString('es-AR')}</p>
+                                    <p key={idx} className="font-medium">• {formatExtraNombre(extra)}  +${(getExtraLineTotal(extra) * qty).toLocaleString('es-AR')}</p>
                                   ))}
                                   <p className="font-medium text-muted-foreground mt-1">Extras: ${(extrasTotal * qty).toLocaleString('es-AR')}</p>
                                 </div>
@@ -917,7 +917,7 @@ export function ModalEditarPedido({
                       return extras.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-border text-xs text-foreground space-y-0.5">
                           {extrasLista.map((extra, eIdx) => (
-                            <p key={eIdx} className="font-medium">• {extra.nombre}  +${((extra.precio ?? extra.precio_extra ?? 0) * quantity).toLocaleString('es-AR')}</p>
+                            <p key={eIdx} className="font-medium">• {formatExtraNombre(extra)}  +${(getExtraLineTotal(extra) * quantity).toLocaleString('es-AR')}</p>
                           ))}
                           <p className="font-medium text-muted-foreground mt-1">Extras: ${(extrasTotal * quantity).toLocaleString('es-AR')}</p>
                         </div>

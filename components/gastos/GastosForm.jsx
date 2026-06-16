@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,6 +38,14 @@ export function GastosForm({
 }) {
     const [errors, setErrors] = useState({});
 
+    const todayInput = useMemo(() => {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }, []);
+
     const handleChange = (field, value) => {
         setFormulario(prev => ({ ...prev, [field]: value }));
         setErrors(prev => ({ ...prev, [field]: undefined }));
@@ -48,6 +56,7 @@ export function GastosForm({
         const nextErrors = {};
 
         if (!formulario.categoria_id) nextErrors.categoria_id = 'La categoría es obligatoria';
+        if (!formulario.fecha) nextErrors.fecha = 'La fecha del gasto es obligatoria';
         if (!formulario.descripcion?.trim()) nextErrors.descripcion = 'La descripción es obligatoria';
         if (!formulario.monto || parseFloat(formulario.monto) <= 0) nextErrors.monto = 'El monto debe ser mayor a 0';
 
@@ -70,6 +79,24 @@ export function GastosForm({
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
+                    {/* Fecha del gasto */}
+                    <div>
+                        <Label htmlFor="fecha" className="text-sm font-medium">
+                            Fecha del gasto <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                            id="fecha"
+                            type="date"
+                            value={formulario.fecha || ''}
+                            onChange={(e) => handleChange('fecha', e.target.value)}
+                            max={todayInput}
+                            className="mt-1"
+                            error={Boolean(errors.fecha)}
+                            aria-invalid={Boolean(errors.fecha)}
+                        />
+                        <FieldError error={errors.fecha} />
+                    </div>
+
                     {/* Categoría */}
                     <div>
                         <Label htmlFor="categoria_id" className="text-sm font-medium">

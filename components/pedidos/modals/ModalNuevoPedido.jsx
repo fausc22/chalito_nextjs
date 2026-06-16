@@ -11,7 +11,7 @@ import { FieldError } from '@/components/ui/field-error';
 import { ProductCard } from '../ProductCard';
 import ClienteAutocomplete from '../ClienteAutocomplete';
 import { toast } from '@/hooks/use-toast';
-import { getSufijoPresentacion, getExtrasSinPresentacion } from '@/lib/extrasUtils';
+import { getSufijoPresentacion, getExtrasSinPresentacion, formatExtraNombre, getExtraLineTotal } from '@/lib/extrasUtils';
 import { clearFieldError as clearErrorByPath, getInputErrorProps } from '@/lib/form-errors';
 import { formatDireccionEntrega } from '@/lib/formatters';
 import {
@@ -140,7 +140,7 @@ const CartSummaryMobile = ({
                         const extras = item.extras ?? item.extrasSeleccionados ?? [];
                         const precioBase = price * quantity;
                         const precioExtras = extras.reduce(
-                          (sum, extra) => sum + ((extra.precio || 0) * quantity),
+                          (sum, extra) => sum + getExtraLineTotal(extra) * quantity,
                           0
                         );
                         return (precioBase + precioExtras).toLocaleString('es-AR');
@@ -562,7 +562,10 @@ export function ModalNuevoPedido({
                                   const price = item.price ?? item.precio ?? 0;
                                   const extras = item.extras ?? item.extrasSeleccionados ?? [];
                                   const precioBase = price * quantity;
-                                  const precioExtras = extras.reduce((sum, extra) => sum + ((extra.precio || 0) * quantity), 0);
+                                  const precioExtras = extras.reduce(
+                                    (sum, extra) => sum + getExtraLineTotal(extra) * quantity,
+                                    0
+                                  );
                                   return (precioBase + precioExtras).toLocaleString('es-AR');
                                 })()}
                               </p>
@@ -571,7 +574,7 @@ export function ModalNuevoPedido({
                             {getExtrasSinPresentacion(item.extras ?? item.extrasSeleccionados ?? []).length > 0 && (
                               <div className="mt-2 pt-2 border-t border-border text-xs text-foreground space-y-0.5">
                                 {getExtrasSinPresentacion(item.extras ?? item.extrasSeleccionados ?? []).map((extra, idx) => (
-                                  <p key={idx} className="font-medium">+ {extra.nombre} (+${((extra.precio || 0) * (item.quantity ?? item.cantidad ?? 1)).toLocaleString('es-AR')})</p>
+                                  <p key={idx} className="font-medium">+ {formatExtraNombre(extra)} (+${(getExtraLineTotal(extra) * (item.quantity ?? item.cantidad ?? 1)).toLocaleString('es-AR')})</p>
                                 ))}
                               </div>
                             )}
@@ -953,7 +956,7 @@ export function ModalNuevoPedido({
                     {getExtrasSinPresentacion(item.extras ?? item.extrasSeleccionados ?? []).length > 0 && (
                       <div className="mt-2 pt-2 border-t border-border text-xs text-foreground space-y-0.5">
                         {getExtrasSinPresentacion(item.extras ?? item.extrasSeleccionados ?? []).map((extra, eIdx) => (
-                          <p key={eIdx} className="font-medium">+ {extra.nombre} (+${((extra.precio || 0) * (item.quantity ?? item.cantidad ?? 1)).toLocaleString('es-AR')})</p>
+                          <p key={eIdx} className="font-medium">+ {formatExtraNombre(extra)} (+${(getExtraLineTotal(extra) * (item.quantity ?? item.cantidad ?? 1)).toLocaleString('es-AR')})</p>
                         ))}
                       </div>
                     )}
@@ -974,7 +977,10 @@ export function ModalNuevoPedido({
                           const price = item.price ?? item.precio ?? 0;
                           const extras = item.extras ?? item.extrasSeleccionados ?? [];
                           const precioBase = price * quantity;
-                          const precioExtras = extras.reduce((sum, extra) => sum + ((extra.precio || 0) * quantity), 0);
+                          const precioExtras = extras.reduce(
+                            (sum, extra) => sum + getExtraLineTotal(extra) * quantity,
+                            0
+                          );
                           return (precioBase + precioExtras).toLocaleString('es-AR');
                         })()}
                       </p>
