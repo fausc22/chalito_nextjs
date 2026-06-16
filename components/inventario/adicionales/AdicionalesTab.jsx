@@ -34,6 +34,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { clearFieldError, hasErrors } from '@/lib/form-errors';
 
+const permiteCantidadActivo = (adicional) =>
+  Boolean(adicional?.permite_cantidad === 1 || adicional?.permite_cantidad === true);
+
 export function AdicionalesTab({
   adicionales,
   loadingAdicionales,
@@ -55,6 +58,7 @@ export function AdicionalesTab({
     descripcion: '',
     precio_extra: 0,
     disponible: 1,
+    permite_cantidad: false,
   });
   const [errors, setErrors] = useState({});
 
@@ -122,6 +126,7 @@ export function AdicionalesTab({
       descripcion: '',
       precio_extra: 0,
       disponible: 1,
+      permite_cantidad: false,
     });
     setErrors({});
     setModalAbierto(true);
@@ -135,6 +140,7 @@ export function AdicionalesTab({
       descripcion: adicional.descripcion || '',
       precio_extra: adicional.precio_extra || 0,
       disponible: adicional.disponible,
+      permite_cantidad: permiteCantidadActivo(adicional),
     });
     setErrors({});
     setModalAbierto(true);
@@ -149,6 +155,7 @@ export function AdicionalesTab({
       descripcion: '',
       precio_extra: 0,
       disponible: 1,
+      permite_cantidad: false,
     });
     setErrors({});
   };
@@ -205,7 +212,8 @@ export function AdicionalesTab({
         nombre: formulario.nombre.trim(),
         descripcion: formulario.descripcion.trim() || null,
         precio_extra: precioExtra,
-        disponible: formulario.disponible
+        disponible: formulario.disponible,
+        permite_cantidad: Boolean(formulario.permite_cantidad),
       };
 
       let resultado;

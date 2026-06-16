@@ -3,6 +3,9 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Pencil, Trash2 } from 'lucide-react';
 
+const permiteCantidadActivo = (adicional) =>
+  Boolean(adicional?.permite_cantidad === 1 || adicional?.permite_cantidad === true);
+
 export function AdicionalesTable({ adicionales, onEditar, onEliminar }) {
   return (
     <div className="hidden lg:block overflow-x-auto">
@@ -26,7 +29,14 @@ export function AdicionalesTable({ adicionales, onEditar, onEliminar }) {
                 }`}
               >
                 <TableCell className="font-medium text-center py-2 px-2">
-                  <div className="break-words">{adicional.nombre}</div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="break-words">{adicional.nombre}</div>
+                    {permiteCantidadActivo(adicional) && (
+                      <Badge className="bg-blue-100 text-blue-800 border-blue-200 pointer-events-none text-xs">
+                        Cantidad
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="text-center py-2 px-2">
                   <div className="break-words text-sm text-muted-foreground line-clamp-2">

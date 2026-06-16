@@ -3,6 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
+const permiteCantidadActivo = (adicional) =>
+  Boolean(adicional?.permite_cantidad === 1 || adicional?.permite_cantidad === true);
+
 export function AdicionalesCard({ adicional, onEditar, onEliminar }) {
   return (
     <Card className="hover:shadow-lg transition-all h-full flex flex-col rounded-t-xl rounded-b-none overflow-hidden">
@@ -11,9 +14,14 @@ export function AdicionalesCard({ adicional, onEditar, onEliminar }) {
           {/* Header con nombre y estado */}
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <Plus className="h-4 w-4 text-purple-500" />
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <Plus className="h-4 w-4 text-purple-500 shrink-0" />
                 <h3 className="font-semibold text-base">{adicional.nombre}</h3>
+                {permiteCantidadActivo(adicional) && (
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
+                    Cantidad
+                  </Badge>
+                )}
               </div>
             </div>
             <Badge

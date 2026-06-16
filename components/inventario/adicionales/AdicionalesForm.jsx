@@ -102,6 +102,26 @@ export const AdicionalesForm = ({
             </p>
           </div>
 
+          {/* Permitir elegir cantidad */}
+          <div className="space-y-2">
+            <div className="flex items-start gap-3 p-4 bg-muted border-2 border-border rounded-lg">
+              <Checkbox
+                id="permite_cantidad"
+                checked={Boolean(formulario.permite_cantidad)}
+                onCheckedChange={(checked) => onFieldChange('permite_cantidad', Boolean(checked))}
+                className="mt-0.5 w-5 h-5 border-2"
+              />
+              <div className="space-y-1">
+                <Label htmlFor="permite_cantidad" className="cursor-pointer font-medium text-foreground">
+                  Permitir elegir cantidad
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Si está activado, en la carta online el cliente podrá sumar más de una unidad de este adicional.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Checkbox disponible */}
           {isEditing && (formulario.disponible === 0 || formulario.disponible === false) ? (
             <div className="flex items-center gap-3 p-4 bg-amber-500/10 border-2 border-amber-500 rounded-lg cursor-pointer hover:bg-amber-100 transition-colors">
