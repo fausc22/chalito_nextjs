@@ -34,7 +34,7 @@ export function ModalAyudaImpresora({ open, onOpenChange }) {
     if (open) {
       setAgentUrlState(getPrintAgentUrl());
       setToken(getPrintAgentToken());
-      setBrowserPrintFallback(isBrowserPrintFallbackEnabled());
+      setBrowserFallback(isBrowserPrintFallbackEnabled());
       refreshHealth();
     }
   }, [open]);
