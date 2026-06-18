@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { API_CONFIG } from '../config/api';
 import { toast } from '@/hooks/use-toast';
-import { setPollingBlocked } from './rateLimitManager';
+import { classifyRateLimitRequest, setPollingBlocked } from './rateLimitManager';
 
 // Token Manager
 export const tokenManager = {
@@ -100,6 +100,15 @@ const shouldTryRefreshOn401 = (error, url = '') => {
   }
 
   return true;
+};
+
+const DEFAULT_RETRY_AFTER_SECONDS = 60;
+
+const parseRetryAfterHeaderSeconds = (retryAfterHeader) => {
+  if (retryAfterHeader == null) return null;
+  const normalized = Array.isArray(retryAfterHeader) ? retryAfterHeader[0] : retryAfterHeader;
+  const parsed = Number.parseInt(String(normalized), 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 };
 
 // Interceptor de request
@@ -206,20 +215,47 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 429) {
       const retryAfterHeader = error.response?.headers?.['retry-after'] ||
         error.response?.headers?.['Retry-After'];
-      const { blockedUntil } = setPollingBlocked({ retryAfterHeader, retryAfterSeconds: 60 });
-      const retryAfterSeconds = Math.max(60, Math.ceil((blockedUntil - Date.now()) / 1000));
+      const backendMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.response?.data?.mensaje ||
+        'Demasiadas peticiones. Intente nuevamente más tarde.';
+      const backendRetryAfter = Number(error.response?.data?.retryAfter);
+      const requestKind = classifyRateLimitRequest(requestUrl);
 
-      console.warn(`⚠️ Rate limit excedido. Polling pausado por ${retryAfterSeconds} segundos.`);
-      // Devolver como respuesta para que los componentes puedan manejarlo
+      let blockedUntil = null;
+      let retryAfterSeconds = Number.isFinite(backendRetryAfter) && backendRetryAfter >= 0
+        ? backendRetryAfter
+        : Math.max(1, Math.ceil((parseRetryAfterHeaderSeconds(retryAfterHeader) || DEFAULT_RETRY_AFTER_SECONDS)));
+
+      if (requestKind === 'automaticPolling') {
+        const blockResult = setPollingBlocked({
+          retryAfterHeader,
+          retryAfterSeconds: backendRetryAfter,
+        });
+        blockedUntil = blockResult.blockedUntil;
+        retryAfterSeconds = Math.max(1, Math.ceil((blockedUntil - Date.now()) / 1000));
+        console.warn(`Rate limit en polling automático. Pausado ${retryAfterSeconds}s.`);
+      } else if (requestKind === 'login') {
+        console.warn('Rate limit en login:', backendMessage);
+      } else {
+        console.warn('Rate limit en request staff:', backendMessage);
+      }
+
+      const mensaje = requestKind === 'automaticPolling'
+        ? `Rate limit en monitoreo automático. Reintentando en ${retryAfterSeconds} segundos.`
+        : backendMessage;
+
       return Promise.resolve({
         data: {
           success: false,
           error: true,
           status: 429,
-          mensaje: `Rate limit excedido. Polling pausado por ${retryAfterSeconds} segundos.`,
+          mensaje,
+          message: backendMessage,
           rateLimit: true,
           retryAfter: retryAfterSeconds,
-          pollingBlockedUntil: blockedUntil
+          pollingBlockedUntil: blockedUntil,
         },
         status: 429,
         statusText: 'Too Many Requests',

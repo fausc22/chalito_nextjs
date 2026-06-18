@@ -6,6 +6,7 @@ import { comandasService } from '../../services/comandasService';
 import { getSufijoPresentacionCocina, getExtrasSinPresentacion } from '../../lib/extrasUtils';
 import { pedidosService } from '../../services/pedidosService';
 import { getPollingRemainingMs, isPollingBlocked, setPollingBlocked } from '../../services/rateLimitManager';
+import { useConnectionStatus } from '../../contexts/ConnectionStatusContext';
 
 export function ModoCocina({
   isOpen,
@@ -22,6 +23,7 @@ export function ModoCocina({
   const [currentTime, setCurrentTime] = useState(Date.now());
   const erroresConsecutivosRef = useRef(0);
   const isActualizandoRef = useRef(false);
+  const { websocketConnected } = useConnectionStatus();
 
   // Cargar comandas en preparación
   const cargarComandas = useCallback(async (esManual = false) => {
@@ -202,7 +204,7 @@ export function ModoCocina({
     // Cargar inmediatamente al abrir
     cargarComandasRef.current();
     
-    const baseInterval = 3000;
+    const baseInterval = websocketConnected ? 10000 : 5000;
     
     const interval = setInterval(() => {
       if (isPolling) {
@@ -218,7 +220,7 @@ export function ModoCocina({
     }, baseInterval);
     
     return () => clearInterval(interval);
-  }, [isOpen, isPolling]);
+  }, [isOpen, isPolling, websocketConnected]);
 
   // Formatear tiempo transcurrido
   const formatearTiempo = (fecha) => {

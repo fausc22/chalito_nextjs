@@ -53,8 +53,8 @@ function PedidosColumnComponent({
   useEffect(() => {
     if (estado === 'en_cocina' || titulo === 'EN PREPARACIÓN') {
       cargarCapacidad();
-      // Recargar cada 15 segundos para actualización más frecuente
-      const interval = setInterval(cargarCapacidad, 15000);
+      // Recargar cada 30 segundos para actualización periódica
+      const interval = setInterval(cargarCapacidad, 30000);
       return () => clearInterval(interval);
     }
   }, [estado, titulo, cargarCapacidad]);

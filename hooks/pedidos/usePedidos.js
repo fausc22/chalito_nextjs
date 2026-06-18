@@ -493,14 +493,9 @@ export const usePedidos = () => {
     }, delayMs);
   }, [cargarPedidos]);
 
-  // Cargar pedidos desde el backend al montar el componente
+  // Cargar pedidos al montar el componente
   useEffect(() => {
     cargarPedidos({ source: 'initial' });
-    
-    // Polling optimizado: cada 45 segundos (balance entre latencia y carga)
-    // Se puede optimizar más con If-Modified-Since en el backend
-    const interval = setInterval(() => cargarPedidos({ source: 'polling' }), 45000);
-    return () => clearInterval(interval);
   }, [cargarPedidos]);
 
   useEffect(() => {
@@ -682,6 +677,19 @@ export const usePedidos = () => {
   useEffect(() => {
     updateWebsocketStatus(socketConnected);
   }, [socketConnected, updateWebsocketStatus]);
+
+  // Polling de respaldo solo cuando WebSocket no está conectado
+  useEffect(() => {
+    if (socketConnected) {
+      return undefined;
+    }
+
+    const interval = setInterval(() => {
+      cargarPedidos({ source: 'polling' });
+    }, 45000);
+
+    return () => clearInterval(interval);
+  }, [socketConnected, cargarPedidos]);
 
   // Filtrar pedidos por búsqueda (sin necesidad de tildes)
   const pedidosFiltrados = useMemo(() => {

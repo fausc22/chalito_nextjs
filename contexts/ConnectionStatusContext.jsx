@@ -1,11 +1,14 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { systemService } from '../services/systemService';
+import { tokenManager } from '../services/api';
 import {
   getPollingBlockedUntil,
   getPollingRemainingMs,
   isPollingBlocked,
   setPollingBlocked
 } from '../services/rateLimitManager';
+
+const HEALTH_POLLING_INTERVAL_MS = 60 * 1000;
 
 const ConnectionStatusContext = createContext();
 
@@ -179,15 +182,20 @@ export const ConnectionStatusProvider = ({ children }) => {
     }
   }, [parseWorkerActive, resolveSystemStatus]);
 
-  // Polling de health y métricas cada 30 segundos
+  // Polling de health y métricas solo con sesión activa
   useEffect(() => {
-    // Verificar inmediatamente al montar
+    if (!tokenManager.getAccessToken()) {
+      return undefined;
+    }
+
     checkSystemHealth();
 
-    // Configurar polling cada 30 segundos
     const interval = setInterval(() => {
+      if (!tokenManager.getAccessToken()) {
+        return;
+      }
       checkSystemHealth();
-    }, 30000);
+    }, HEALTH_POLLING_INTERVAL_MS);
 
     return () => clearInterval(interval);
   }, [checkSystemHealth]);
