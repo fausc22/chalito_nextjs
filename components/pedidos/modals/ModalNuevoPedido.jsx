@@ -25,6 +25,7 @@ import {
   applyClienteFieldUpdate,
   clienteFormMatchesSeleccion,
 } from '@/lib/clienteAutocompleteUtils';
+import { CATEGORIA_TODOS, CATEGORIA_TODOS_LABEL } from '@/lib/pedidosCategoriaConstants';
 
 const CartSummaryMobile = ({
   carrito,
@@ -395,8 +396,21 @@ export function ModalNuevoPedido({
           <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0 bg-muted">
             {/* Columna principal: Categorías y Productos */}
             <div className="w-full lg:w-[60%] flex flex-col min-h-0">
-              {/* Categorías como tabs: HAMBURGUESAS, SÁNDWICHES, EMPANADAS, PAPAS, BEBIDAS | ÚLTIMOS */}
+              {/* Categorías como tabs: TODOS, HAMBURGUESAS, SÁNDWICHES, ... */}
               <div className="flex items-center gap-1.5 mb-3 border-b-2 border-slate-400 pb-1.5 flex-shrink-0 overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setCategoriaSeleccionada(CATEGORIA_TODOS)}
+                  className={`
+                    px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all whitespace-nowrap flex-shrink-0
+                    ${categoriaSeleccionada === CATEGORIA_TODOS
+                      ? 'bg-blue-600 text-white border-b-2 border-blue-600'
+                      : 'bg-muted text-muted-foreground hover:bg-accent'
+                    }
+                  `}
+                >
+                  {CATEGORIA_TODOS_LABEL}
+                </button>
                 {loadingCategorias ? (
                   <div className="text-xs text-muted-foreground">Cargando categorías...</div>
                 ) : !Array.isArray(categorias) || categorias.length === 0 ? (
@@ -626,7 +640,7 @@ export function ModalNuevoPedido({
                 </div>
 
                 <div>
-                  <Label className="text-xs font-medium">Teléfono *</Label>
+                  <Label className="text-xs font-medium">Teléfono</Label>
                   <Input
                     ref={telefonoInputRef}
                     type="tel"

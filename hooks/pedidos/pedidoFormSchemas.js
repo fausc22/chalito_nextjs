@@ -11,12 +11,20 @@ export const clienteSchema = z.object({
     .min(2, 'El nombre debe tener al menos 2 caracteres')
     .max(100, 'El nombre es demasiado largo')
     .regex(SOLO_LETRAS_ESPACIOS, 'El nombre solo puede contener letras, espacios, guiones o apóstrofes'),
-  telefono: z
-    .string()
-    .min(1, 'El teléfono es requerido')
-    .max(20, 'El teléfono es demasiado largo')
-    .regex(SOLO_NUMEROS_TELEFONO, 'El teléfono solo puede contener números, espacios, guiones o paréntesis')
-    .refine((v) => v.replace(/\D/g, '').length >= 6, 'El teléfono debe tener al menos 6 dígitos'),
+  telefono: z.preprocess(
+    (val) => {
+      if (!val || (typeof val === 'string' && val.trim() === '')) {
+        return undefined;
+      }
+      return val;
+    },
+    z
+      .string()
+      .max(20, 'El teléfono es demasiado largo')
+      .regex(SOLO_NUMEROS_TELEFONO, 'El teléfono solo puede contener números, espacios, guiones o paréntesis')
+      .refine((v) => v.replace(/\D/g, '').length >= 6, 'El teléfono debe tener al menos 6 dígitos')
+      .optional()
+  ),
   email: z.preprocess(
     (val) => {
       if (!val || (typeof val === 'string' && val.trim() === '')) {

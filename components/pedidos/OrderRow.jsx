@@ -1,12 +1,58 @@
-import { memo } from 'react';
+import { memo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+import { cn } from '@/lib/utils';
 import { calcularEstadoTemporalPedido } from '@/lib/pedidoTimeUtils';
 import { isPedidoMercadoPagoPendiente, isPedidoPaid } from '@/lib/pedidoPaymentUtils';
+import { ROW_INLINE_MIN, useContainerWidth } from '@/hooks/useContainerWidth';
 import { PedidoAcciones } from './PedidoAcciones';
+
+function OrderRowBodyLayout({ pedido, isGhost = false, cobrandoPedidoId = null, handlers = {} }) {
+  const bodyRef = useRef(null);
+  const bodyWidth = useContainerWidth(bodyRef);
+  const isInlineLayout = bodyWidth >= ROW_INLINE_MIN;
+
+  return (
+    <div ref={bodyRef} className="pt-2 px-3 pb-3 flex flex-col flex-grow bg-card min-w-0">
+      <div className={cn('flex gap-3', isInlineLayout ? 'flex-row items-end' : 'flex-col')}>
+        <div className={cn('bg-card rounded p-2 border border-border min-w-0', isInlineLayout ? 'flex-1' : 'w-full')}>
+          <div className="text-foreground">
+            {pedido.items.slice(0, 3).map((item, idx) => (
+              <div key={idx} className="truncate" title={`${item.cantidad}x ${item.nombre}`}>
+                <span className="text-xs font-bold">{item.cantidad}x</span>{' '}
+                <span className="text-sm truncate">{item.nombre}</span>
+              </div>
+            ))}
+            {pedido.items.length > 3 && (
+              <div className="text-xs text-muted-foreground font-medium">
+                +{pedido.items.length - 3} más...
+              </div>
+            )}
+          </div>
+        </div>
+        <div className={cn(isInlineLayout ? 'shrink-0 self-end' : 'w-full')}>
+          <PedidoAcciones
+            pedido={pedido}
+            onMarcharACocina={handlers.onMarcharACocina}
+            onListo={handlers.onListo}
+            onEntregar={handlers.onEntregar}
+            onEditar={handlers.onEditar}
+            onCambiarHorario={handlers.onCambiarHorario}
+            onCancelar={handlers.onCancelar}
+            onCobrar={handlers.onCobrar}
+            onImprimir={handlers.onImprimir}
+            isGhost={isGhost}
+            variant="row"
+            cobrandoPedidoId={cobrandoPedidoId}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function OrderRowComponent({
   pedido,
@@ -184,7 +230,7 @@ function OrderRowComponent({
                   </Badge>
                 )}
               </div>
-              <p className="text-xs font-bold text-foreground truncate max-w-[200px]">
+              <p className="text-xs font-bold text-foreground truncate min-w-0">
                 {pedido.clienteNombre}
               </p>
             </div>
@@ -266,45 +312,21 @@ function OrderRowComponent({
         )}
       </div>
 
-      {/* Cuerpo Inferior: Items y Acciones - Fondo blanco */}
-      <div className="pt-2 px-3 pb-3 flex flex-col flex-grow bg-card">
-        <div className="flex flex-col lg:flex-row lg:items-end gap-3">
-          {/* Items del pedido */}
-          <div className="bg-card rounded p-2 border border-border flex-1 min-w-0 lg:max-w-[70%]">
-            <div className="text-foreground">
-              {pedido.items.slice(0, 3).map((item, idx) => (
-                <div key={idx} className="truncate" title={`${item.cantidad}x ${item.nombre}`}>
-                  <span className="text-xs font-bold">{item.cantidad}x</span>{' '}
-                  <span className="text-sm truncate">{item.nombre}</span>
-                </div>
-              ))}
-              {pedido.items.length > 3 && (
-                <div className="text-xs text-muted-foreground font-medium">
-                  +{pedido.items.length - 3} más...
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Acciones: bloque fijo a la derecha en escritorio */}
-          <div className="w-full lg:w-auto lg:flex-shrink-0 lg:self-end">
-            <PedidoAcciones
-              pedido={pedido}
-              onMarcharACocina={onMarcharACocina}
-              onListo={onListo}
-              onEntregar={onEntregar}
-              onEditar={onEditar}
-              onCambiarHorario={onCambiarHorario}
-              onCancelar={onCancelar}
-              onCobrar={onCobrar}
-              onImprimir={onImprimir}
-              isGhost={false}
-              variant="row"
-              cobrandoPedidoId={cobrandoPedidoId}
-            />
-          </div>
-        </div>
-      </div>
+      <OrderRowBodyLayout
+        pedido={pedido}
+        isGhost={false}
+        cobrandoPedidoId={cobrandoPedidoId}
+        handlers={{
+          onMarcharACocina,
+          onListo,
+          onEntregar,
+          onEditar,
+          onCambiarHorario,
+          onCancelar,
+          onCobrar,
+          onImprimir,
+        }}
+      />
     </div>
     </RowWrapper>
   );
@@ -385,7 +407,7 @@ export function OrderRowGhost({ pedido }) {
                   </Badge>
                 )}
               </div>
-              <p className="text-xs font-bold text-foreground truncate max-w-[200px]">
+              <p className="text-xs font-bold text-foreground truncate min-w-0">
                 {pedido.clienteNombre}
               </p>
             </div>
@@ -440,42 +462,18 @@ export function OrderRowGhost({ pedido }) {
         </div>
       </div>
 
-      {/* Cuerpo Inferior: Items y Acciones - Fondo blanco */}
-      <div className="pt-2 px-3 pb-3 flex flex-col flex-grow bg-card">
-        <div className="flex flex-col lg:flex-row lg:items-end gap-3">
-          {/* Items del pedido */}
-          <div className="bg-card rounded p-2 border border-border flex-1 min-w-0 md:max-w-[70%]">
-            <div className="text-foreground">
-              {pedido.items.slice(0, 3).map((item, idx) => (
-                <div key={idx} className="truncate" title={`${item.cantidad}x ${item.nombre}`}>
-                  <span className="text-xs font-bold">{item.cantidad}x</span>{' '}
-                  <span className="text-sm truncate">{item.nombre}</span>
-                </div>
-              ))}
-              {pedido.items.length > 3 && (
-                <div className="text-xs text-muted-foreground font-medium">
-                  +{pedido.items.length - 3} más...
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Acciones: bloque fijo a la derecha en escritorio */}
-          <div className="md:flex-shrink-0 md:self-end">
-            <PedidoAcciones
-              pedido={pedido}
-              onMarcharACocina={() => {}}
-              onListo={() => {}}
-              onEditar={() => {}}
-              onCancelar={() => {}}
-              onCobrar={() => {}}
-              onImprimir={() => {}}
-              isGhost={true}
-              variant="row"
-            />
-          </div>
-        </div>
-      </div>
+      <OrderRowBodyLayout
+        pedido={pedido}
+        isGhost
+        handlers={{
+          onMarcharACocina: () => {},
+          onListo: () => {},
+          onEditar: () => {},
+          onCancelar: () => {},
+          onCobrar: () => {},
+          onImprimir: () => {},
+        }}
+      />
     </div>
   );
 }

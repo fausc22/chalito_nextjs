@@ -115,10 +115,11 @@ export const whatsappService = {
     try {
       const response = await apiRequest.put(API_CONFIG.ENDPOINTS.WHATSAPP.SETTINGS, payload);
       if (!response.data?.success) {
-        return {
-          success: false,
-          message: getApiErrorMessage(response, 'Error al guardar configuración'),
-        };
+      return {
+        success: false,
+        message: getApiErrorMessage(response, 'Error al guardar configuración'),
+        errors: response.data?.errors,
+      };
       }
       return {
         success: true,
@@ -129,6 +130,7 @@ export const whatsappService = {
       return {
         success: false,
         message: error.response?.data?.message || 'Error al guardar configuración',
+        errors: error.response?.data?.errors,
       };
     }
   },

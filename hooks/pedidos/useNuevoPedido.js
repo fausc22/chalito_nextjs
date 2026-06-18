@@ -10,6 +10,7 @@ import { calculateCartSubtotal } from '../../lib/pedidoTotals';
 import { getExtraLineTotal } from '../../lib/extrasUtils';
 import { setFieldError, zodIssuesToErrors } from '@/lib/form-errors';
 import { clienteSchema, carritoSchema, pedidoSchema } from './pedidoFormSchemas';
+import { CATEGORIA_TODOS } from '../../lib/pedidosCategoriaConstants';
 
 // Normalización para comparar nombres de categorías (ignora tildes y mayúsculas/minúsculas)
 const normalizarCategoria = (value) =>
@@ -26,7 +27,7 @@ export const useNuevoPedido = () => {
   const [pasoModal, setPasoModal] = useState(1);
 
   // Paso 1: Armar Pedido
-  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(CATEGORIA_TODOS);
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [carrito, setCarrito] = useState([]);
   const CATEGORIA_ULTIMOS = 'ultimos';
@@ -119,15 +120,6 @@ export const useNuevoPedido = () => {
         const categoriasResponse = await articulosService.obtenerCategorias();
         if (categoriasResponse.success && Array.isArray(categoriasResponse.data)) {
           setCategorias(categoriasResponse.data);
-          // Seleccionar la primera categoría por defecto
-          // eslint-disable-next-line react-hooks/exhaustive-deps
-          if (categoriasResponse.data.length > 0 && !categoriaSeleccionada) {
-            const primeraCategoria = categoriasResponse.data[0];
-            const categoriaId = primeraCategoria.id || primeraCategoria.categoria_id;
-            if (categoriaId) {
-              setCategoriaSeleccionada(categoriaId);
-            }
-          }
         } else {
           console.warn('No se pudieron cargar las categorías:', categoriasResponse.error);
           setCategorias([]);
@@ -216,6 +208,13 @@ export const useNuevoPedido = () => {
   // Filtrar productos
   const productosFiltrados = useMemo(() => {
     if (!categoriaSeleccionada) return [];
+
+    if (categoriaSeleccionada === CATEGORIA_TODOS) {
+      if (busquedaProducto.trim() === '') return productos;
+      return productos.filter(p =>
+        p.nombre.toLowerCase().includes(busquedaProducto.toLowerCase())
+      );
+    }
     
     if (categoriaSeleccionada === CATEGORIA_ULTIMOS) {
       const lista = productosMasSolicitadosIds
@@ -245,9 +244,7 @@ export const useNuevoPedido = () => {
   // Resetear modal
   const resetearModal = useCallback(() => {
     setPasoModal(1);
-    if (categorias.length > 0) {
-      setCategoriaSeleccionada(categorias[0].id);
-    }
+    setCategoriaSeleccionada(CATEGORIA_TODOS);
     setBusquedaProducto('');
     setCarrito([]);
     setTipoEntrega('retiro');
@@ -269,7 +266,7 @@ export const useNuevoPedido = () => {
     setMedioPago('efectivo');
     setEstadoPago('pending');
     setFieldErrors({});
-  }, [categorias]);
+  }, []);
 
   const clearFieldError = useCallback((fieldPath) => {
     setFieldErrors((prev) => {

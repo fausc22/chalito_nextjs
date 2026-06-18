@@ -231,7 +231,7 @@ function PedidosColumnComponent({
           </div>
         ) : (
           // Vista de cards en grid
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 items-stretch">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3 items-stretch">
             <AnimatePresence mode="popLayout" initial={false}>
               {pedidosPaginados.map((pedido) => (
                 <motion.div

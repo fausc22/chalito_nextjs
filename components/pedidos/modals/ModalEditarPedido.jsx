@@ -25,6 +25,7 @@ import {
   applyClienteFieldUpdate,
   clienteFormMatchesSeleccion,
 } from '@/lib/clienteAutocompleteUtils';
+import { CATEGORIA_TODOS, CATEGORIA_TODOS_LABEL } from '@/lib/pedidosCategoriaConstants';
 import { toast } from '@/hooks/use-toast';
 
 // Mapear estado del pedido a texto legible
@@ -368,6 +369,19 @@ export function ModalEditarPedido({
             <div className="w-full lg:w-[60%] flex flex-col min-h-0">
               {/* Categorías como tabs */}
               <div className="flex gap-1.5 mb-3 border-b-2 border-slate-400 pb-1.5 flex-shrink-0 overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setCategoriaSeleccionada(CATEGORIA_TODOS)}
+                  className={`
+                    px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all whitespace-nowrap flex-shrink-0
+                    ${categoriaSeleccionada === CATEGORIA_TODOS
+                      ? 'bg-blue-600 text-white border-b-2 border-blue-600'
+                      : 'bg-muted text-muted-foreground hover:bg-accent'
+                    }
+                  `}
+                >
+                  {CATEGORIA_TODOS_LABEL}
+                </button>
                 {loadingCategorias ? (
                   <div className="text-xs text-muted-foreground">Cargando categorías...</div>
                 ) : !Array.isArray(categorias) || categorias.length === 0 ? (

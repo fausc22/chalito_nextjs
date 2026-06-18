@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, MessageCircle, RefreshCw, Save, Wifi, WifiOff } from 'lucide-react';
+import { ChevronDown, ChevronUp, MessageCircle, RefreshCw, RotateCcw, Save, Wifi, WifiOff } from 'lucide-react';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useWhatsAppConfig } from '@/hooks/configuracion/useWhatsAppConfig';
+import { WhatsAppPlantillaEditor } from '@/components/configuracion/WhatsAppPlantillaEditor';
+import { TEMPLATE_GROUPS } from '@/lib/whatsappTemplateUtils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,7 +44,11 @@ function estadoBadge(waEstado, polling, waQr) {
 
 export function WhatsAppIntegracionTab() {
   const notification = useNotification();
-  const [previewsOpen, setPreviewsOpen] = useState(false);
+  const [plantillasOpen, setPlantillasOpen] = useState(true);
+  const [openGroups, setOpenGroups] = useState(() =>
+    TEMPLATE_GROUPS.reduce((acc, group) => ({ ...acc, [group.id]: true }), {})
+  );
+
   const {
     loading,
     guardando,
@@ -50,8 +56,12 @@ export function WhatsAppIntegracionTab() {
     waQr,
     polling,
     settingsLocal,
-    previews,
+    plantillaErrors,
+    hasPlantillaErrors,
     setSettingsLocal,
+    setPlantilla,
+    restaurarPlantilla,
+    restaurarTodasPlantillas,
     cargarTodo,
     conectar,
     desconectar,
@@ -60,6 +70,11 @@ export function WhatsAppIntegracionTab() {
 
   const badge = estadoBadge(waEstado, polling, waQr);
   const nombreLocal = settingsLocal.nombreNegocio || 'El Chalito';
+  const disabled = loading || guardando;
+
+  const toggleGroup = (groupId) => {
+    setOpenGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -138,10 +153,10 @@ export function WhatsAppIntegracionTab() {
             Notificaciones de pedidos web
           </CardTitle>
           <CardDescription>
-            Los mensajes al cliente los arma el sistema según la forma de pago y si el pedido es retiro en el local
-            o envío a domicilio. En todos los casos se incluye el saludo de <strong>{nombreLocal}</strong>, el número
-            de pedido, el detalle y el total. Solo podés activar o desactivar el envío y configurar el alias de
-            transferencia.
+            Personalizá los mensajes que se envían al cliente según la forma de pago y si el pedido es retiro o envío.
+            Usá las variables para insertar el número de pedido (<code>{'{{id}}'}</code>), el detalle de productos (
+            <code>{'{{contenido}}'}</code>) y el total (<code>{'{{total}}'}</code>). El nombre del local se inserta con{' '}
+            <code>{'{{local}}'}</code>.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -155,7 +170,7 @@ export function WhatsAppIntegracionTab() {
             <ToggleSwitch
               checked={Boolean(settingsLocal.notificacionesActivas)}
               onChange={(v) => setSettingsLocal((s) => ({ ...s, notificacionesActivas: v }))}
-              disabled={loading || guardando}
+              disabled={disabled}
               label="Notificaciones activas"
             />
           </div>
@@ -168,39 +183,80 @@ export function WhatsAppIntegracionTab() {
               onChange={(e) =>
                 setSettingsLocal((s) => ({ ...s, aliasTransferencia: e.target.value }))
               }
-              disabled={loading || guardando}
+              disabled={disabled}
               placeholder="ej. elchalito.mp"
             />
             <p className="text-xs text-muted-foreground">
-              Se usa en pedidos con transferencia. Mercado Pago y credenciales de pago se configuran solo en el
-              servidor (desarrollo).
+              Se inserta con <code>{'{{alias}}'}</code> en plantillas de transferencia. Mercado Pago y credenciales de
+              pago se configuran solo en el servidor (desarrollo).
             </p>
           </div>
 
           <div className="rounded-lg border border-border">
-            <button
-              type="button"
-              className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm font-semibold text-foreground hover:bg-muted/60"
-              onClick={() => setPreviewsOpen((o) => !o)}
-            >
-              Ejemplos de mensajes (solo lectura)
-              {previewsOpen ? (
-                <ChevronUp className="h-4 w-4 shrink-0" />
-              ) : (
-                <ChevronDown className="h-4 w-4 shrink-0" />
-              )}
-            </button>
-            {previewsOpen ? (
+            <div className="flex items-center justify-between gap-2 px-3 py-2.5">
+              <button
+                type="button"
+                className="flex flex-1 items-center justify-between gap-2 text-left text-sm font-semibold text-foreground hover:opacity-80"
+                onClick={() => setPlantillasOpen((o) => !o)}
+              >
+                Plantillas de mensajes
+                {plantillasOpen ? (
+                  <ChevronUp className="h-4 w-4 shrink-0" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 shrink-0" />
+                )}
+              </button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0 text-xs"
+                onClick={restaurarTodasPlantillas}
+                disabled={disabled}
+              >
+                <RotateCcw className="h-3 w-3 mr-1" />
+                Restaurar todas
+              </Button>
+            </div>
+
+            {plantillasOpen ? (
               <div className="space-y-3 border-t border-border p-3">
-                {loading && previews.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Cargando ejemplos…</p>
+                {loading && !settingsLocal.plantillas ? (
+                  <p className="text-sm text-muted-foreground">Cargando plantillas…</p>
                 ) : null}
-                {previews.map((preview) => (
-                  <div key={preview.key} className="space-y-1">
-                    <p className="text-xs font-semibold text-foreground">{preview.label}</p>
-                    <pre className="whitespace-pre-wrap rounded-md border border-border bg-muted p-3 text-xs text-muted-foreground font-sans">
-                      {preview.texto}
-                    </pre>
+
+                {TEMPLATE_GROUPS.map((group) => (
+                  <div key={group.id} className="rounded-lg border border-border">
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm font-semibold text-foreground hover:bg-muted/60"
+                      onClick={() => toggleGroup(group.id)}
+                    >
+                      {group.label}
+                      {openGroups[group.id] ? (
+                        <ChevronUp className="h-4 w-4 shrink-0" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 shrink-0" />
+                      )}
+                    </button>
+
+                    {openGroups[group.id] ? (
+                      <div className="space-y-3 border-t border-border p-3">
+                        {group.keys.map((templateKey) => (
+                          <WhatsAppPlantillaEditor
+                            key={templateKey}
+                            templateKey={templateKey}
+                            value={settingsLocal.plantillas?.[templateKey] || ''}
+                            onChange={(text) => setPlantilla(templateKey, text)}
+                            onRestore={() => restaurarPlantilla(templateKey)}
+                            disabled={disabled}
+                            nombreNegocio={nombreLocal}
+                            aliasTransferencia={settingsLocal.aliasTransferencia}
+                            serverErrors={plantillaErrors[templateKey] || []}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -211,7 +267,7 @@ export function WhatsAppIntegracionTab() {
             <Button
               type="button"
               onClick={guardarSettings}
-              disabled={loading || guardando}
+              disabled={disabled || hasPlantillaErrors}
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               <Save className="h-4 w-4 mr-2" />

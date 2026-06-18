@@ -268,7 +268,7 @@ function OrderCardComponent({
           )}
         </div>
 
-        <div className="mt-1 flex justify-start sm:justify-end w-full">
+        <div className="mt-1 w-full min-w-0">
           <PedidoAcciones
             pedido={pedido}
             onMarcharACocina={onMarcharACocina}
@@ -420,7 +420,7 @@ export function OrderCardGhost({ pedido }) {
           )}
         </div>
 
-        <div className="mt-1 flex justify-start sm:justify-end w-full">
+        <div className="mt-1 w-full min-w-0">
           <PedidoAcciones
             pedido={pedido}
             onMarcharACocina={() => {}}
@@ -437,4 +437,3 @@ export function OrderCardGhost({ pedido }) {
     </Card>
   );
 }
-

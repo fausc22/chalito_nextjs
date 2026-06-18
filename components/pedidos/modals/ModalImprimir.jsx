@@ -215,11 +215,11 @@ export function ModalImprimir({ pedido, open, onOpenChange }) {
           <Button
             onClick={() => runThermalPrint('kitchen')}
             disabled={isBusy}
-            className="w-full justify-start gap-3 h-auto py-4"
+            className="w-full justify-start gap-3 h-auto py-4 whitespace-normal"
             variant="outline"
           >
             <Printer className="h-5 w-5 shrink-0" />
-            <div className="flex flex-col items-start text-left">
+            <div className="flex min-w-0 flex-col items-start text-left">
               <span className="font-semibold">Imprimir Ticket</span>
               <span className="text-xs text-muted-foreground">Comandera y cliente — disponible desde que se crea el pedido</span>
             </div>
@@ -228,11 +228,11 @@ export function ModalImprimir({ pedido, open, onOpenChange }) {
           <Button
             onClick={() => runThermalPrint('customer')}
             disabled={isBusy || !pedidoEntregado}
-            className="w-full justify-start gap-3 h-auto py-4"
+            className="w-full justify-start gap-3 h-auto py-4 whitespace-normal"
             variant="outline"
           >
             <Receipt className="h-5 w-5 shrink-0" />
-            <div className="flex flex-col items-start text-left">
+            <div className="flex min-w-0 flex-col items-start text-left">
               <span className="font-semibold">Imprimir Factura</span>
               <span className="text-xs text-muted-foreground">
                 {pedidoEntregado

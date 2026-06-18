@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { whatsappService } from '@/services/whatsappService';
+import { hasValidationErrors, validateAllPlantillas } from '@/lib/whatsappTemplateUtils';
 
 const EMPTY_SETTINGS = {
   notificacionesActivas: true,
   aliasTransferencia: '',
   nombreNegocio: '',
+  plantillas: {},
+  plantillasDefault: {},
 };
 
 export function useWhatsAppConfig(notification) {
@@ -16,6 +19,14 @@ export function useWhatsAppConfig(notification) {
   const [previews, setPreviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const [plantillaErrors, setPlantillaErrors] = useState({});
+
+  const validationErrors = useMemo(
+    () => validateAllPlantillas(settingsLocal.plantillas),
+    [settingsLocal.plantillas]
+  );
+
+  const hasPlantillaErrors = hasValidationErrors(validationErrors);
 
   const refrescarEstado = useCallback(async () => {
     const result = await whatsappService.obtenerEstado();
@@ -36,6 +47,7 @@ export function useWhatsAppConfig(notification) {
     }
     setSettings(result.data);
     setSettingsLocal(result.data);
+    setPlantillaErrors({});
   }, [notification]);
 
   const cargarPreviews = useCallback(async () => {
@@ -104,15 +116,66 @@ export function useWhatsAppConfig(notification) {
     await refrescarEstado();
   };
 
+  const setPlantilla = useCallback((templateKey, value) => {
+    setSettingsLocal((prev) => ({
+      ...prev,
+      plantillas: {
+        ...(prev.plantillas || {}),
+        [templateKey]: value,
+      },
+    }));
+    setPlantillaErrors((prev) => {
+      if (!prev[templateKey]) return prev;
+      const next = { ...prev };
+      delete next[templateKey];
+      return next;
+    });
+  }, []);
+
+  const restaurarPlantilla = useCallback((templateKey) => {
+    setSettingsLocal((prev) => ({
+      ...prev,
+      plantillas: {
+        ...(prev.plantillas || {}),
+        [templateKey]: prev.plantillasDefault?.[templateKey] || '',
+      },
+    }));
+    setPlantillaErrors((prev) => {
+      if (!prev[templateKey]) return prev;
+      const next = { ...prev };
+      delete next[templateKey];
+      return next;
+    });
+  }, []);
+
+  const restaurarTodasPlantillas = useCallback(() => {
+    setSettingsLocal((prev) => ({
+      ...prev,
+      plantillas: { ...(prev.plantillasDefault || {}) },
+    }));
+    setPlantillaErrors({});
+  }, []);
+
   const guardarSettings = async () => {
+    const localErrors = validateAllPlantillas(settingsLocal.plantillas);
+    if (hasValidationErrors(localErrors)) {
+      setPlantillaErrors(localErrors);
+      notification?.showError?.('Revisá las plantillas: faltan placeholders obligatorios');
+      return false;
+    }
+
     setGuardando(true);
     const result = await whatsappService.updateSettings({
       notificacionesActivas: settingsLocal.notificacionesActivas,
       aliasTransferencia: settingsLocal.aliasTransferencia,
+      plantillas: settingsLocal.plantillas,
     });
     setGuardando(false);
 
     if (!result.success) {
+      if (result.errors) {
+        setPlantillaErrors(result.errors);
+      }
       notification?.showError?.(result.message);
       return false;
     }
@@ -120,6 +183,7 @@ export function useWhatsAppConfig(notification) {
     notification?.showSuccess?.(result.message || 'Configuración guardada');
     setSettings(result.data);
     setSettingsLocal(result.data);
+    setPlantillaErrors({});
     await cargarPreviews();
     return true;
   };
@@ -133,7 +197,13 @@ export function useWhatsAppConfig(notification) {
     settings,
     settingsLocal,
     previews,
+    plantillaErrors,
+    validationErrors,
+    hasPlantillaErrors,
     setSettingsLocal,
+    setPlantilla,
+    restaurarPlantilla,
+    restaurarTodasPlantillas,
     refrescarEstado,
     cargarTodo,
     conectar,

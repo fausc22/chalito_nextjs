@@ -10,6 +10,7 @@ import { getItemExtras } from '../../lib/extrasUtils';
 import { calculateCartSubtotal } from '../../lib/pedidoTotals';
 import { setFieldError, zodIssuesToErrors } from '@/lib/form-errors';
 import { clienteSchema, carritoSchema, pedidoSchema } from './pedidoFormSchemas';
+import { CATEGORIA_TODOS } from '../../lib/pedidosCategoriaConstants';
 
 // Normalización para comparar nombres de categorías (ignora tildes y mayúsculas/minúsculas)
 const normalizarCategoria = (value) =>
@@ -27,7 +28,7 @@ export const useEditarPedido = () => {
   const [pasoModal, setPasoModal] = useState(1);
 
   // Paso 1: Armar Pedido
-  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(CATEGORIA_TODOS);
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [carrito, setCarrito] = useState([]);
   
@@ -116,13 +117,6 @@ export const useEditarPedido = () => {
         const categoriasResponse = await articulosService.obtenerCategorias();
         if (categoriasResponse.success && Array.isArray(categoriasResponse.data)) {
           setCategorias(categoriasResponse.data);
-          if (categoriasResponse.data.length > 0 && !categoriaSeleccionada) {
-            const primeraCategoria = categoriasResponse.data[0];
-            const categoriaId = primeraCategoria.id || primeraCategoria.categoria_id;
-            if (categoriaId) {
-              setCategoriaSeleccionada(categoriaId);
-            }
-          }
         } else {
           console.warn('No se pudieron cargar las categorías:', categoriasResponse.error);
           setCategorias([]);
@@ -275,6 +269,13 @@ export const useEditarPedido = () => {
   // Filtrar productos
   const productosFiltrados = useMemo(() => {
     if (!categoriaSeleccionada) return [];
+
+    if (categoriaSeleccionada === CATEGORIA_TODOS) {
+      if (busquedaProducto.trim() === '') return productos;
+      return productos.filter(p =>
+        p.nombre.toLowerCase().includes(busquedaProducto.toLowerCase())
+      );
+    }
     
     return productos.filter(p => {
       const matchCategoria = p.categoria === categoriaSeleccionada;
@@ -294,9 +295,7 @@ export const useEditarPedido = () => {
   const resetearModal = useCallback(() => {
     setPasoModal(1);
     setPedidoOriginal(null);
-    if (categorias.length > 0) {
-      setCategoriaSeleccionada(categorias[0].id);
-    }
+    setCategoriaSeleccionada(CATEGORIA_TODOS);
     setBusquedaProducto('');
     setCarrito([]);
     setTipoEntrega('retiro');
@@ -319,7 +318,7 @@ export const useEditarPedido = () => {
     setEstadoPago('pending');
     setFieldErrors({});
 
-  }, [categorias]);
+  }, []);
 
   const clearFieldError = useCallback((fieldPath) => {
     setFieldErrors((prev) => {
@@ -359,6 +358,8 @@ export const useEditarPedido = () => {
       return;
     }
 
+    setCategoriaSeleccionada(CATEGORIA_TODOS);
+    setBusquedaProducto('');
     setIsOpen(true);
     cargarPedido(pedido.id);
   }, [cargarPedido]);
