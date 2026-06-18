@@ -13,7 +13,8 @@ export const useSocket = (
     onCapacidadActualizada,
     onPedidosAtrasados,
     onPedidoActualizado,
-    onWorkerHeartbeat
+    onWorkerHeartbeat,
+    onMpPaymentUpdated
 ) => {
     const socketRef = useRef(null);
     const [isConnected, setIsConnected] = useState(false);
@@ -25,6 +26,7 @@ export const useSocket = (
         onPedidosAtrasados,
         onPedidoActualizado,
         onWorkerHeartbeat,
+        onMpPaymentUpdated,
     });
 
     // Mantener referencias actualizadas sin recrear la conexión
@@ -37,6 +39,7 @@ export const useSocket = (
             onPedidosAtrasados,
             onPedidoActualizado,
             onWorkerHeartbeat,
+            onMpPaymentUpdated,
         };
     }, [
         onPedidoCreado,
@@ -45,7 +48,8 @@ export const useSocket = (
         onCapacidadActualizada,
         onPedidosAtrasados,
         onPedidoActualizado,
-        onWorkerHeartbeat
+        onWorkerHeartbeat,
+        onMpPaymentUpdated
     ]);
 
     useEffect(() => {
@@ -143,6 +147,16 @@ export const useSocket = (
             }
             if (handlersRef.current.onPedidoActualizado) {
                 handlersRef.current.onPedidoActualizado(data);
+            }
+        });
+
+        socket.on('mp:payment-updated', (data) => {
+            console.log('💳 [WebSocket] MP payment updated:', data);
+            if (handlersRef.current.onWorkerHeartbeat) {
+                handlersRef.current.onWorkerHeartbeat({ active: true, timestamp: Date.now(), source: 'mp:payment-updated' });
+            }
+            if (handlersRef.current.onMpPaymentUpdated) {
+                handlersRef.current.onMpPaymentUpdated(data);
             }
         });
 

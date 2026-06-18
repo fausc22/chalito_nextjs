@@ -653,6 +653,19 @@ export const usePedidos = () => {
     markPedidoRecientementeActualizado(data.pedidoId);
   }, [markPedidoRecientementeActualizado, patchPedido]);
 
+  const handleMpPaymentUpdated = useCallback((data) => {
+    debugPedidos('socket_mp_payment_updated', {
+      pedidoId: data?.pedidoId ?? null,
+      estadoPago: data?.estadoPago ?? null,
+      esPagoNuevo: data?.esPagoNuevo ?? false,
+    });
+
+    const estadoPago = String(data?.estadoPago || '').trim().toUpperCase();
+    if (estadoPago === 'PAGADO' && data?.pedidoId) {
+      scheduleWebsocketRefresh(300);
+    }
+  }, [scheduleWebsocketRefresh]);
+
   // Conectar WebSocket
   const { isConnected: socketConnected } = useSocket(
     handlePedidoCreado,
@@ -661,7 +674,8 @@ export const usePedidos = () => {
     handleCapacidadActualizada,
     handlePedidosAtrasados,
     handlePedidoActualizado,
-    markWorkerHeartbeat
+    markWorkerHeartbeat,
+    handleMpPaymentUpdated
   );
 
   // Actualizar estado de conexión cuando cambia el WebSocket
