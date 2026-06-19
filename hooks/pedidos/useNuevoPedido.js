@@ -95,6 +95,7 @@ export const useNuevoPedido = () => {
     direccion: {
       calle: '',
       numero: '',
+      entreCalles: '',
       edificio: '',
       piso: '',
       observaciones: ''
@@ -255,6 +256,7 @@ export const useNuevoPedido = () => {
       direccion: {
         calle: '',
         numero: '',
+        entreCalles: '',
         edificio: '',
         piso: '',
         observaciones: ''
@@ -492,6 +494,9 @@ export const useNuevoPedido = () => {
     if (tipoEntregaActual === 'delivery' && !(clienteActual.direccion?.calle?.trim())) {
       nextErrors = setFieldError(nextErrors, 'direccion.calle', 'La calle es obligatoria para delivery');
     }
+    if (tipoEntregaActual === 'delivery' && !(clienteActual.direccion?.entreCalles?.trim())) {
+      nextErrors = setFieldError(nextErrors, 'direccion.entreCalles', 'Indicá entre qué calles se encuentra el domicilio.');
+    }
 
     if (tipoPedido === 'programado' && !horaProgramada) {
       nextErrors = setFieldError(nextErrors, 'horaProgramada', 'Debes indicar una hora programada');
@@ -519,6 +524,9 @@ export const useNuevoPedido = () => {
     }
     if (tipoEntregaActual === 'delivery' && !(clienteActual.direccion?.calle?.trim())) {
       return { valid: false, mensaje: 'Calle: La calle es requerida para delivery.' };
+    }
+    if (tipoEntregaActual === 'delivery' && !(clienteActual.direccion?.entreCalles?.trim())) {
+      return { valid: false, mensaje: 'Entre calles: Indicá entre qué calles se encuentra el domicilio.' };
     }
     if (tipoPedido === 'programado' && !horaProgramada) {
       return { valid: false, mensaje: 'Hora programada: Debes indicar una hora programada.' };
@@ -555,6 +563,9 @@ export const useNuevoPedido = () => {
 
         if (tipoEntrega === 'delivery' && !(cliente.direccion?.calle?.trim())) {
           nextErrors = setFieldError(nextErrors, 'direccion.calle', 'La calle es obligatoria para delivery');
+        }
+        if (tipoEntrega === 'delivery' && !(cliente.direccion?.entreCalles?.trim())) {
+          nextErrors = setFieldError(nextErrors, 'direccion.entreCalles', 'Indicá entre qué calles se encuentra el domicilio.');
         }
 
         if (tipoPedido === 'programado' && !horaProgramada) {
@@ -596,6 +607,7 @@ export const useNuevoPedido = () => {
     const direccionCompleta = formatDireccionEntrega({
       calle: cliente.direccion?.calle,
       numero: cliente.direccion?.numero,
+      entreCalles: cliente.direccion?.entreCalles,
       edificio: cliente.direccion?.edificio,
       piso: cliente.direccion?.piso
     });

@@ -1,37 +1,42 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, MessageCircle, RefreshCw, RotateCcw, Save, Wifi, WifiOff } from 'lucide-react';
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  MessageCircle,
+  RefreshCw,
+  RotateCcw,
+  Save,
+  Wifi,
+  WifiOff,
+} from 'lucide-react';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useWhatsAppConfig } from '@/hooks/configuracion/useWhatsAppConfig';
 import { WhatsAppPlantillaEditor } from '@/components/configuracion/WhatsAppPlantillaEditor';
-import { WhatsAppClienteAlLocalEditor } from '@/components/configuracion/WhatsAppClienteAlLocalEditor';
-import { TEMPLATE_GROUPS } from '@/lib/whatsappTemplateUtils';
+import { TEMPLATE_GROUPS, formatNumeroWhatsAppDisplay } from '@/lib/whatsappTemplateUtils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-function ToggleSwitch({ checked, onChange, disabled, label }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={() => onChange(!checked)}
-      disabled={disabled}
-      className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition ${
-        checked ? 'bg-blue-600' : 'bg-slate-300'
-      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-    >
-      <span
-        className={`inline-block h-5 w-5 transform rounded-full bg-card transition ${
-          checked ? 'translate-x-6' : 'translate-x-1'
-        }`}
-      />
-    </button>
-  );
-}
+const MODO_OPTIONS = [
+  {
+    id: 'local_a_cliente',
+    title: 'El local envía confirmaciones automáticas al cliente',
+    description: 'WhatsApp vía Baileys al teléfono del cliente cuando entra un pedido web.',
+  },
+  {
+    id: 'cliente_a_local',
+    title: 'El cliente envía el resumen del pedido al local',
+    description: 'La carta abre WhatsApp con el mensaje armado hacia el número del local.',
+  },
+  {
+    id: 'desactivado',
+    title: 'Desactivado',
+    description: 'Solo se crea el pedido en el sistema; sin mensajes WhatsApp.',
+  },
+];
 
 function estadoBadge(waEstado, polling, waQr) {
   if (waEstado.connected) {
@@ -58,12 +63,12 @@ export function WhatsAppIntegracionTab() {
     polling,
     settingsLocal,
     plantillaErrors,
-    clienteAlLocalErrors,
     hasPlantillaErrors,
-    hasClienteAlLocalErrors,
+    modoPedidosWeb,
+    plantillasActivas,
+    setModoPedidosWeb,
     setSettingsLocal,
     setPlantilla,
-    setTemplateClienteAlLocal,
     restaurarPlantilla,
     restaurarTodasPlantillas,
     cargarTodo,
@@ -75,6 +80,13 @@ export function WhatsAppIntegracionTab() {
   const badge = estadoBadge(waEstado, polling, waQr);
   const nombreLocal = settingsLocal.nombreNegocio || 'El Chalito';
   const disabled = loading || guardando;
+  const plantillasDisabled = disabled || modoPedidosWeb === 'desactivado';
+  const editorVariant =
+    modoPedidosWeb === 'cliente_a_local' ? 'cliente_a_local' : 'local_a_cliente';
+
+  const numeroDisplay = formatNumeroWhatsAppDisplay(settingsLocal.numeroContactoResuelto);
+  const sinNumero =
+    modoPedidosWeb === 'cliente_a_local' && !settingsLocal.numeroContactoResuelto;
 
   const toggleGroup = (groupId) => {
     setOpenGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
@@ -154,30 +166,59 @@ export function WhatsAppIntegracionTab() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <MessageCircle className="h-5 w-5 text-green-700" />
-            Notificaciones de pedidos web
+            Pedidos web por WhatsApp
           </CardTitle>
           <CardDescription>
-            Personalizá los mensajes que se envían al cliente según la forma de pago y si el pedido es retiro o envío.
-            Usá las variables para insertar el número de pedido (<code>{'{{id}}'}</code>), el detalle de productos (
-            <code>{'{{contenido}}'}</code>) y el total (<code>{'{{total}}'}</code>). El nombre del local se inserta con{' '}
-            <code>{'{{local}}'}</code>.
+            El pedido siempre se crea en el sistema. WhatsApp es complementario para confirmar o enviar
+            el resumen según el modo elegido.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
-            <div>
-              <p className="text-sm font-semibold text-foreground">Enviar notificaciones WhatsApp</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Si está desactivado, los pedidos se crean igual pero no se envía mensaje.
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-semibold text-foreground">Modo de WhatsApp para pedidos web</legend>
+            {MODO_OPTIONS.map((option) => (
+              <label
+                key={option.id}
+                className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${
+                  modoPedidosWeb === option.id
+                    ? 'border-blue-500 bg-blue-50/50'
+                    : 'border-border hover:bg-muted/40'
+                } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name="wa-modo-pedidos"
+                  className="mt-1"
+                  checked={modoPedidosWeb === option.id}
+                  disabled={disabled}
+                  onChange={() => setModoPedidosWeb(option.id)}
+                />
+                <span>
+                  <span className="text-sm font-semibold text-foreground">{option.title}</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">{option.description}</span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+
+          <div className="rounded-lg border border-border bg-muted/30 p-3">
+            <p className="text-sm font-semibold text-foreground">Número usado</p>
+            {numeroDisplay ? (
+              <p className="mt-1 text-sm text-foreground">{numeroDisplay}</p>
+            ) : (
+              <p className="mt-1 text-sm text-muted-foreground">Sin número configurado</p>
+            )}
+          </div>
+
+          {sinNumero ? (
+            <div className="flex gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+              <AlertTriangle className="h-5 w-5 shrink-0" />
+              <p>
+                No hay número de WhatsApp disponible para recibir pedidos. Conectá WhatsApp arriba o
+                configurá el número en el servidor.
               </p>
             </div>
-            <ToggleSwitch
-              checked={Boolean(settingsLocal.notificacionesActivas)}
-              onChange={(v) => setSettingsLocal((s) => ({ ...s, notificacionesActivas: v }))}
-              disabled={disabled}
-              label="Notificaciones activas"
-            />
-          </div>
+          ) : null}
 
           <div className="space-y-1">
             <Label htmlFor="wa-alias">Alias transferencia</Label>
@@ -191,19 +232,21 @@ export function WhatsAppIntegracionTab() {
               placeholder="ej. elchalito.mp"
             />
             <p className="text-xs text-muted-foreground">
-              Se inserta con <code>{'{{alias}}'}</code> en plantillas de transferencia. Mercado Pago y credenciales de
-              pago se configuran solo en el servidor (desarrollo).
+              Se usa en plantillas de transferencia (<code>{'{{alias}}'}</code> o{' '}
+              <code>{'{{bloque_transferencia}}'}</code>).
             </p>
           </div>
 
-          <div className="rounded-lg border border-border">
+          <div
+            className={`rounded-lg border border-border ${plantillasDisabled ? 'opacity-60' : ''}`}
+          >
             <div className="flex items-center justify-between gap-2 px-3 py-2.5">
               <button
                 type="button"
                 className="flex flex-1 items-center justify-between gap-2 text-left text-sm font-semibold text-foreground hover:opacity-80"
                 onClick={() => setPlantillasOpen((o) => !o)}
               >
-                Plantillas de mensajes
+                Plantillas de mensajes (6)
                 {plantillasOpen ? (
                   <ChevronUp className="h-4 w-4 shrink-0" />
                 ) : (
@@ -216,53 +259,62 @@ export function WhatsAppIntegracionTab() {
                 size="sm"
                 className="shrink-0 text-xs"
                 onClick={restaurarTodasPlantillas}
-                disabled={disabled}
+                disabled={plantillasDisabled}
               >
                 <RotateCcw className="h-3 w-3 mr-1" />
-                Restaurar todas
+                Restaurar de este modo
               </Button>
             </div>
 
             {plantillasOpen ? (
               <div className="space-y-3 border-t border-border p-3">
-                {loading && !settingsLocal.plantillas ? (
+                {modoPedidosWeb === 'desactivado' ? (
+                  <p className="text-sm text-muted-foreground">
+                    Activá un modo para editar las plantillas correspondientes.
+                  </p>
+                ) : null}
+
+                {loading && !plantillasActivas ? (
                   <p className="text-sm text-muted-foreground">Cargando plantillas…</p>
                 ) : null}
 
-                {TEMPLATE_GROUPS.map((group) => (
-                  <div key={group.id} className="rounded-lg border border-border">
-                    <button
-                      type="button"
-                      className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm font-semibold text-foreground hover:bg-muted/60"
-                      onClick={() => toggleGroup(group.id)}
-                    >
-                      {group.label}
-                      {openGroups[group.id] ? (
-                        <ChevronUp className="h-4 w-4 shrink-0" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 shrink-0" />
-                      )}
-                    </button>
+                {modoPedidosWeb !== 'desactivado'
+                  ? TEMPLATE_GROUPS.map((group) => (
+                      <div key={group.id} className="rounded-lg border border-border">
+                        <button
+                          type="button"
+                          className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm font-semibold text-foreground hover:bg-muted/60"
+                          onClick={() => toggleGroup(group.id)}
+                        >
+                          {group.label}
+                          {openGroups[group.id] ? (
+                            <ChevronUp className="h-4 w-4 shrink-0" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 shrink-0" />
+                          )}
+                        </button>
 
-                    {openGroups[group.id] ? (
-                      <div className="space-y-3 border-t border-border p-3">
-                        {group.keys.map((templateKey) => (
-                          <WhatsAppPlantillaEditor
-                            key={templateKey}
-                            templateKey={templateKey}
-                            value={settingsLocal.plantillas?.[templateKey] || ''}
-                            onChange={(text) => setPlantilla(templateKey, text)}
-                            onRestore={() => restaurarPlantilla(templateKey)}
-                            disabled={disabled}
-                            nombreNegocio={nombreLocal}
-                            aliasTransferencia={settingsLocal.aliasTransferencia}
-                            serverErrors={plantillaErrors[templateKey] || []}
-                          />
-                        ))}
+                        {openGroups[group.id] ? (
+                          <div className="space-y-3 border-t border-border p-3">
+                            {group.keys.map((templateKey) => (
+                              <WhatsAppPlantillaEditor
+                                key={`${modoPedidosWeb}-${templateKey}`}
+                                templateKey={templateKey}
+                                variant={editorVariant}
+                                value={plantillasActivas?.[templateKey] || ''}
+                                onChange={(text) => setPlantilla(templateKey, text)}
+                                onRestore={() => restaurarPlantilla(templateKey)}
+                                disabled={plantillasDisabled}
+                                nombreNegocio={nombreLocal}
+                                aliasTransferencia={settingsLocal.aliasTransferencia}
+                                serverErrors={plantillaErrors[templateKey] || []}
+                              />
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
-                    ) : null}
-                  </div>
-                ))}
+                    ))
+                  : null}
               </div>
             ) : null}
           </div>
@@ -271,81 +323,7 @@ export function WhatsAppIntegracionTab() {
             <Button
               type="button"
               onClick={guardarSettings}
-              disabled={disabled || hasPlantillaErrors || hasClienteAlLocalErrors}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {guardando ? 'Guardando...' : 'Guardar configuración'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-border">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <MessageCircle className="h-5 w-5 text-green-700" />
-            Carta online — mensaje del cliente al local
-          </CardTitle>
-          <CardDescription>
-            Cuando un cliente finaliza un pedido en la carta web, puede abrir WhatsApp hacia el local con el
-            resumen. El alias de transferencia usa el mismo valor configurado arriba (
-            <code>{'{{alias}}'}</code> / <code>{'{{bloque_transferencia}}'}</code>).
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
-            <div>
-              <p className="text-sm font-semibold text-foreground">Cliente envía pedido por WhatsApp</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                El pedido se crea igual en el sistema; esto solo abre WhatsApp con el mensaje armado.
-              </p>
-            </div>
-            <ToggleSwitch
-              checked={Boolean(settingsLocal.clienteEnviaAlLocal)}
-              onChange={(v) => setSettingsLocal((s) => ({ ...s, clienteEnviaAlLocal: v }))}
-              disabled={disabled}
-              label="Cliente envía al local"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label htmlFor="wa-numero-contacto">Número WhatsApp del local (wa.me)</Label>
-            <Input
-              id="wa-numero-contacto"
-              value={settingsLocal.numeroContacto || ''}
-              onChange={(e) =>
-                setSettingsLocal((s) => ({ ...s, numeroContacto: e.target.value }))
-              }
-              disabled={disabled}
-              placeholder="5492302633818"
-            />
-            <p className="text-xs text-muted-foreground">
-              Solo dígitos, con código de país. Si queda vacío, se usa el número de la sesión Baileys vinculada.
-            </p>
-          </div>
-
-          <WhatsAppClienteAlLocalEditor
-            value={settingsLocal.templateClienteAlLocal || ''}
-            defaultValue={settingsLocal.templateClienteAlLocalDefault || ''}
-            onChange={setTemplateClienteAlLocal}
-            onRestore={() =>
-              setSettingsLocal((s) => ({
-                ...s,
-                templateClienteAlLocal: s.templateClienteAlLocalDefault || '',
-              }))
-            }
-            disabled={disabled}
-            nombreNegocio={nombreLocal}
-            aliasTransferencia={settingsLocal.aliasTransferencia}
-            serverErrors={clienteAlLocalErrors}
-          />
-
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              onClick={guardarSettings}
-              disabled={disabled || hasPlantillaErrors || hasClienteAlLocalErrors}
+              disabled={disabled || hasPlantillaErrors}
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               <Save className="h-4 w-4 mr-2" />

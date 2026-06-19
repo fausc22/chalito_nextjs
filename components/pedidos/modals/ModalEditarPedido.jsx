@@ -253,6 +253,7 @@ export function ModalEditarPedido({
     }));
     clearInlineError('direccion.calle');
     clearInlineError('direccion.numero');
+    clearInlineError('direccion.entreCalles');
     clearInlineError('direccion.edificio');
     clearInlineError('direccion.piso');
   };
@@ -294,6 +295,7 @@ export function ModalEditarPedido({
     if (tipoEntrega === 'delivery' && clienteData.ultima_direccion) {
       clearInlineError('direccion.calle');
       clearInlineError('direccion.numero');
+      clearInlineError('direccion.entreCalles');
     }
   };
 
@@ -698,6 +700,19 @@ export function ModalEditarPedido({
                     <FieldError error={fieldErrors?.direccion?.numero} id="direccion-numero-error" />
                   </div>
 
+                  <div className="col-span-2 sm:col-span-1">
+                    <Label className="text-xs font-medium">Entre calles *</Label>
+                    <Input
+                      value={cliente.direccion.entreCalles}
+                      onChange={(e) => updateClienteField('direccion.entreCalles', sanitizeDireccion(e.target.value).slice(0, 80))}
+                      placeholder="Ej: 20 y 22"
+                      className="mt-1 h-8 text-sm"
+                      maxLength={80}
+                      {...getInputErrorProps(fieldErrors, 'direccion.entreCalles').inputProps}
+                    />
+                    <FieldError error={fieldErrors?.direccion?.entreCalles} id="direccion-entreCalles-error" />
+                  </div>
+
                   <div>
                     <Label className="text-xs font-medium">Edificio/Casa</Label>
                     <Input
@@ -973,6 +988,7 @@ export function ModalEditarPedido({
                     {formatDireccionEntrega({
                       calle: cliente.direccion.calle,
                       numero: cliente.direccion.numero,
+                      entreCalles: cliente.direccion.entreCalles,
                       edificio: cliente.direccion.edificio,
                       piso: cliente.direccion.piso,
                     })}
