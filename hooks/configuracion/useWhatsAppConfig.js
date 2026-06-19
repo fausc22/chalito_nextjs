@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { whatsappService } from '@/services/whatsappService';
 import { hasValidationErrors, validateAllPlantillas } from '@/lib/whatsappTemplateUtils';
+import { validateClienteAlLocalTemplate } from '@/lib/whatsappClienteAlLocalUtils';
 
 const EMPTY_SETTINGS = {
   notificacionesActivas: true,
@@ -8,6 +9,10 @@ const EMPTY_SETTINGS = {
   nombreNegocio: '',
   plantillas: {},
   plantillasDefault: {},
+  clienteEnviaAlLocal: false,
+  numeroContacto: '',
+  templateClienteAlLocal: '',
+  templateClienteAlLocalDefault: '',
 };
 
 export function useWhatsAppConfig(notification) {
@@ -20,6 +25,7 @@ export function useWhatsAppConfig(notification) {
   const [loading, setLoading] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [plantillaErrors, setPlantillaErrors] = useState({});
+  const [clienteAlLocalErrors, setClienteAlLocalErrors] = useState([]);
 
   const validationErrors = useMemo(
     () => validateAllPlantillas(settingsLocal.plantillas),
@@ -27,6 +33,7 @@ export function useWhatsAppConfig(notification) {
   );
 
   const hasPlantillaErrors = hasValidationErrors(validationErrors);
+  const hasClienteAlLocalErrors = clienteAlLocalErrors.length > 0;
 
   const refrescarEstado = useCallback(async () => {
     const result = await whatsappService.obtenerEstado();
@@ -48,6 +55,7 @@ export function useWhatsAppConfig(notification) {
     setSettings(result.data);
     setSettingsLocal(result.data);
     setPlantillaErrors({});
+    setClienteAlLocalErrors([]);
   }, [notification]);
 
   const cargarPreviews = useCallback(async () => {
@@ -132,6 +140,14 @@ export function useWhatsAppConfig(notification) {
     });
   }, []);
 
+  const setTemplateClienteAlLocal = useCallback((value) => {
+    setSettingsLocal((prev) => ({
+      ...prev,
+      templateClienteAlLocal: value,
+    }));
+    setClienteAlLocalErrors([]);
+  }, []);
+
   const restaurarPlantilla = useCallback((templateKey) => {
     setSettingsLocal((prev) => ({
       ...prev,
@@ -158,9 +174,19 @@ export function useWhatsAppConfig(notification) {
 
   const guardarSettings = async () => {
     const localErrors = validateAllPlantillas(settingsLocal.plantillas);
+    const clienteTemplateErrors = validateClienteAlLocalTemplate(
+      settingsLocal.templateClienteAlLocal
+    );
     if (hasValidationErrors(localErrors)) {
       setPlantillaErrors(localErrors);
       notification?.showError?.('Revisá las plantillas: faltan placeholders obligatorios');
+      return false;
+    }
+    if (clienteTemplateErrors.length > 0) {
+      setClienteAlLocalErrors(clienteTemplateErrors);
+      notification?.showError?.(
+        'Revisá la plantilla del cliente al local: faltan placeholders obligatorios'
+      );
       return false;
     }
 
@@ -169,6 +195,9 @@ export function useWhatsAppConfig(notification) {
       notificacionesActivas: settingsLocal.notificacionesActivas,
       aliasTransferencia: settingsLocal.aliasTransferencia,
       plantillas: settingsLocal.plantillas,
+      clienteEnviaAlLocal: settingsLocal.clienteEnviaAlLocal,
+      numeroContacto: settingsLocal.numeroContacto,
+      templateClienteAlLocal: settingsLocal.templateClienteAlLocal,
     });
     setGuardando(false);
 
@@ -184,6 +213,7 @@ export function useWhatsAppConfig(notification) {
     setSettings(result.data);
     setSettingsLocal(result.data);
     setPlantillaErrors({});
+    setClienteAlLocalErrors([]);
     await cargarPreviews();
     return true;
   };
@@ -198,10 +228,13 @@ export function useWhatsAppConfig(notification) {
     settingsLocal,
     previews,
     plantillaErrors,
+    clienteAlLocalErrors,
     validationErrors,
     hasPlantillaErrors,
+    hasClienteAlLocalErrors,
     setSettingsLocal,
     setPlantilla,
+    setTemplateClienteAlLocal,
     restaurarPlantilla,
     restaurarTodasPlantillas,
     refrescarEstado,
