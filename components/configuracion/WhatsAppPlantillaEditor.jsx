@@ -10,6 +10,11 @@ import {
   isTransferenciaKey,
   validateTemplate,
 } from '@/lib/whatsappTemplateUtils';
+import {
+  CLIENTE_AL_LOCAL_PLACEHOLDER_CHIPS,
+  buildClienteAlLocalPreview,
+  validateClienteAlLocalTemplate,
+} from '@/lib/whatsappClienteAlLocalUtils';
 
 export function WhatsAppPlantillaEditor({
   templateKey,
@@ -20,25 +25,42 @@ export function WhatsAppPlantillaEditor({
   nombreNegocio,
   aliasTransferencia,
   serverErrors = [],
+  variant = 'local_a_cliente',
 }) {
   const textareaRef = useRef(null);
+  const isClienteLocal = variant === 'cliente_a_local';
 
-  const localErrors = useMemo(() => validateTemplate(templateKey, value), [templateKey, value]);
+  const localErrors = useMemo(() => {
+    if (isClienteLocal) {
+      return validateClienteAlLocalTemplate(value);
+    }
+    return validateTemplate(templateKey, value);
+  }, [isClienteLocal, templateKey, value]);
+
   const errors = serverErrors.length > 0 ? serverErrors : localErrors;
   const hasErrors = errors.length > 0;
 
-  const previewText = useMemo(
-    () =>
-      buildPreviewText(value, {
+  const previewText = useMemo(() => {
+    if (isClienteLocal) {
+      return buildClienteAlLocalPreview(value, {
         nombreNegocio,
         aliasTransferencia,
-      }),
-    [value, nombreNegocio, aliasTransferencia]
-  );
+      });
+    }
+    return buildPreviewText(value, {
+      nombreNegocio,
+      aliasTransferencia,
+    });
+  }, [isClienteLocal, value, nombreNegocio, aliasTransferencia]);
 
-  const chips = isTransferenciaKey(templateKey)
-    ? PLACEHOLDER_CHIPS
-    : PLACEHOLDER_CHIPS.filter((chip) => chip.key !== 'alias');
+  const chips = useMemo(() => {
+    if (isClienteLocal) {
+      return CLIENTE_AL_LOCAL_PLACEHOLDER_CHIPS;
+    }
+    return isTransferenciaKey(templateKey)
+      ? PLACEHOLDER_CHIPS
+      : PLACEHOLDER_CHIPS.filter((chip) => chip.key !== 'alias');
+  }, [isClienteLocal, templateKey]);
 
   const handleInsertChip = (token) => {
     const textarea = textareaRef.current;
@@ -93,7 +115,7 @@ export function WhatsAppPlantillaEditor({
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         error={hasErrors}
-        rows={8}
+        rows={isClienteLocal ? 10 : 8}
         className="font-mono text-xs"
         placeholder="Escribí el mensaje usando las variables..."
       />

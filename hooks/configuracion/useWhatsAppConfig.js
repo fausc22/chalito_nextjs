@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { whatsappService } from '@/services/whatsappService';
-import { hasValidationErrors, validateAllPlantillas } from '@/lib/whatsappTemplateUtils';
+import {
+  deriveModoPedidosWeb,
+  getPlantillasDefaultForModo,
+  getPlantillasMapForModo,
+  hasValidationErrors,
+  modoToFlags,
+  TEMPLATE_KEYS,
+  validateAllPlantillas,
+} from '@/lib/whatsappTemplateUtils';
 import { validateClienteAlLocalTemplate } from '@/lib/whatsappClienteAlLocalUtils';
 
 const EMPTY_SETTINGS = {
@@ -9,10 +17,26 @@ const EMPTY_SETTINGS = {
   nombreNegocio: '',
   plantillas: {},
   plantillasDefault: {},
+  plantillasClienteLocal: {},
+  plantillasClienteLocalDefault: {},
   clienteEnviaAlLocal: false,
   numeroContacto: '',
   templateClienteAlLocal: '',
   templateClienteAlLocalDefault: '',
+  modoPedidosWeb: 'desactivado',
+  numeroContactoResuelto: null,
+  numeroContactoFuente: null,
+};
+
+const validateClienteLocalPlantillas = (plantillas = {}) => {
+  const errors = {};
+  for (const key of TEMPLATE_KEYS) {
+    const keyErrors = validateClienteAlLocalTemplate(plantillas[key]);
+    if (keyErrors.length > 0) {
+      errors[key] = keyErrors;
+    }
+  }
+  return errors;
 };
 
 export function useWhatsAppConfig(notification) {
@@ -25,15 +49,32 @@ export function useWhatsAppConfig(notification) {
   const [loading, setLoading] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [plantillaErrors, setPlantillaErrors] = useState({});
-  const [clienteAlLocalErrors, setClienteAlLocalErrors] = useState([]);
 
-  const validationErrors = useMemo(
-    () => validateAllPlantillas(settingsLocal.plantillas),
-    [settingsLocal.plantillas]
+  const modoPedidosWeb = useMemo(
+    () =>
+      deriveModoPedidosWeb({
+        notificacionesActivas: settingsLocal.notificacionesActivas,
+        clienteEnviaAlLocal: settingsLocal.clienteEnviaAlLocal,
+      }),
+    [settingsLocal.notificacionesActivas, settingsLocal.clienteEnviaAlLocal]
   );
 
+  const plantillasActivas = useMemo(
+    () => getPlantillasMapForModo(settingsLocal, modoPedidosWeb),
+    [settingsLocal, modoPedidosWeb]
+  );
+
+  const validationErrors = useMemo(() => {
+    if (modoPedidosWeb === 'local_a_cliente') {
+      return validateAllPlantillas(settingsLocal.plantillas);
+    }
+    if (modoPedidosWeb === 'cliente_a_local') {
+      return validateClienteLocalPlantillas(settingsLocal.plantillasClienteLocal);
+    }
+    return {};
+  }, [modoPedidosWeb, settingsLocal.plantillas, settingsLocal.plantillasClienteLocal]);
+
   const hasPlantillaErrors = hasValidationErrors(validationErrors);
-  const hasClienteAlLocalErrors = clienteAlLocalErrors.length > 0;
 
   const refrescarEstado = useCallback(async () => {
     const result = await whatsappService.obtenerEstado();
@@ -55,7 +96,6 @@ export function useWhatsAppConfig(notification) {
     setSettings(result.data);
     setSettingsLocal(result.data);
     setPlantillaErrors({});
-    setClienteAlLocalErrors([]);
   }, [notification]);
 
   const cargarPreviews = useCallback(async () => {
@@ -87,6 +127,7 @@ export function useWhatsAppConfig(notification) {
         setWaQr(null);
         notification?.showSuccess?.('WhatsApp conectado');
         await refrescarEstado();
+        await cargarSettings();
         return;
       }
 
@@ -98,7 +139,7 @@ export function useWhatsAppConfig(notification) {
     poll();
     const id = setInterval(poll, 3000);
     return () => clearInterval(id);
-  }, [polling, refrescarEstado, notification]);
+  }, [polling, refrescarEstado, cargarSettings, notification]);
 
   const conectar = async () => {
     const result = await whatsappService.conectar();
@@ -122,71 +163,82 @@ export function useWhatsAppConfig(notification) {
     }
     notification?.showSuccess?.(result.message || 'WhatsApp desconectado');
     await refrescarEstado();
+    await cargarSettings();
   };
 
-  const setPlantilla = useCallback((templateKey, value) => {
+  const setModoPedidosWeb = useCallback((modo) => {
+    const flags = modoToFlags(modo);
     setSettingsLocal((prev) => ({
       ...prev,
-      plantillas: {
-        ...(prev.plantillas || {}),
-        [templateKey]: value,
-      },
-    }));
-    setPlantillaErrors((prev) => {
-      if (!prev[templateKey]) return prev;
-      const next = { ...prev };
-      delete next[templateKey];
-      return next;
-    });
-  }, []);
-
-  const setTemplateClienteAlLocal = useCallback((value) => {
-    setSettingsLocal((prev) => ({
-      ...prev,
-      templateClienteAlLocal: value,
-    }));
-    setClienteAlLocalErrors([]);
-  }, []);
-
-  const restaurarPlantilla = useCallback((templateKey) => {
-    setSettingsLocal((prev) => ({
-      ...prev,
-      plantillas: {
-        ...(prev.plantillas || {}),
-        [templateKey]: prev.plantillasDefault?.[templateKey] || '',
-      },
-    }));
-    setPlantillaErrors((prev) => {
-      if (!prev[templateKey]) return prev;
-      const next = { ...prev };
-      delete next[templateKey];
-      return next;
-    });
-  }, []);
-
-  const restaurarTodasPlantillas = useCallback(() => {
-    setSettingsLocal((prev) => ({
-      ...prev,
-      plantillas: { ...(prev.plantillasDefault || {}) },
+      ...flags,
     }));
     setPlantillaErrors({});
   }, []);
 
+  const setPlantilla = useCallback(
+    (templateKey, value) => {
+      if (modoPedidosWeb === 'cliente_a_local') {
+        setSettingsLocal((prev) => ({
+          ...prev,
+          plantillasClienteLocal: {
+            ...(prev.plantillasClienteLocal || {}),
+            [templateKey]: value,
+          },
+        }));
+      } else {
+        setSettingsLocal((prev) => ({
+          ...prev,
+          plantillas: {
+            ...(prev.plantillas || {}),
+            [templateKey]: value,
+          },
+        }));
+      }
+      setPlantillaErrors((prev) => {
+        if (!prev[templateKey]) return prev;
+        const next = { ...prev };
+        delete next[templateKey];
+        return next;
+      });
+    },
+    [modoPedidosWeb]
+  );
+
+  const restaurarPlantilla = useCallback(
+    (templateKey) => {
+      const defaults = getPlantillasDefaultForModo(settingsLocal, modoPedidosWeb);
+      setPlantilla(templateKey, defaults[templateKey] || '');
+    },
+    [modoPedidosWeb, settingsLocal, setPlantilla]
+  );
+
+  const restaurarTodasPlantillas = useCallback(() => {
+    const defaults = getPlantillasDefaultForModo(settingsLocal, modoPedidosWeb);
+    if (modoPedidosWeb === 'cliente_a_local') {
+      setSettingsLocal((prev) => ({
+        ...prev,
+        plantillasClienteLocal: { ...defaults },
+      }));
+    } else {
+      setSettingsLocal((prev) => ({
+        ...prev,
+        plantillas: { ...defaults },
+      }));
+    }
+    setPlantillaErrors({});
+  }, [modoPedidosWeb, settingsLocal]);
+
   const guardarSettings = async () => {
-    const localErrors = validateAllPlantillas(settingsLocal.plantillas);
-    const clienteTemplateErrors = validateClienteAlLocalTemplate(
-      settingsLocal.templateClienteAlLocal
-    );
+    const localErrors =
+      modoPedidosWeb === 'local_a_cliente'
+        ? validateAllPlantillas(settingsLocal.plantillas)
+        : modoPedidosWeb === 'cliente_a_local'
+          ? validateClienteLocalPlantillas(settingsLocal.plantillasClienteLocal)
+          : {};
+
     if (hasValidationErrors(localErrors)) {
       setPlantillaErrors(localErrors);
       notification?.showError?.('Revisá las plantillas: faltan placeholders obligatorios');
-      return false;
-    }
-    if (clienteTemplateErrors.length > 0) {
-      setClienteAlLocalErrors(clienteTemplateErrors);
-      notification?.showError?.(
-        'Revisá la plantilla del cliente al local: faltan placeholders obligatorios'
-      );
       return false;
     }
 
@@ -195,9 +247,8 @@ export function useWhatsAppConfig(notification) {
       notificacionesActivas: settingsLocal.notificacionesActivas,
       aliasTransferencia: settingsLocal.aliasTransferencia,
       plantillas: settingsLocal.plantillas,
+      plantillasClienteLocal: settingsLocal.plantillasClienteLocal,
       clienteEnviaAlLocal: settingsLocal.clienteEnviaAlLocal,
-      numeroContacto: settingsLocal.numeroContacto,
-      templateClienteAlLocal: settingsLocal.templateClienteAlLocal,
     });
     setGuardando(false);
 
@@ -213,7 +264,6 @@ export function useWhatsAppConfig(notification) {
     setSettings(result.data);
     setSettingsLocal(result.data);
     setPlantillaErrors({});
-    setClienteAlLocalErrors([]);
     await cargarPreviews();
     return true;
   };
@@ -228,13 +278,13 @@ export function useWhatsAppConfig(notification) {
     settingsLocal,
     previews,
     plantillaErrors,
-    clienteAlLocalErrors,
     validationErrors,
     hasPlantillaErrors,
-    hasClienteAlLocalErrors,
+    modoPedidosWeb,
+    plantillasActivas,
     setSettingsLocal,
+    setModoPedidosWeb,
     setPlantilla,
-    setTemplateClienteAlLocal,
     restaurarPlantilla,
     restaurarTodasPlantillas,
     refrescarEstado,

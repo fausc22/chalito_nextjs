@@ -92,6 +92,7 @@ export const useEditarPedido = () => {
     direccion: {
       calle: '',
       numero: '',
+      entreCalles: '',
       edificio: '',
       piso: '',
       observaciones: ''
@@ -204,6 +205,7 @@ export const useEditarPedido = () => {
           direccion: {
             calle: dir.calle,
             numero: dir.altura,
+            entreCalles: dir.entreCalles,
             edificio: dir.edificioCasa,
             piso: dir.pisoDepto,
             observaciones: pedido.tipoEntrega === 'delivery' ? (pedido.observaciones || '') : ''
@@ -306,6 +308,7 @@ export const useEditarPedido = () => {
       direccion: {
         calle: '',
         numero: '',
+        entreCalles: '',
         edificio: '',
         piso: '',
         observaciones: ''
@@ -572,6 +575,9 @@ export const useEditarPedido = () => {
     if (tipoEntregaActual === 'delivery' && !(clienteActual.direccion?.calle?.trim())) {
       nextErrors = setFieldError(nextErrors, 'direccion.calle', 'La calle es obligatoria para delivery');
     }
+    if (tipoEntregaActual === 'delivery' && !(clienteActual.direccion?.entreCalles?.trim())) {
+      nextErrors = setFieldError(nextErrors, 'direccion.entreCalles', 'Indicá entre qué calles se encuentra el domicilio.');
+    }
 
     if (tipoPedido === 'programado' && !horaProgramada) {
       nextErrors = setFieldError(nextErrors, 'horaProgramada', 'Debes indicar una hora programada');
@@ -586,6 +592,9 @@ export const useEditarPedido = () => {
 
     if (tipoEntregaActual === 'delivery' && !(clienteActual.direccion?.calle?.trim())) {
       return { valid: false, mensaje: 'Calle: La calle es requerida para delivery.' };
+    }
+    if (tipoEntregaActual === 'delivery' && !(clienteActual.direccion?.entreCalles?.trim())) {
+      return { valid: false, mensaje: 'Entre calles: Indicá entre qué calles se encuentra el domicilio.' };
     }
 
     if (tipoPedido === 'programado' && !horaProgramada) {
@@ -628,6 +637,9 @@ export const useEditarPedido = () => {
 
         if (tipoEntrega === 'delivery' && !(cliente.direccion?.calle?.trim())) {
           nextErrors = setFieldError(nextErrors, 'direccion.calle', 'La calle es obligatoria para delivery');
+        }
+        if (tipoEntrega === 'delivery' && !(cliente.direccion?.entreCalles?.trim())) {
+          nextErrors = setFieldError(nextErrors, 'direccion.entreCalles', 'Indicá entre qué calles se encuentra el domicilio.');
         }
 
         if (tipoPedido === 'programado' && !horaProgramada) {
@@ -672,6 +684,7 @@ export const useEditarPedido = () => {
     const direccionCompleta = formatDireccionEntrega({
       calle: cliente.direccion?.calle,
       numero: cliente.direccion?.numero,
+      entreCalles: cliente.direccion?.entreCalles,
       edificio: cliente.direccion?.edificio,
       piso: cliente.direccion?.piso
     });
