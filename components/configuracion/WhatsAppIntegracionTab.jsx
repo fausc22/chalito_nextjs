@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, MessageCircle, RefreshCw, RotateCcw, Save, Wifi
 import { useNotification } from '@/contexts/NotificationContext';
 import { useWhatsAppConfig } from '@/hooks/configuracion/useWhatsAppConfig';
 import { WhatsAppPlantillaEditor } from '@/components/configuracion/WhatsAppPlantillaEditor';
+import { WhatsAppClienteAlLocalEditor } from '@/components/configuracion/WhatsAppClienteAlLocalEditor';
 import { TEMPLATE_GROUPS } from '@/lib/whatsappTemplateUtils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -57,9 +58,12 @@ export function WhatsAppIntegracionTab() {
     polling,
     settingsLocal,
     plantillaErrors,
+    clienteAlLocalErrors,
     hasPlantillaErrors,
+    hasClienteAlLocalErrors,
     setSettingsLocal,
     setPlantilla,
+    setTemplateClienteAlLocal,
     restaurarPlantilla,
     restaurarTodasPlantillas,
     cargarTodo,
@@ -267,7 +271,81 @@ export function WhatsAppIntegracionTab() {
             <Button
               type="button"
               onClick={guardarSettings}
-              disabled={disabled || hasPlantillaErrors}
+              disabled={disabled || hasPlantillaErrors || hasClienteAlLocalErrors}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {guardando ? 'Guardando...' : 'Guardar configuración'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <MessageCircle className="h-5 w-5 text-green-700" />
+            Carta online — mensaje del cliente al local
+          </CardTitle>
+          <CardDescription>
+            Cuando un cliente finaliza un pedido en la carta web, puede abrir WhatsApp hacia el local con el
+            resumen. El alias de transferencia usa el mismo valor configurado arriba (
+            <code>{'{{alias}}'}</code> / <code>{'{{bloque_transferencia}}'}</code>).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Cliente envía pedido por WhatsApp</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                El pedido se crea igual en el sistema; esto solo abre WhatsApp con el mensaje armado.
+              </p>
+            </div>
+            <ToggleSwitch
+              checked={Boolean(settingsLocal.clienteEnviaAlLocal)}
+              onChange={(v) => setSettingsLocal((s) => ({ ...s, clienteEnviaAlLocal: v }))}
+              disabled={disabled}
+              label="Cliente envía al local"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="wa-numero-contacto">Número WhatsApp del local (wa.me)</Label>
+            <Input
+              id="wa-numero-contacto"
+              value={settingsLocal.numeroContacto || ''}
+              onChange={(e) =>
+                setSettingsLocal((s) => ({ ...s, numeroContacto: e.target.value }))
+              }
+              disabled={disabled}
+              placeholder="5492302633818"
+            />
+            <p className="text-xs text-muted-foreground">
+              Solo dígitos, con código de país. Si queda vacío, se usa el número de la sesión Baileys vinculada.
+            </p>
+          </div>
+
+          <WhatsAppClienteAlLocalEditor
+            value={settingsLocal.templateClienteAlLocal || ''}
+            defaultValue={settingsLocal.templateClienteAlLocalDefault || ''}
+            onChange={setTemplateClienteAlLocal}
+            onRestore={() =>
+              setSettingsLocal((s) => ({
+                ...s,
+                templateClienteAlLocal: s.templateClienteAlLocalDefault || '',
+              }))
+            }
+            disabled={disabled}
+            nombreNegocio={nombreLocal}
+            aliasTransferencia={settingsLocal.aliasTransferencia}
+            serverErrors={clienteAlLocalErrors}
+          />
+
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              onClick={guardarSettings}
+              disabled={disabled || hasPlantillaErrors || hasClienteAlLocalErrors}
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               <Save className="h-4 w-4 mr-2" />
