@@ -40,7 +40,14 @@ const validateClienteLocalPlantillas = (plantillas = {}) => {
 };
 
 export function useWhatsAppConfig(notification) {
-  const [waEstado, setWaEstado] = useState({ connected: false, hasQR: false, phone: null });
+  const [waEstado, setWaEstado] = useState({
+    connected: false,
+    hasQR: false,
+    phone: null,
+    reconnecting: false,
+    reconnectAttempts: 0,
+    lastError: null,
+  });
   const [waQr, setWaQr] = useState(null);
   const [polling, setPolling] = useState(false);
   const [settings, setSettings] = useState(EMPTY_SETTINGS);
@@ -83,6 +90,9 @@ export function useWhatsAppConfig(notification) {
         connected: result.connected,
         hasQR: result.hasQR,
         phone: result.phone,
+        reconnecting: result.reconnecting ?? false,
+        reconnectAttempts: result.reconnectAttempts ?? 0,
+        lastError: result.lastError ?? null,
       });
     }
   }, []);

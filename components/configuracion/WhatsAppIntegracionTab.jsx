@@ -42,6 +42,9 @@ function estadoBadge(waEstado, polling, waQr) {
   if (waEstado.connected) {
     return { label: 'Conectado', variant: 'default' };
   }
+  if (waEstado.reconnecting) {
+    return { label: 'Reconectando...', variant: 'secondary' };
+  }
   if (polling || waQr) {
     return { label: 'Esperando QR', variant: 'secondary' };
   }
@@ -85,6 +88,7 @@ export function WhatsAppIntegracionTab() {
     modoPedidosWeb === 'cliente_a_local' ? 'cliente_a_local' : 'local_a_cliente';
 
   const numeroDisplay = formatNumeroWhatsAppDisplay(settingsLocal.numeroContactoResuelto);
+  const telefonoVinculadoDisplay = formatNumeroWhatsAppDisplay(waEstado.phone);
   const sinNumero =
     modoPedidosWeb === 'cliente_a_local' && !settingsLocal.numeroContactoResuelto;
 
@@ -117,7 +121,18 @@ export function WhatsAppIntegracionTab() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {waEstado.connected && waEstado.phone ? (
+          {waEstado.lastError === 'session_expired' ? (
+            <div className="flex gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+              <AlertTriangle className="h-5 w-5 shrink-0" />
+              <p>Sesión expirada. Volvé a conectar WhatsApp escaneando el QR.</p>
+            </div>
+          ) : null}
+
+          {waEstado.connected && telefonoVinculadoDisplay ? (
+            <p className="text-sm text-muted-foreground">
+              Teléfono vinculado: <strong>{telefonoVinculadoDisplay}</strong>
+            </p>
+          ) : waEstado.connected && waEstado.phone ? (
             <p className="text-sm text-muted-foreground">
               Teléfono vinculado: <strong>{waEstado.phone}</strong>
             </p>
@@ -204,7 +219,14 @@ export function WhatsAppIntegracionTab() {
           <div className="rounded-lg border border-border bg-muted/30 p-3">
             <p className="text-sm font-semibold text-foreground">Número usado</p>
             {numeroDisplay ? (
-              <p className="mt-1 text-sm text-foreground">{numeroDisplay}</p>
+              <p className="mt-1 text-sm text-foreground">
+                {numeroDisplay}
+                {settingsLocal.numeroContactoFuente ? (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    (fuente: {settingsLocal.numeroContactoFuente})
+                  </span>
+                ) : null}
+              </p>
             ) : (
               <p className="mt-1 text-sm text-muted-foreground">Sin número configurado</p>
             )}
