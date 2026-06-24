@@ -49,6 +49,7 @@ export const API_CONFIG = {
       CAROUSEL: '/configuracion/tienda-online/carousel',
       CAROUSEL_UPLOAD: '/configuracion/tienda-online/carousel/upload',
       CAROUSEL_SLIDE: (slideId) => `/configuracion/tienda-online/carousel/${slideId}`,
+      ENVIO_GRATIS: '/configuracion/tienda-online/envio-gratis',
     },
     MERCADOPAGO: {
       ESTADO: '/configuracion/mercadopago/estado',

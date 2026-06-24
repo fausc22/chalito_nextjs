@@ -5,9 +5,37 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   CLIENTE_AL_LOCAL_PLACEHOLDER_CHIPS,
   buildClienteAlLocalPreview,
+  formatClienteAlLocalValidationError,
   validateClienteAlLocalTemplate,
 } from '@/lib/whatsappClienteAlLocalUtils';
 import { insertAtCursor } from '@/lib/whatsappTemplateUtils';
+
+function ChipSection({ title, chips, tone, onInsert, disabled }) {
+  const toneClass =
+    tone === 'required'
+      ? 'border-red-200 bg-red-50 text-red-900'
+      : 'border-border bg-muted text-foreground';
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-semibold text-muted-foreground">{title}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {chips.map((chip) => (
+          <button
+            key={chip.token}
+            type="button"
+            disabled={disabled}
+            title={chip.description}
+            onClick={() => onInsert(chip.token)}
+            className={`rounded-md border px-2 py-1 text-xs hover:opacity-90 disabled:opacity-50 ${toneClass}`}
+          >
+            {chip.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function WhatsAppClienteAlLocalEditor({
   value,
@@ -34,6 +62,9 @@ export function WhatsAppClienteAlLocalEditor({
     [value, nombreNegocio, aliasTransferencia]
   );
 
+  const requiredChips = CLIENTE_AL_LOCAL_PLACEHOLDER_CHIPS.filter((chip) => chip.required);
+  const optionalChips = CLIENTE_AL_LOCAL_PLACEHOLDER_CHIPS.filter((chip) => !chip.required);
+
   const handleInsertChip = (token) => {
     const textarea = textareaRef.current;
     if (!textarea) {
@@ -49,7 +80,7 @@ export function WhatsAppClienteAlLocalEditor({
   };
 
   return (
-    <div className="space-y-2 rounded-md border border-border p-3">
+    <div className="space-y-3 rounded-md border border-border p-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-semibold text-foreground">Mensaje del cliente al local</p>
         <Button
@@ -65,18 +96,24 @@ export function WhatsAppClienteAlLocalEditor({
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
-        {CLIENTE_AL_LOCAL_PLACEHOLDER_CHIPS.map((chip) => (
-          <button
-            key={chip.token}
-            type="button"
-            disabled={disabled}
-            onClick={() => handleInsertChip(chip.token)}
-            className="rounded-md border border-border bg-muted px-2 py-0.5 text-xs font-mono text-foreground hover:bg-muted/80 disabled:opacity-50"
-          >
-            {chip.label}
-          </button>
-        ))}
+      <div className="space-y-2 rounded-md border border-border bg-card p-3">
+        <ChipSection
+          title="Campos obligatorios"
+          chips={requiredChips}
+          tone="required"
+          onInsert={handleInsertChip}
+          disabled={disabled}
+        />
+        <ChipSection
+          title="Campos opcionales"
+          chips={optionalChips}
+          tone="optional"
+          onInsert={handleInsertChip}
+          disabled={disabled}
+        />
+        <p className="text-xs text-muted-foreground">
+          Los bloques como &quot;Bloque dirección&quot; se completan solos según el pedido. No cambies sus nombres técnicos si no estás seguro.
+        </p>
       </div>
 
       <Textarea
@@ -85,23 +122,23 @@ export function WhatsAppClienteAlLocalEditor({
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         error={hasErrors}
-        rows={14}
+        rows={12}
         className="font-mono text-xs"
         placeholder="Plantilla del mensaje que el cliente envía al local..."
       />
 
       {hasErrors ? (
-        <ul className="space-y-0.5">
+        <ul className="space-y-1 rounded-md border border-red-200 bg-red-50 p-3">
           {errors.map((error) => (
-            <li key={error} className="text-xs text-red-600">
-              {error}
+            <li key={error} className="text-xs text-red-700">
+              {formatClienteAlLocalValidationError(error)}
             </li>
           ))}
         </ul>
       ) : null}
 
       <div className="space-y-1">
-        <p className="text-xs font-medium text-muted-foreground">Vista previa (ejemplo delivery + transferencia)</p>
+        <p className="text-xs font-semibold text-foreground">Así se verá el mensaje en WhatsApp</p>
         <pre className="whitespace-pre-wrap rounded-md border border-border bg-muted p-3 text-xs text-muted-foreground font-sans">
           {previewText}
         </pre>

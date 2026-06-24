@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TiendaAparienciaTab } from '@/components/configuracion/TiendaAparienciaTab';
+import { EnvioGratisConfig } from '@/components/configuracion/EnvioGratisConfig';
 
 function ToggleSwitch({ checked, onChange, disabled, label }) {
   return (
@@ -362,12 +363,21 @@ export function TiendaOnlineTab() {
         >
           Apariencia tienda
         </TabsTrigger>
+        <TabsTrigger
+          value="envio-gratis"
+          className="rounded-lg px-3 py-1.5 text-sm data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+        >
+          Envío gratis
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="horarios">
         <TiendaOnlineHorariosPanel />
       </TabsContent>
       <TabsContent value="apariencia">
         <TiendaAparienciaTab />
+      </TabsContent>
+      <TabsContent value="envio-gratis">
+        <EnvioGratisConfig />
       </TabsContent>
     </Tabs>
   );

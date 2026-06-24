@@ -285,4 +285,47 @@ export const tiendaOnlineService = {
       };
     }
   },
+
+  async getEnvioGratis() {
+    try {
+      const response = await apiRequest.get(API_CONFIG.ENDPOINTS.TIENDA_ONLINE.ENVIO_GRATIS);
+      if (!response.data?.success) {
+        return {
+          success: false,
+          message: getApiErrorMessage(response, 'Error al obtener envío gratis'),
+        };
+      }
+      return { success: true, data: response.data.data };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Error al obtener envío gratis',
+      };
+    }
+  },
+
+  async updateEnvioGratis(payload) {
+    try {
+      const response = await apiRequest.put(
+        API_CONFIG.ENDPOINTS.TIENDA_ONLINE.ENVIO_GRATIS,
+        payload
+      );
+      if (!response.data?.success) {
+        return {
+          success: false,
+          message: getApiErrorMessage(response, 'Error al guardar envío gratis'),
+        };
+      }
+      return {
+        success: true,
+        message: response.data.message,
+        data: response.data.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Error al guardar envío gratis',
+      };
+    }
+  },
 };
