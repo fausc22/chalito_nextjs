@@ -40,6 +40,54 @@ const normalizeEmpleado = (empleado) => {
   };
 };
 
+const toBoolOrNull = (value) => {
+  if (value === true || value === 1 || value === '1') return true;
+  if (value === false || value === 0 || value === '0') return false;
+  if (typeof value === 'string') {
+    const t = value.trim().toLowerCase();
+    if (t === 'true' || t === 's' || t === 'si' || t === 'yes') return true;
+    if (t === 'false' || t === 'n' || t === 'no') return false;
+  }
+  return null;
+};
+
+const resolveAsistenciaLiquidacionFlags = (asistencia) => {
+  const estaLiquidado = toBoolOrNull(getFirstDefined(
+    asistencia?.esta_liquidado,
+    asistencia?.estaLiquidado,
+    asistencia?.liquidado,
+  ));
+  const puedeAjustarIngreso = toBoolOrNull(getFirstDefined(
+    asistencia?.puede_ajustar_ingreso,
+    asistencia?.puedeAjustarIngreso,
+  ));
+
+  if (puedeAjustarIngreso !== null) {
+    return {
+      estaLiquidado: estaLiquidado === true,
+      puedeAjustarIngreso,
+    };
+  }
+
+  const tieneIngreso = Boolean(getFirstDefined(
+    asistencia?.ingreso,
+    asistencia?.hora_ingreso,
+    asistencia?.fecha_ingreso,
+  ));
+  const tieneEgreso = Boolean(getFirstDefined(
+    asistencia?.egreso,
+    asistencia?.hora_egreso,
+    asistencia?.fecha_egreso,
+  ));
+  const estado = getFirstDefined(asistencia?.estado, asistencia?.status);
+  const turnoAbierto = estado === 'ABIERTO' && !tieneEgreso;
+
+  return {
+    estaLiquidado: estaLiquidado === true,
+    puedeAjustarIngreso: tieneIngreso && turnoAbierto && estaLiquidado !== true,
+  };
+};
+
 const normalizeAsistencia = (asistencia) => {
   const ingresoRaw = getFirstDefined(
     asistencia?.ingreso,
@@ -67,6 +115,8 @@ const normalizeAsistencia = (asistencia) => {
   );
   const empleadoNombrePlano = `${getFirstDefined(asistencia?.empleado_nombre, '') || ''} ${getFirstDefined(asistencia?.empleado_apellido, '') || ''}`.trim();
   const empleadoNombreCompuesto = `${getFirstDefined(asistencia?.empleado?.nombre, '') || ''} ${getFirstDefined(asistencia?.empleado?.apellido, '') || ''}`.trim();
+  const liquidacionFlags = resolveAsistenciaLiquidacionFlags(asistencia);
+  const fechaAsistenciaRaw = getFirstDefined(asistencia?.fecha, asistencia?.fecha_asistencia);
 
   return {
     id: String(getFirstDefined(asistencia?.id, asistencia?.asistencia_id, `${empleadoId || 'x'}-${ingresoRaw || 'sin-ingreso'}`)),
@@ -83,6 +133,8 @@ const normalizeAsistencia = (asistencia) => {
     ) || 'Sin nombre',
     ingreso: toDate(ingresoRaw),
     egreso: toDate(egresoRaw),
+    fechaAsistencia: toDate(fechaAsistenciaRaw) || toDate(ingresoRaw),
+    minutosTrabajados: toNumber(getFirstDefined(asistencia?.minutos_trabajados, asistencia?.minutos)),
     accion: getFirstDefined(asistencia?.accion, asistencia?.tipo_movimiento, asistencia?.tipo, asistencia?.estado) || null,
     registradoPor: getFirstDefined(
       asistencia?.registrado_por_nombre,
@@ -92,6 +144,8 @@ const normalizeAsistencia = (asistencia) => {
       asistencia?.created_by
     ) || 'Sistema',
     estado: getFirstDefined(asistencia?.estado, asistencia?.status) || null,
+    estaLiquidado: liquidacionFlags.estaLiquidado,
+    puedeAjustarIngreso: liquidacionFlags.puedeAjustarIngreso,
     raw: asistencia,
   };
 };
@@ -112,6 +166,35 @@ const diffHours = (fromDate, toDateValue) => {
   const ms = toDateValue.getTime() - fromDate.getTime();
   if (ms <= 0) return 0;
   return ms / (1000 * 60 * 60);
+};
+
+const isTurnoAbierto = (record) =>
+  record?.estado === 'ABIERTO' && !record?.egreso;
+
+const getRecordSortTs = (record) => {
+  const updated = toDate(getFirstDefined(
+    record?.raw?.fecha_actualizacion,
+    record?.raw?.updated_at,
+  ));
+  if (updated) return updated.getTime();
+  const id = Number(record?.id);
+  return Number.isFinite(id) ? id : 0;
+};
+
+/** Elige la asistencia vigente del día: prioriza ABIERTO; si no, la última cerrada/corregida. */
+const resolverAsistenciaActualPorEmpleado = (registros) => {
+  if (!registros?.length) return null;
+
+  const abierta = registros.find(isTurnoAbierto);
+  if (abierta) return abierta;
+
+  const cerradas = registros
+    .filter((record) => record.egreso && ['CERRADO', 'CORREGIDO'].includes(record.estado))
+    .sort((a, b) => getRecordSortTs(b) - getRecordSortTs(a));
+
+  if (cerradas.length > 0) return cerradas[0];
+
+  return [...registros].sort((a, b) => getRecordSortTs(b) - getRecordSortTs(a))[0];
 };
 
 const formatYmd = (date) => {
@@ -205,11 +288,18 @@ export const useAsistencia = () => {
   }, [asistencias]);
 
   const estadoPorEmpleado = useMemo(() => {
-    const map = new Map();
+    const registrosPorEmpleado = new Map();
 
     asistenciaHoy.forEach((record) => {
-      if (!record.empleadoId || map.has(record.empleadoId)) return;
-      map.set(record.empleadoId, record);
+      if (!record.empleadoId) return;
+      const lista = registrosPorEmpleado.get(record.empleadoId) || [];
+      lista.push(record);
+      registrosPorEmpleado.set(record.empleadoId, lista);
+    });
+
+    const map = new Map();
+    registrosPorEmpleado.forEach((registros, empleadoId) => {
+      map.set(empleadoId, resolverAsistenciaActualPorEmpleado(registros));
     });
 
     return map;
@@ -239,6 +329,8 @@ export const useAsistencia = () => {
           asistenciaActual,
           horasTurno,
           estimadoTurno: horasTurno * (empleado.valorHora || 0),
+          puedeAjustarIngreso: Boolean(asistenciaActual?.puedeAjustarIngreso),
+          estaLiquidado: Boolean(asistenciaActual?.estaLiquidado),
           loadingAccion: Boolean(accionesCargando[empleado.id]),
         };
       });
@@ -389,6 +481,36 @@ export const useAsistencia = () => {
     }
   }, [empleados]);
 
+  const ajustarIngreso = useCallback(async (asistenciaId, payload) => {
+    const key = `ajuste-${asistenciaId}`;
+    setAccionesCargando((prev) => ({ ...prev, [key]: true }));
+
+    try {
+      const response = await empleadosService.ajustarIngresoAsistencia(asistenciaId, payload);
+      if (!response.success) {
+        return {
+          success: false,
+          error: response.error || 'No se pudo ajustar la hora de ingreso',
+        };
+      }
+
+      const backendRecord = response.data ? normalizeAsistencia(response.data) : null;
+      if (backendRecord?.empleadoId) {
+        setAsistencias((prev) => {
+          const filtered = prev.filter((item) => item.id !== backendRecord.id);
+          return [backendRecord, ...filtered];
+        });
+      }
+
+      return { success: true, data: backendRecord };
+    } catch (errorRequest) {
+      console.error('Error al ajustar ingreso:', errorRequest);
+      return { success: false, error: 'No se pudo ajustar la hora de ingreso' };
+    } finally {
+      setAccionesCargando((prev) => ({ ...prev, [key]: false }));
+    }
+  }, []);
+
   return {
     empleadosConEstado,
     actividadReciente,
@@ -399,5 +521,7 @@ export const useAsistencia = () => {
     cargarAsistencia,
     registrarIngreso,
     registrarEgreso,
+    ajustarIngreso,
+    accionesCargando,
   };
 };

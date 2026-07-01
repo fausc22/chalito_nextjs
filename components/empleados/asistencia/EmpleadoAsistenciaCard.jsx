@@ -39,11 +39,21 @@ export function EmpleadoAsistenciaCard({
   empleado,
   onRegistrarIngreso,
   onRegistrarEgreso,
+  onAjustarIngreso,
   showHourlyRate = true,
+  canAdjustIngreso = false,
 }) {
   const estadoUi = ESTADO_UI[empleado.estado] || ESTADO_UI.sin_ingreso;
   const ingresoDisponible = empleado.estado !== 'en_turno';
   const egresoDisponible = empleado.estado === 'en_turno';
+  const asistencia = empleado.asistenciaActual;
+  const mostrarAjuste = canAdjustIngreso
+    && empleado.estado === 'en_turno'
+    && Boolean(asistencia?.ingreso)
+    && !asistencia?.egreso
+    && asistencia?.estado === 'ABIERTO'
+    && empleado.puedeAjustarIngreso
+    && !empleado.estaLiquidado;
 
   return (
     <Card className="border-border shadow-sm transition-all hover:shadow-md">
@@ -107,6 +117,17 @@ export function EmpleadoAsistenciaCard({
           >
             {empleado.loadingAccion && egresoDisponible ? 'Registrando...' : 'Registrar egreso'}
           </Button>
+          {mostrarAjuste ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={empleado.loadingAccion}
+              onClick={() => onAjustarIngreso?.(empleado)}
+              className="border-blue-300 bg-white text-blue-700 hover:bg-blue-50 hover:text-blue-800 sm:col-span-2"
+            >
+              Ajustar ingreso
+            </Button>
+          ) : null}
         </div>
       </CardContent>
     </Card>

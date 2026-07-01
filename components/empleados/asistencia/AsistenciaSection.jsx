@@ -10,10 +10,12 @@ import {
   canViewEmployeeEstimatedTotal,
   canViewEmployeeHourlyRate,
   canViewEmployeeHoursSummary,
+  canOperateEmployeeAttendance,
 } from '@/config/empleadosPermissions';
 import { AsistenciaMetricCard } from './AsistenciaMetricCard';
 import { EmpleadoAsistenciaCard } from './EmpleadoAsistenciaCard';
 import { AsistenciaRecentTable } from './AsistenciaRecentTable';
+import { AjustarIngresoModal } from './AjustarIngresoModal';
 
 const ESTADO_OPTIONS = [
   { value: 'all', label: 'Todos los estados' },
@@ -42,12 +44,20 @@ export function AsistenciaSection() {
     cargarAsistencia,
     registrarIngreso,
     registrarEgreso,
+    ajustarIngreso,
+    accionesCargando,
   } = useAsistencia();
   const [searchTerm, setSearchTerm] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState('all');
+  const [asistenciaAjuste, setAsistenciaAjuste] = useState(null);
+  const [ajusteModalOpen, setAjusteModalOpen] = useState(false);
   const showHourlyRate = useMemo(() => canViewEmployeeHourlyRate(userRole), [userRole]);
   const showHoursSummary = useMemo(() => canViewEmployeeHoursSummary(userRole), [userRole]);
   const showEstimatedTotal = useMemo(() => canViewEmployeeEstimatedTotal(userRole), [userRole]);
+  const canAdjustIngreso = useMemo(() => canOperateEmployeeAttendance(userRole), [userRole]);
+  const ajusteSubmitting = asistenciaAjuste
+    ? Boolean(accionesCargando[`ajuste-${asistenciaAjuste.asistenciaActual?.id}`])
+    : false;
 
   useEffect(() => {
     cargarAsistencia();
@@ -79,6 +89,31 @@ export function AsistenciaSection() {
       await cargarAsistencia({ silent: true });
     } else {
       toast.error('No se pudo registrar egreso', { description: response.error });
+    }
+  };
+
+  const handleAbrirAjuste = (empleado) => {
+    if (!empleado?.asistenciaActual) return;
+    setAsistenciaAjuste(empleado);
+    setAjusteModalOpen(true);
+  };
+
+  const handleCerrarAjuste = () => {
+    setAjusteModalOpen(false);
+    setAsistenciaAjuste(null);
+  };
+
+  const handleGuardarAjuste = async (payload) => {
+    const asistenciaId = asistenciaAjuste?.asistenciaActual?.id;
+    if (!asistenciaId) return;
+
+    const response = await ajustarIngreso(asistenciaId, payload);
+    if (response.success) {
+      toast.success('Hora de ingreso ajustada');
+      handleCerrarAjuste();
+      await cargarAsistencia({ silent: true });
+    } else {
+      toast.error('No se pudo ajustar el ingreso', { description: response.error });
     }
   };
 
@@ -188,7 +223,9 @@ export function AsistenciaSection() {
               empleado={empleado}
               onRegistrarIngreso={handleIngreso}
               onRegistrarEgreso={handleEgreso}
+              onAjustarIngreso={handleAbrirAjuste}
               showHourlyRate={showHourlyRate}
+              canAdjustIngreso={canAdjustIngreso}
             />
           ))}
         </div>
@@ -197,6 +234,14 @@ export function AsistenciaSection() {
       <div id="actividad-reciente">
         <AsistenciaRecentTable rows={actividadReciente} />
       </div>
+
+      <AjustarIngresoModal
+        isOpen={ajusteModalOpen}
+        onClose={handleCerrarAjuste}
+        asistencia={asistenciaAjuste?.asistenciaActual || null}
+        onSubmit={handleGuardarAjuste}
+        isSubmitting={ajusteSubmitting}
+      />
     </div>
   );
 }

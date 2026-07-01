@@ -203,6 +203,15 @@ export const empleadosService = {
     })
   ),
 
+  ajustarIngresoAsistencia: async (asistenciaId, payload) => withNumericId(
+    asistenciaId,
+    'El ID de asistencia debe ser un numero positivo',
+    (id) => executeRequest('patch', API_CONFIG.ENDPOINTS.EMPLEADOS.ASISTENCIAS.AJUSTAR_INGRESO(id), {
+      data: payload,
+      fallbackError: 'No se pudo ajustar la hora de ingreso',
+    })
+  ),
+
   obtenerMovimientos: async (filtros = {}) => {
     const response = await executeRequest('get', API_CONFIG.ENDPOINTS.EMPLEADOS.MOVIMIENTOS.LIST, {
       params: pickDefined(filtros),
