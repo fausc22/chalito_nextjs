@@ -84,7 +84,7 @@ const CartSummaryMobile = ({
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-xs leading-tight uppercase truncate text-foreground">
                         {item.nombre}
-                        {getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [])}
+                        {getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [], item.nombre)}
                       </p>
                       {getExtrasSinPresentacion(item.extras ?? item.extrasSeleccionados ?? []).length > 0 && (
                         <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -526,7 +526,7 @@ export function ModalNuevoPedido({
                             <div className="flex justify-between items-start mb-2">
                               <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-sm text-foreground truncate leading-tight uppercase">
-                                  {item.nombre}{getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [])}
+                                  {item.nombre}{getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [], item.nombre)}
                                 </p>
                                 {item.extrasDisponibles && item.extrasDisponibles.length > 0 && (
                                   <Badge variant="outline" className="text-xs mt-1 bg-amber-500/10 text-yellow-700 border-yellow-300 px-1.5 py-0.5">
@@ -957,7 +957,7 @@ export function ModalNuevoPedido({
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm text-foreground leading-tight uppercase">
-                          {item.nombre}{getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [])}
+                          {item.nombre}{getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [], item.nombre)}
                         </p>
                         {item.extrasDisponibles && item.extrasDisponibles.length > 0 && (
                           <Badge variant="outline" className="text-xs mt-1 bg-amber-500/10 text-yellow-700 border-yellow-300 px-1.5 py-0.5">

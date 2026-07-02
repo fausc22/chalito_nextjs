@@ -97,7 +97,7 @@ const CartSummaryMobile = ({
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-xs leading-tight uppercase truncate text-foreground">
                         {item.nombre}
-                        {getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [])}
+                        {getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [], item.nombre)}
                       </p>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
@@ -480,7 +480,7 @@ export function ModalEditarPedido({
                             <div className="flex justify-between items-start mb-2">
                               <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-sm text-foreground truncate leading-tight uppercase">
-                                  {item.nombre}{getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [])}
+                                  {item.nombre}{getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [], item.nombre)}
                                 </p>
                                 {(() => {
                                   const { extras } = getItemExtras(item);
@@ -909,7 +909,7 @@ export function ModalEditarPedido({
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm text-foreground leading-tight uppercase">
-                          {item.nombre}{getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [])}
+                          {item.nombre}{getSufijoPresentacion(item.extras ?? item.extrasSeleccionados ?? [], item.nombre)}
                         </p>
                         {(() => {
                           const { extras } = getItemExtras(item);

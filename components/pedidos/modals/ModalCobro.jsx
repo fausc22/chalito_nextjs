@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { CreditCard, Building2, Smartphone, Wallet } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { pedidosService } from '@/services/pedidosService';
@@ -12,12 +13,26 @@ import { toast } from '@/hooks/use-toast';
 import { getItemExtras } from '@/lib/extrasUtils';
 import { calculateLineSubtotalFromSnapshot } from '@/lib/pedidoTotals';
 
+const MEDIO_OPCIONES = [
+  { value: 'efectivo', label: 'Efectivo' },
+  { value: 'debito', label: 'Débito' },
+  { value: 'credito', label: 'Crédito' },
+  { value: 'transferencia', label: 'Transferencia (sin factura)' },
+  { value: 'transferencia_facturada', label: 'Transferencia (con factura)' },
+  { value: 'mercadopago', label: 'MercadoPago' },
+];
+
 export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
   const [medioPago, setMedioPago] = useState('efectivo');
+  const [dividirPago, setDividirPago] = useState(false);
+  const [medio2, setMedio2] = useState('transferencia');
+  const [monto1, setMonto1] = useState('');
   const [loading, setLoading] = useState(false);
 
   const mediosConArca = ['mercadopago', 'debito', 'credito', 'transferencia_facturada'];
-  const requiereFacturaElectronica = mediosConArca.includes(medioPago);
+  const requiereFacturaElectronica = dividirPago
+    ? mediosConArca.includes(medioPago) || mediosConArca.includes(medio2)
+    : mediosConArca.includes(medioPago);
   const [pedidoCompleto, setPedidoCompleto] = useState(null);
   const [descuentoPorcentaje, setDescuentoPorcentaje] = useState(0);
   const submittedRef = useRef(false);
@@ -56,6 +71,9 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
     if (isOpen && pedidoCompleto) {
       setMedioPago(pedidoCompleto.medioPago || 'efectivo');
       setDescuentoPorcentaje(0);
+      setDividirPago(false);
+      setMedio2('transferencia');
+      setMonto1('');
     }
   }, [isOpen, pedidoCompleto]);
 
@@ -71,6 +89,11 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
   const porcentajeNormalizado = Math.min(Math.max(Number(descuentoPorcentaje) || 0, 0), 100);
   const descuentoCalculadoPreview = roundTo2(totalOriginal * (porcentajeNormalizado / 100));
   const totalFinalPreview = roundTo2(Math.max(totalOriginal - descuentoCalculadoPreview, 0));
+  const monto1Num = parseFloat(monto1) || 0;
+  const monto2Auto = roundTo2(Math.max(totalFinalPreview - monto1Num, 0));
+  const sumaMediosValida = dividirPago
+    ? Math.abs(monto1Num + monto2Auto - totalFinalPreview) <= 0.01
+    : true;
 
   const handleCobrar = async () => {
     if (!pedidoParaMostrar) return;
@@ -79,16 +102,40 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
       toast.error('El descuento (%) debe estar entre 0 y 100');
       return;
     }
+    if (dividirPago) {
+      if (medioPago === medio2) {
+        toast.error('Los dos medios de pago deben ser distintos');
+        return;
+      }
+      if (monto1Num <= 0 || monto2Auto <= 0) {
+        toast.error('Ambos montos deben ser mayores a 0');
+        return;
+      }
+      if (!sumaMediosValida) {
+        toast.error('La suma de los medios no coincide con el total a cobrar');
+        return;
+      }
+    }
 
     submittedRef.current = true;
     setLoading(true);
     try {
       // PEDIDO EXISTENTE: usar endpoint de cobro del backend (evita ventas duplicadas)
       if (pedidoParaMostrar.id !== 'nuevo') {
-        const response = await pedidosService.cobrarPedido(pedidoParaMostrar.id, {
-          medioPago,
-          descuentoPorcentaje: porcentajeNormalizado,
-        });
+        const cobroPayload = dividirPago
+          ? {
+              mediosPago: [
+                { medioPago, monto: monto1Num },
+                { medioPago: medio2, monto: monto2Auto },
+              ],
+              descuentoPorcentaje: porcentajeNormalizado,
+            }
+          : {
+              medioPago,
+              descuentoPorcentaje: porcentajeNormalizado,
+            };
+
+        const response = await pedidosService.cobrarPedido(pedidoParaMostrar.id, cobroPayload);
 
         if (response.success) {
           toast.success('Pedido cobrado correctamente', {
@@ -343,57 +390,129 @@ export function ModalCobro({ pedido, isOpen, onClose, onCobroExitoso }) {
 
           {/* Método de Pago */}
           <div className="bg-card border-2 border-border rounded-lg p-3 shadow-md">
-            <h3 className="text-base font-semibold text-foreground mb-3">💳 Método de Pago</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Button
-                variant={medioPago === 'efectivo' ? 'default' : 'outline'}
-                className={`h-12 text-sm font-medium ${medioPago === 'efectivo' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-                onClick={() => setMedioPago('efectivo')}
-              >
-                <Wallet className="h-4 w-4 mr-1.5" />
-                Efectivo
-              </Button>
-              <Button
-                variant={medioPago === 'debito' ? 'default' : 'outline'}
-                className={`h-12 text-sm font-medium ${medioPago === 'debito' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-                onClick={() => setMedioPago('debito')}
-              >
-                <CreditCard className="h-4 w-4 mr-1.5" />
-                Débito
-              </Button>
-              <Button
-                variant={medioPago === 'credito' ? 'default' : 'outline'}
-                className={`h-12 text-sm font-medium ${medioPago === 'credito' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-                onClick={() => setMedioPago('credito')}
-              >
-                <CreditCard className="h-4 w-4 mr-1.5" />
-                Crédito
-              </Button>
-              <Button
-                variant={medioPago === 'transferencia' ? 'default' : 'outline'}
-                className={`h-12 text-sm font-medium ${medioPago === 'transferencia' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-                onClick={() => setMedioPago('transferencia')}
-              >
-                <Building2 className="h-4 w-4 mr-1.5" />
-                Transferencia (sin factura)
-              </Button>
-              <Button
-                variant={medioPago === 'transferencia_facturada' ? 'default' : 'outline'}
-                className={`h-12 text-sm font-medium ${medioPago === 'transferencia_facturada' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-                onClick={() => setMedioPago('transferencia_facturada')}
-              >
-                <Building2 className="h-4 w-4 mr-1.5" />
-                Transferencia (con factura)
-              </Button>
-              <Button
-                variant={medioPago === 'mercadopago' ? 'default' : 'outline'}
-                className={`h-12 text-sm font-medium sm:col-span-2 ${medioPago === 'mercadopago' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-                onClick={() => setMedioPago('mercadopago')}
-              >
-                <Smartphone className="h-4 w-4 mr-1.5" />
-                MercadoPago
-              </Button>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold text-foreground">💳 Método de Pago</h3>
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-foreground">
+                <Checkbox
+                  checked={dividirPago}
+                  onCheckedChange={(checked) => {
+                    setDividirPago(Boolean(checked));
+                    setMonto1('');
+                  }}
+                />
+                <span>Dividir en 2 medios</span>
+              </label>
             </div>
+
+            {!dividirPago ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Button
+                  variant={medioPago === 'efectivo' ? 'default' : 'outline'}
+                  className={`h-12 text-sm font-medium ${medioPago === 'efectivo' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                  onClick={() => setMedioPago('efectivo')}
+                >
+                  <Wallet className="h-4 w-4 mr-1.5" />
+                  Efectivo
+                </Button>
+                <Button
+                  variant={medioPago === 'debito' ? 'default' : 'outline'}
+                  className={`h-12 text-sm font-medium ${medioPago === 'debito' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                  onClick={() => setMedioPago('debito')}
+                >
+                  <CreditCard className="h-4 w-4 mr-1.5" />
+                  Débito
+                </Button>
+                <Button
+                  variant={medioPago === 'credito' ? 'default' : 'outline'}
+                  className={`h-12 text-sm font-medium ${medioPago === 'credito' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                  onClick={() => setMedioPago('credito')}
+                >
+                  <CreditCard className="h-4 w-4 mr-1.5" />
+                  Crédito
+                </Button>
+                <Button
+                  variant={medioPago === 'transferencia' ? 'default' : 'outline'}
+                  className={`h-12 text-sm font-medium ${medioPago === 'transferencia' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                  onClick={() => setMedioPago('transferencia')}
+                >
+                  <Building2 className="h-4 w-4 mr-1.5" />
+                  Transferencia (sin factura)
+                </Button>
+                <Button
+                  variant={medioPago === 'transferencia_facturada' ? 'default' : 'outline'}
+                  className={`h-12 text-sm font-medium ${medioPago === 'transferencia_facturada' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                  onClick={() => setMedioPago('transferencia_facturada')}
+                >
+                  <Building2 className="h-4 w-4 mr-1.5" />
+                  Transferencia (con factura)
+                </Button>
+                <Button
+                  variant={medioPago === 'mercadopago' ? 'default' : 'outline'}
+                  className={`h-12 text-sm font-medium sm:col-span-2 ${medioPago === 'mercadopago' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                  onClick={() => setMedioPago('mercadopago')}
+                >
+                  <Smartphone className="h-4 w-4 mr-1.5" />
+                  MercadoPago
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium">Medio 1</Label>
+                    <Select value={medioPago} onValueChange={setMedioPago}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MEDIO_OPCIONES.map((op) => (
+                          <SelectItem key={op.value} value={op.value}>{op.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="monto1" className="text-sm font-medium">Monto medio 1</Label>
+                    <Input
+                      id="monto1"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={monto1}
+                      onChange={(e) => setMonto1(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium">Medio 2</Label>
+                    <Select value={medio2} onValueChange={setMedio2}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MEDIO_OPCIONES.map((op) => (
+                          <SelectItem key={op.value} value={op.value}>{op.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium">Monto medio 2 (automático)</Label>
+                    <div className="h-10 flex items-center px-3 rounded-md border border-input bg-muted text-sm font-semibold">
+                      ${monto2Auto.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                </div>
+                <div className={`text-sm font-medium ${sumaMediosValida && monto1Num > 0 ? 'text-green-700' : 'text-muted-foreground'}`}>
+                  Suma medios: ${(monto1Num + monto2Auto).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {' / '}
+                  Total: ${totalFinalPreview.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {sumaMediosValida && monto1Num > 0 && monto2Auto > 0 ? ' ✓' : ''}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

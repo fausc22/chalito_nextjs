@@ -128,6 +128,14 @@ function OrderRowComponent({
   const showHighlight = isHighlighted || isActualizadoRecientemente;
   const isPaid = isPedidoPaid(pedido);
   const isMercadoPagoPendiente = isPedidoMercadoPagoPendiente(pedido);
+  const splitLabel = (() => {
+    if (pedido?.mediosPago?.length >= 2) {
+      return pedido.mediosPago.map((m) => (m.medioPago || m.medio_pago || '').toString().toUpperCase()).join(' + ');
+    }
+    const raw = (pedido?.medio_pago || '').toString();
+    if (raw.includes(' + ')) return raw;
+    return null;
+  })();
   const isPendingUpdate = Boolean(pedido.uiPendingStateUpdate);
 
   const isNewEntry = isNewWebOrder || isNew;
@@ -250,6 +258,11 @@ function OrderRowComponent({
             ) : (
               <Badge className="bg-red-600 text-white font-semibold text-xs px-2 py-0.5 pointer-events-none whitespace-nowrap" title={`Debe: $${pedido.total.toLocaleString('es-AR')}`}>
                 DEBE ${pedido.total.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+              </Badge>
+            )}
+            {isPaid && splitLabel && (
+              <Badge variant="outline" className="text-xs font-medium pointer-events-none whitespace-nowrap">
+                {splitLabel}
               </Badge>
             )}
 

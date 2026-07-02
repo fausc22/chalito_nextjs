@@ -206,6 +206,12 @@ const transformarPedidoBackendAFrontend = (pedidoBackend, articulos = []) => {
     tipoEntrega: mapearModalidadBackendAFrontend(pedidoBackend.modalidad),
     medio_pago: pedidoBackend.medio_pago || null,
     medioPago: mapearMedioPagoBackendAFrontend(pedidoBackend.medio_pago),
+    mediosPago: Array.isArray(pedidoBackend.medios_pago) && pedidoBackend.medios_pago.length >= 2
+      ? pedidoBackend.medios_pago.map((m) => ({
+          medioPago: mapearMedioPagoBackendAFrontend(m.medio_pago),
+          monto: parseFloat(m.monto) || 0
+        }))
+      : null,
     monto_con_cuanto_abona: pedidoBackend.monto_con_cuanto_abona ?? null,
     observaciones_pedido: pedidoBackend.observaciones_pedido || pedidoBackend.observaciones || '',
     horario_entrega_formateado: formatearHorarioEntrega(pedidoBackend.horario_entrega),
@@ -946,18 +952,28 @@ export const pedidosService = {
    */
   cobrarPedido: async (
     pedidoId,
-    { medioPago = 'efectivo', descuentoPorcentaje = 0 } = {}
+    { medioPago = 'efectivo', mediosPago = null, descuentoPorcentaje = 0 } = {}
   ) => {
     try {
-      const medioPagoBackend = mapearMedioPagoFrontendABackend(medioPago) || 'EFECTIVO';
       const pedidoIdNum = parseInt(pedidoId, 10);
+      const body = Array.isArray(mediosPago) && mediosPago.length > 1
+        ? {
+            pedido_id: Number.isFinite(pedidoIdNum) ? pedidoIdNum : null,
+            medios_pago: mediosPago.map((m) => ({
+              medio_pago: mapearMedioPagoFrontendABackend(m.medioPago),
+              monto: m.monto
+            })),
+            descuento_porcentaje: Number(descuentoPorcentaje) || 0
+          }
+        : {
+            pedido_id: Number.isFinite(pedidoIdNum) ? pedidoIdNum : null,
+            medio_pago: mapearMedioPagoFrontendABackend(medioPago) || 'EFECTIVO',
+            descuento_porcentaje: Number(descuentoPorcentaje) || 0
+          };
+
       const response = await apiRequest.post(
         API_CONFIG.ENDPOINTS.PEDIDOS.COBRAR(pedidoId),
-        {
-          pedido_id: Number.isFinite(pedidoIdNum) ? pedidoIdNum : null,
-          medio_pago: medioPagoBackend,
-          descuento_porcentaje: Number(descuentoPorcentaje) || 0,
-        }
+        body
       );
 
       if (response.data?.error === true || response.data?.success === false) {
