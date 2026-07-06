@@ -450,7 +450,7 @@ export function ModoCocina({
                     {comanda.articulos?.map((articulo, idx) => (
                       <div key={idx} className="border-l-4 border-slate-500 pl-2.5 py-1.5">
                         <p className="font-bold text-base text-foreground">
-                          {articulo.cantidad}x {(articulo.articuloNombre || '').toUpperCase()}{getSufijoPresentacionCocina(articulo.personalizaciones?.extras ?? []).toUpperCase()}
+                          {articulo.cantidad}x {(articulo.articuloNombre || '').toUpperCase()}{getSufijoPresentacionCocina(articulo.personalizaciones, articulo.articuloNombre).toUpperCase()}
                         </p>
                         {/* Extras (sin presentación: Hacela doble/triple va en el nombre como medallones) */}
                         {(() => {
