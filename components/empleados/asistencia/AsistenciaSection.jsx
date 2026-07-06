@@ -16,11 +16,16 @@ import { AsistenciaMetricCard } from './AsistenciaMetricCard';
 import { EmpleadoAsistenciaCard } from './EmpleadoAsistenciaCard';
 import { AsistenciaRecentTable } from './AsistenciaRecentTable';
 import { AjustarIngresoModal } from './AjustarIngresoModal';
+import { RegistroManualModal } from './RegistroManualModal';
+import { TurnosPendientesBanner } from './TurnosPendientesBanner';
+import { CerrarTurnoPendienteModal } from './CerrarTurnoPendienteModal';
 
 const ESTADO_OPTIONS = [
   { value: 'all', label: 'Todos los estados' },
   { value: 'sin_ingreso', label: 'Sin ingreso' },
+  { value: 'turno_pendiente', label: 'Turno pendiente' },
   { value: 'en_turno', label: 'En turno' },
+  { value: 'entre_turnos', label: 'Entre turnos' },
   { value: 'turno_cerrado', label: 'Turno cerrado' },
 ];
 
@@ -36,6 +41,7 @@ export function AsistenciaSection() {
   const { userRole } = useAuth();
   const {
     empleadosConEstado,
+    turnosPendientes,
     actividadReciente,
     metricas,
     loadingInicial,
@@ -45,19 +51,30 @@ export function AsistenciaSection() {
     registrarIngreso,
     registrarEgreso,
     ajustarIngreso,
+    registrarManual,
     accionesCargando,
   } = useAsistencia();
   const [searchTerm, setSearchTerm] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState('all');
   const [asistenciaAjuste, setAsistenciaAjuste] = useState(null);
   const [ajusteModalOpen, setAjusteModalOpen] = useState(false);
+  const [manualModalOpen, setManualModalOpen] = useState(false);
+  const [empleadoManual, setEmpleadoManual] = useState(null);
+  const [cierrePendienteModalOpen, setCierrePendienteModalOpen] = useState(false);
+  const [empleadoCierrePendiente, setEmpleadoCierrePendiente] = useState(null);
   const showHourlyRate = useMemo(() => canViewEmployeeHourlyRate(userRole), [userRole]);
   const showHoursSummary = useMemo(() => canViewEmployeeHoursSummary(userRole), [userRole]);
   const showEstimatedTotal = useMemo(() => canViewEmployeeEstimatedTotal(userRole), [userRole]);
-  const canAdjustIngreso = useMemo(() => canOperateEmployeeAttendance(userRole), [userRole]);
+  const canOperateAttendance = useMemo(() => canOperateEmployeeAttendance(userRole), [userRole]);
   const ajusteSubmitting = asistenciaAjuste
     ? Boolean(accionesCargando[`ajuste-${asistenciaAjuste.asistenciaActual?.id}`])
     : false;
+  const cierrePendienteSubmitting = empleadoCierrePendiente
+    ? Boolean(accionesCargando[empleadoCierrePendiente.id])
+    : false;
+  const manualSubmitting = Object.entries(accionesCargando).some(
+    ([key, loading]) => key.startsWith('manual-') && loading
+  );
 
   useEffect(() => {
     cargarAsistencia();
@@ -82,13 +99,37 @@ export function AsistenciaSection() {
     }
   };
 
-  const handleEgreso = async (empleadoId) => {
-    const response = await registrarEgreso(empleadoId);
+  const handleEgreso = async (empleado) => {
+    if (empleado?.estado === 'turno_pendiente') {
+      setEmpleadoCierrePendiente(empleado);
+      setCierrePendienteModalOpen(true);
+      return;
+    }
+
+    const response = await registrarEgreso(empleado.id);
     if (response.success) {
       toast.success('Egreso registrado');
       await cargarAsistencia({ silent: true });
     } else {
       toast.error('No se pudo registrar egreso', { description: response.error });
+    }
+  };
+
+  const handleCerrarCierrePendiente = () => {
+    setCierrePendienteModalOpen(false);
+    setEmpleadoCierrePendiente(null);
+  };
+
+  const handleGuardarCierrePendiente = async (payload) => {
+    const response = await registrarEgreso(payload.empleado_id, {
+      hora_egreso: payload.hora_egreso,
+    });
+    if (response.success) {
+      toast.success('Turno pendiente cerrado');
+      handleCerrarCierrePendiente();
+      await cargarAsistencia({ silent: true });
+    } else {
+      toast.error('No se pudo cerrar el turno pendiente', { description: response.error });
     }
   };
 
@@ -114,6 +155,27 @@ export function AsistenciaSection() {
       await cargarAsistencia({ silent: true });
     } else {
       toast.error('No se pudo ajustar el ingreso', { description: response.error });
+    }
+  };
+
+  const handleAbrirManual = (empleado = null) => {
+    setEmpleadoManual(empleado);
+    setManualModalOpen(true);
+  };
+
+  const handleCerrarManual = () => {
+    setManualModalOpen(false);
+    setEmpleadoManual(null);
+  };
+
+  const handleGuardarManual = async (payload) => {
+    const response = await registrarManual(payload);
+    if (response.success) {
+      toast.success('Turno manual registrado');
+      handleCerrarManual();
+      await cargarAsistencia({ silent: true });
+    } else {
+      toast.error('No se pudo registrar el turno manual', { description: response.error });
     }
   };
 
@@ -203,8 +265,24 @@ export function AsistenciaSection() {
             Actualizar
           </Button>
 
+          {canOperateAttendance ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleAbrirManual()}
+              className="border-blue-300 text-blue-700 hover:bg-blue-50"
+            >
+              Registro manual
+            </Button>
+          ) : null}
+
         </div>
       </div>
+
+      <TurnosPendientesBanner
+        turnosPendientes={turnosPendientes}
+        empleadosConEstado={empleadosConEstado}
+      />
 
       {error ? (
         <EmpleadosFeedback type="error" message={error} />
@@ -225,7 +303,7 @@ export function AsistenciaSection() {
               onRegistrarEgreso={handleEgreso}
               onAjustarIngreso={handleAbrirAjuste}
               showHourlyRate={showHourlyRate}
-              canAdjustIngreso={canAdjustIngreso}
+              canAdjustIngreso={canOperateAttendance}
             />
           ))}
         </div>
@@ -241,6 +319,23 @@ export function AsistenciaSection() {
         asistencia={asistenciaAjuste?.asistenciaActual || null}
         onSubmit={handleGuardarAjuste}
         isSubmitting={ajusteSubmitting}
+      />
+
+      <RegistroManualModal
+        isOpen={manualModalOpen}
+        onClose={handleCerrarManual}
+        empleados={empleadosConEstado}
+        empleadoPreseleccionado={empleadoManual}
+        onSubmit={handleGuardarManual}
+        isSubmitting={manualSubmitting}
+      />
+
+      <CerrarTurnoPendienteModal
+        isOpen={cierrePendienteModalOpen}
+        onClose={handleCerrarCierrePendiente}
+        empleado={empleadoCierrePendiente}
+        onSubmit={handleGuardarCierrePendiente}
+        isSubmitting={cierrePendienteSubmitting}
       />
     </div>
   );
