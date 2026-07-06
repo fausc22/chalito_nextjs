@@ -50,6 +50,8 @@ const buildErrorResponse = (error, fallbackError) => ({
   success: false,
   error: getErrorMessage(error?.response?.data, fallbackError),
   status: error?.response?.status || null,
+  code: error?.response?.data?.code || null,
+  details: error?.response?.data?.details || null,
 });
 
 const parseResponse = (response, fallbackError) => {
@@ -64,6 +66,8 @@ const parseResponse = (response, fallbackError) => {
       success: false,
       error: getErrorMessage(response.data, fallbackError),
       status,
+      code: response.data?.code || null,
+      details: response.data?.details || null,
     };
   }
 
@@ -211,6 +215,11 @@ export const empleadosService = {
       fallbackError: 'No se pudo ajustar la hora de ingreso',
     })
   ),
+
+  registrarAsistenciaManual: async (payload) => executeRequest('post', API_CONFIG.ENDPOINTS.EMPLEADOS.ASISTENCIAS.MANUAL, {
+    data: payload,
+    fallbackError: 'No se pudo registrar la asistencia manual',
+  }),
 
   obtenerMovimientos: async (filtros = {}) => {
     const response = await executeRequest('get', API_CONFIG.ENDPOINTS.EMPLEADOS.MOVIMIENTOS.LIST, {

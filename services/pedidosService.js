@@ -368,31 +368,18 @@ const buildActualizarPedidoPayload = (pedidoFrontend) => {
 export const pedidosService = {
   normalizarPedidoRealtime,
   /**
-   * Obtener todos los pedidos
-   * Por defecto filtra solo los pedidos del día actual
+   * Obtener pedidos operativos (listado del módulo).
+   * Sin filtro de fecha por defecto: el backend expone activos + LISTO/ENTREGADO/CANCELADO recientes.
    */
   obtenerPedidos: async (filtros = {}) => {
     try {
       const params = new URLSearchParams();
-      
-      // Por defecto, filtrar solo pedidos del día actual
-      // Usar fecha local para evitar problemas de zona horaria
-      const ahora = new Date();
-      const hoy = ahora.getFullYear() + '-' + 
-                  String(ahora.getMonth() + 1).padStart(2, '0') + '-' + 
-                  String(ahora.getDate()).padStart(2, '0'); // YYYY-MM-DD en zona horaria local
-      
-      if (!filtros.fecha_desde && !filtros.fecha_hasta && filtros.soloHoy !== false) {
-        params.append('fecha_desde', hoy);
-        params.append('fecha_hasta', hoy);
-        console.log('🔍 Filtrando pedidos del día:', hoy);
-      } else {
-        if (filtros.fecha_desde) {
-          params.append('fecha_desde', filtros.fecha_desde);
-        }
-        if (filtros.fecha_hasta) {
-          params.append('fecha_hasta', filtros.fecha_hasta);
-        }
+
+      if (filtros.fecha_desde) {
+        params.append('fecha_desde', filtros.fecha_desde);
+      }
+      if (filtros.fecha_hasta) {
+        params.append('fecha_hasta', filtros.fecha_hasta);
       }
       
       if (filtros.estado) {

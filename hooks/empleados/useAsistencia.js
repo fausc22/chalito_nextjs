@@ -96,7 +96,6 @@ const normalizeAsistencia = (asistencia) => {
     asistencia?.ingreso_at,
     asistencia?.entrada,
     asistencia?.check_in,
-    asistencia?.created_at
   );
   const egresoRaw = getFirstDefined(
     asistencia?.egreso,
@@ -155,11 +154,31 @@ const isMissingEmployeeName = (value) => {
   return !normalized || normalized === 'sin nombre';
 };
 
+const formatYmd = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+export const getManualDateBounds = () => {
+  const now = new Date();
+  const maxDate = formatYmd(now);
+  const inicioMes = new Date(now.getFullYear(), now.getMonth(), 1);
+  const hace30 = new Date(now);
+  hace30.setDate(hace30.getDate() - 30);
+  const minDate = formatYmd(inicioMes > hace30 ? inicioMes : hace30);
+  return { minDate, maxDate };
+};
+
 const isSameDay = (date, now) =>
   date &&
   date.getDate() === now.getDate() &&
   date.getMonth() === now.getMonth() &&
   date.getFullYear() === now.getFullYear();
+
+const isRecordToday = (record, now) =>
+  isSameDay(record.fechaAsistencia, now) || isSameDay(record.ingreso, now);
 
 const diffHours = (fromDate, toDateValue) => {
   if (!fromDate || !toDateValue) return 0;
@@ -171,37 +190,66 @@ const diffHours = (fromDate, toDateValue) => {
 const isTurnoAbierto = (record) =>
   record?.estado === 'ABIERTO' && !record?.egreso;
 
+const isTurnoCerrado = (record) =>
+  record?.egreso && ['CERRADO', 'CORREGIDO'].includes(record.estado);
+
 const getRecordSortTs = (record) => {
   const updated = toDate(getFirstDefined(
     record?.raw?.fecha_actualizacion,
     record?.raw?.updated_at,
   ));
   if (updated) return updated.getTime();
+  const ingreso = record?.ingreso?.getTime?.() || 0;
+  if (ingreso) return ingreso;
   const id = Number(record?.id);
   return Number.isFinite(id) ? id : 0;
 };
 
-/** Elige la asistencia vigente del día: prioriza ABIERTO; si no, la última cerrada/corregida. */
-const resolverAsistenciaActualPorEmpleado = (registros) => {
-  if (!registros?.length) return null;
+const isTurnoPendiente = (record, now) =>
+  isTurnoAbierto(record) && !isRecordToday(record, now);
 
-  const abierta = registros.find(isTurnoAbierto);
-  if (abierta) return abierta;
-
-  const cerradas = registros
-    .filter((record) => record.egreso && ['CERRADO', 'CORREGIDO'].includes(record.estado))
-    .sort((a, b) => getRecordSortTs(b) - getRecordSortTs(a));
-
-  if (cerradas.length > 0) return cerradas[0];
-
-  return [...registros].sort((a, b) => getRecordSortTs(b) - getRecordSortTs(a))[0];
+const mergeAsistencias = (items) => {
+  const byId = new Map();
+  items.forEach((item) => {
+    if (!item?.id) return;
+    byId.set(item.id, item);
+  });
+  return Array.from(byId.values());
 };
 
-const formatYmd = (date) => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+const calcularHorasTurnos = (turnos, now) => {
+  return turnos.reduce((acc, turno) => {
+    if (isTurnoCerrado(turno)) {
+      if (turno.minutosTrabajados > 0) {
+        return acc + turno.minutosTrabajados / 60;
+      }
+      return acc + diffHours(turno.ingreso, turno.egreso);
+    }
+    if (isTurnoAbierto(turno)) {
+      return acc + diffHours(turno.ingreso, now);
+    }
+    return acc;
+  }, 0);
+};
+
+const resolverEstadoEmpleado = ({
+  turnosHoy,
+  turnoPendiente,
+  turnoAbiertoHoy,
+}) => {
+  if (turnoPendiente) return 'turno_pendiente';
+  if (turnoAbiertoHoy) return 'en_turno';
+  if (turnosHoy.some(isTurnoCerrado)) return 'entre_turnos';
+  return 'sin_ingreso';
+};
+
+const buildIngresoError = (response) => {
+  const base = response.error || 'No se pudo registrar ingreso';
+  if (response.code !== 'ASISTENCIA_ABIERTA_EXISTENTE' || !response.details) {
+    return base;
+  }
+  const fecha = response.details.fecha || 'otro dia';
+  return `${base}. Hay un turno abierto desde el ${fecha}. Registra el egreso del turno pendiente primero.`;
 };
 
 export const useAsistencia = () => {
@@ -224,19 +272,20 @@ export const useAsistencia = () => {
     const fecha = formatYmd(today);
 
     try {
-      const [empleadosResponse, asistenciasResponse] = await Promise.all([
+      const [empleadosResponse, asistenciasHoyResponse, asistenciasAbiertasResponse] = await Promise.all([
         empleadosService.obtenerEmpleados({ activo: true }),
         empleadosService.obtenerAsistencias({
           fecha_desde: fecha,
           fecha_hasta: fecha,
         }),
+        empleadosService.obtenerAsistencias({ estado: 'ABIERTO' }),
       ]);
 
       if (!empleadosResponse.success) {
         setError(empleadosResponse.error || 'No se pudo cargar empleados');
       }
-      if (!asistenciasResponse.success) {
-        setError((previous) => previous || asistenciasResponse.error || 'No se pudo cargar asistencias');
+      if (!asistenciasHoyResponse.success) {
+        setError((previous) => previous || asistenciasHoyResponse.error || 'No se pudo cargar asistencias');
       }
 
       const normalizedEmpleados = empleadosResponse.success
@@ -249,9 +298,14 @@ export const useAsistencia = () => {
         setEmpleados([]);
       }
 
-      if (asistenciasResponse.success) {
-        const empleadosById = new Map(normalizedEmpleados.map((item) => [item.id, item]));
-        const asistenciasNormalizadas = (asistenciasResponse.data || [])
+      const empleadosById = new Map(normalizedEmpleados.map((item) => [item.id, item]));
+      const rawAsistencias = [
+        ...(asistenciasHoyResponse.success ? asistenciasHoyResponse.data || [] : []),
+        ...(asistenciasAbiertasResponse.success ? asistenciasAbiertasResponse.data || [] : []),
+      ];
+
+      const asistenciasNormalizadas = mergeAsistencias(
+        rawAsistencias
           .map(normalizeAsistencia)
           .filter((item) => item.empleadoId)
           .map((item) => {
@@ -259,12 +313,10 @@ export const useAsistencia = () => {
             if (!empleado) return item;
             if (!isMissingEmployeeName(item.empleadoNombre)) return item;
             return { ...item, empleadoNombre: empleado.nombre };
-          });
+          })
+      );
 
-        setAsistencias(asistenciasNormalizadas);
-      } else {
-        setAsistencias([]);
-      }
+      setAsistencias(asistenciasNormalizadas);
     } catch (requestError) {
       setError('No se pudo cargar la pantalla de asistencia');
       console.error('Error al cargar asistencia:', requestError);
@@ -279,31 +331,31 @@ export const useAsistencia = () => {
   const asistenciaHoy = useMemo(() => {
     const now = new Date();
     return asistencias
-      .filter((item) => isSameDay(item.ingreso, now))
-      .sort((a, b) => {
-        const aTs = a.ingreso ? a.ingreso.getTime() : 0;
-        const bTs = b.ingreso ? b.ingreso.getTime() : 0;
-        return bTs - aTs;
-      });
+      .filter((item) => isRecordToday(item, now))
+      .sort((a, b) => getRecordSortTs(a) - getRecordSortTs(b));
   }, [asistencias]);
 
-  const estadoPorEmpleado = useMemo(() => {
-    const registrosPorEmpleado = new Map();
+  const turnosPendientes = useMemo(() => {
+    const now = new Date();
+    return asistencias
+      .filter((item) => isTurnoPendiente(item, now))
+      .sort((a, b) => getRecordSortTs(a) - getRecordSortTs(b));
+  }, [asistencias]);
 
-    asistenciaHoy.forEach((record) => {
-      if (!record.empleadoId) return;
-      const lista = registrosPorEmpleado.get(record.empleadoId) || [];
-      lista.push(record);
-      registrosPorEmpleado.set(record.empleadoId, lista);
-    });
-
+  const turnosHoyPorEmpleado = useMemo(() => {
+    const now = new Date();
     const map = new Map();
-    registrosPorEmpleado.forEach((registros, empleadoId) => {
-      map.set(empleadoId, resolverAsistenciaActualPorEmpleado(registros));
+    asistencias.forEach((record) => {
+      if (!record.empleadoId || !isRecordToday(record, now)) return;
+      const lista = map.get(record.empleadoId) || [];
+      lista.push(record);
+      map.set(record.empleadoId, lista);
     });
-
+    map.forEach((lista, empleadoId) => {
+      map.set(empleadoId, [...lista].sort((a, b) => getRecordSortTs(a) - getRecordSortTs(b)));
+    });
     return map;
-  }, [asistenciaHoy]);
+  }, [asistencias]);
 
   const empleadosConEstado = useMemo(() => {
     const now = new Date();
@@ -311,22 +363,19 @@ export const useAsistencia = () => {
     return empleados
       .filter((empleado) => empleado.activo)
       .map((empleado) => {
-        const asistenciaActual = estadoPorEmpleado.get(empleado.id) || null;
-        const tieneIngreso = Boolean(asistenciaActual?.ingreso);
-        const tieneEgreso = Boolean(asistenciaActual?.egreso);
-        const estado = !tieneIngreso
-          ? 'sin_ingreso'
-          : tieneEgreso
-            ? 'turno_cerrado'
-            : 'en_turno';
-        const horasTurno = tieneIngreso
-          ? diffHours(asistenciaActual.ingreso, asistenciaActual.egreso || now)
-          : 0;
+        const turnosHoy = turnosHoyPorEmpleado.get(empleado.id) || [];
+        const turnoPendiente = turnosPendientes.find((item) => item.empleadoId === empleado.id) || null;
+        const turnoAbiertoHoy = turnosHoy.find(isTurnoAbierto) || null;
+        const asistenciaActual = turnoPendiente || turnoAbiertoHoy || null;
+        const estado = resolverEstadoEmpleado({ turnosHoy, turnoPendiente, turnoAbiertoHoy });
+        const horasTurno = calcularHorasTurnos(turnosHoy, now);
 
         return {
           ...empleado,
           estado,
           asistenciaActual,
+          turnosHoy,
+          turnoPendiente,
           horasTurno,
           estimadoTurno: horasTurno * (empleado.valorHora || 0),
           puedeAjustarIngreso: Boolean(asistenciaActual?.puedeAjustarIngreso),
@@ -334,21 +383,23 @@ export const useAsistencia = () => {
           loadingAccion: Boolean(accionesCargando[empleado.id]),
         };
       });
-  }, [accionesCargando, empleados, estadoPorEmpleado]);
+  }, [accionesCargando, empleados, turnosHoyPorEmpleado, turnosPendientes]);
 
   const metricas = useMemo(() => {
-    const activosHoy = empleadosConEstado.filter((item) => item.estado !== 'sin_ingreso').length;
+    const activosHoy = empleadosConEstado.filter((item) => (item.turnosHoy?.length || 0) > 0).length;
     const enTurnoAhora = empleadosConEstado.filter((item) => item.estado === 'en_turno').length;
+    const pendientes = turnosPendientes.length;
     const horasAcumuladasHoy = empleadosConEstado.reduce((acc, item) => acc + item.horasTurno, 0);
     const totalEstimadoHoy = empleadosConEstado.reduce((acc, item) => acc + item.estimadoTurno, 0);
 
     return {
       activosHoy,
       enTurnoAhora,
+      pendientes,
       horasAcumuladasHoy,
       totalEstimadoHoy,
     };
-  }, [empleadosConEstado]);
+  }, [empleadosConEstado, turnosPendientes]);
 
   const actividadReciente = useMemo(() => {
     return asistenciaHoy.flatMap((item) => {
@@ -384,93 +435,44 @@ export const useAsistencia = () => {
 
   const registrarIngreso = useCallback(async (empleadoId) => {
     aplicarCargaAccion(empleadoId, true);
-    const now = new Date();
 
     try {
       const response = await empleadosService.registrarIngreso(empleadoId);
       if (!response.success) {
-        return { success: false, error: response.error || 'No se pudo registrar ingreso' };
+        return {
+          success: false,
+          error: buildIngresoError(response),
+          details: response.details,
+        };
       }
 
       const backendRecord = response.data ? normalizeAsistencia(response.data) : null;
-      const record = backendRecord && backendRecord.empleadoId
-        ? backendRecord
-        : {
-            id: `${empleadoId}-${Date.now()}`,
-            empleadoId: String(empleadoId),
-            empleadoNombre: empleados.find((item) => item.id === String(empleadoId))?.nombre || 'Empleado',
-            ingreso: now,
-            egreso: null,
-            accion: 'Ingreso',
-            registradoPor: 'Mostrador',
-            estado: 'En turno',
-            raw: {},
-          };
+      if (backendRecord?.empleadoId) {
+        setAsistencias((prev) => mergeAsistencias([backendRecord, ...prev]));
+      }
 
-      setAsistencias((prev) => {
-        const withoutOpenShift = prev.filter((item) =>
-          !(item.empleadoId === String(empleadoId) && item.ingreso && !item.egreso)
-        );
-        return [record, ...withoutOpenShift];
-      });
-
-      return { success: true, data: record };
+      return { success: true, data: backendRecord };
     } catch (errorRequest) {
       console.error('Error al registrar ingreso:', errorRequest);
       return { success: false, error: 'No se pudo registrar ingreso' };
     } finally {
       aplicarCargaAccion(empleadoId, false);
     }
-  }, [empleados]);
+  }, []);
 
-  const registrarEgreso = useCallback(async (empleadoId) => {
+  const registrarEgreso = useCallback(async (empleadoId, extraPayload = {}) => {
     aplicarCargaAccion(empleadoId, true);
-    const now = new Date();
 
     try {
-      const response = await empleadosService.registrarEgreso(empleadoId);
+      const response = await empleadosService.registrarEgreso(empleadoId, extraPayload);
       if (!response.success) {
         return { success: false, error: response.error || 'No se pudo registrar egreso' };
       }
 
       const backendRecord = response.data ? normalizeAsistencia(response.data) : null;
-
-      setAsistencias((prev) => {
-        if (backendRecord?.empleadoId) {
-          const filtered = prev.filter((item) => {
-            if (item.id === backendRecord.id) return false;
-            if (item.empleadoId !== backendRecord.empleadoId) return true;
-            if (item.ingreso && !item.egreso) return false;
-            return true;
-          });
-          return [backendRecord, ...filtered];
-        }
-
-        const updated = [...prev];
-        const targetIndex = updated.findIndex((item) => item.empleadoId === String(empleadoId) && item.ingreso && !item.egreso);
-
-        if (targetIndex >= 0) {
-          updated[targetIndex] = {
-            ...updated[targetIndex],
-            egreso: now,
-            estado: 'Turno cerrado',
-          };
-        } else {
-          updated.unshift({
-            id: `${empleadoId}-${Date.now()}`,
-            empleadoId: String(empleadoId),
-            empleadoNombre: empleados.find((item) => item.id === String(empleadoId))?.nombre || 'Empleado',
-            ingreso: null,
-            egreso: now,
-            accion: 'Egreso',
-            registradoPor: 'Mostrador',
-            estado: 'Turno cerrado',
-            raw: {},
-          });
-        }
-
-        return updated;
-      });
+      if (backendRecord?.empleadoId) {
+        setAsistencias((prev) => mergeAsistencias([backendRecord, ...prev]));
+      }
 
       return { success: true, data: backendRecord };
     } catch (errorRequest) {
@@ -479,7 +481,7 @@ export const useAsistencia = () => {
     } finally {
       aplicarCargaAccion(empleadoId, false);
     }
-  }, [empleados]);
+  }, []);
 
   const ajustarIngreso = useCallback(async (asistenciaId, payload) => {
     const key = `ajuste-${asistenciaId}`;
@@ -496,10 +498,7 @@ export const useAsistencia = () => {
 
       const backendRecord = response.data ? normalizeAsistencia(response.data) : null;
       if (backendRecord?.empleadoId) {
-        setAsistencias((prev) => {
-          const filtered = prev.filter((item) => item.id !== backendRecord.id);
-          return [backendRecord, ...filtered];
-        });
+        setAsistencias((prev) => mergeAsistencias([backendRecord, ...prev]));
       }
 
       return { success: true, data: backendRecord };
@@ -511,8 +510,36 @@ export const useAsistencia = () => {
     }
   }, []);
 
+  const registrarManual = useCallback(async (payload) => {
+    const key = `manual-${payload?.empleado_id || 'x'}`;
+    setAccionesCargando((prev) => ({ ...prev, [key]: true }));
+
+    try {
+      const response = await empleadosService.registrarAsistenciaManual(payload);
+      if (!response.success) {
+        return {
+          success: false,
+          error: response.error || 'No se pudo registrar la asistencia manual',
+        };
+      }
+
+      const backendRecord = response.data ? normalizeAsistencia(response.data) : null;
+      if (backendRecord?.empleadoId) {
+        setAsistencias((prev) => mergeAsistencias([backendRecord, ...prev]));
+      }
+
+      return { success: true, data: backendRecord };
+    } catch (errorRequest) {
+      console.error('Error al registrar asistencia manual:', errorRequest);
+      return { success: false, error: 'No se pudo registrar la asistencia manual' };
+    } finally {
+      setAccionesCargando((prev) => ({ ...prev, [key]: false }));
+    }
+  }, []);
+
   return {
     empleadosConEstado,
+    turnosPendientes,
     actividadReciente,
     metricas,
     loadingInicial,
@@ -522,6 +549,8 @@ export const useAsistencia = () => {
     registrarIngreso,
     registrarEgreso,
     ajustarIngreso,
+    registrarManual,
     accionesCargando,
+    manualDateBounds: getManualDateBounds(),
   };
 };
