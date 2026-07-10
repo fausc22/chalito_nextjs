@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const ESTADO_UI = {
   sin_ingreso: {
@@ -66,7 +68,21 @@ const renderTurnoLinea = (turno) => {
   const ingreso = formatTime(turno.ingreso);
   const egreso = turno.egreso ? formatTime(turno.egreso) : 'en curso';
   const horas = formatTurnoHoras(turno);
-  return `${ingreso} – ${egreso} (${horas})`;
+  return (
+  <>
+    {`${ingreso} – ${egreso} (${horas})`}
+    {turno.esFeriado ? (
+      <span className="ml-1 text-xs font-semibold text-orange-600">[Feriado x2]</span>
+    ) : null}
+  </>
+  );
+};
+
+const isSameDay = (dateA, dateB) => {
+  if (!dateA || !dateB) return false;
+  return dateA.getDate() === dateB.getDate()
+    && dateA.getMonth() === dateB.getMonth()
+    && dateA.getFullYear() === dateB.getFullYear();
 };
 
 export function EmpleadoAsistenciaCard({
@@ -77,11 +93,13 @@ export function EmpleadoAsistenciaCard({
   showHourlyRate = true,
   canAdjustIngreso = false,
 }) {
+  const [esFeriado, setEsFeriado] = useState(false);
   const estadoUi = ESTADO_UI[empleado.estado] || ESTADO_UI.sin_ingreso;
   const ingresoDisponible = ['sin_ingreso', 'entre_turnos'].includes(empleado.estado);
   const egresoDisponible = ['en_turno', 'turno_pendiente'].includes(empleado.estado);
   const asistencia = empleado.asistenciaActual;
   const turnosHoy = empleado.turnosHoy || [];
+  const esNocturno = Boolean(empleado.turnoNocturnoActivo);
   const mostrarAjuste = canAdjustIngreso
     && ['en_turno', 'turno_pendiente'].includes(empleado.estado)
     && Boolean(asistencia?.ingreso)
@@ -93,6 +111,11 @@ export function EmpleadoAsistenciaCard({
   const badgeLabel = empleado.estado === 'turno_pendiente' && asistencia
     ? `Turno pendiente desde ${formatFechaCorta(asistencia.fechaAsistencia || asistencia.ingreso)}`
     : estadoUi.label;
+
+  const handleRegistrarIngreso = async () => {
+    await onRegistrarIngreso(empleado.id, { esFeriado });
+    setEsFeriado(false);
+  };
 
   return (
     <Card
@@ -123,6 +146,15 @@ export function EmpleadoAsistenciaCard({
             Turno abierto del {formatFechaCorta(asistencia.fechaAsistencia || asistencia.ingreso)}.
             Registra el egreso antes de un nuevo ingreso.
           </div>
+        ) : null}
+
+        {esNocturno && asistencia?.ingreso ? (
+          <p className="text-xs text-muted-foreground">
+            Turno nocturno — ingreso: {formatTime(asistencia.ingreso)}
+            {asistencia.fechaAsistencia && !isSameDay(asistencia.ingreso, new Date())
+              ? ` (${formatFechaCorta(asistencia.fechaAsistencia || asistencia.ingreso)})`
+              : ''}
+          </p>
         ) : null}
 
         {turnosHoy.length > 0 ? (
@@ -170,7 +202,7 @@ export function EmpleadoAsistenciaCard({
             type="button"
             variant={ingresoDisponible ? 'default' : 'outline'}
             disabled={!ingresoDisponible || empleado.loadingAccion}
-            onClick={() => onRegistrarIngreso(empleado.id)}
+            onClick={handleRegistrarIngreso}
             className={ingresoDisponible ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
             title={empleado.estado === 'turno_pendiente' ? 'Cierra el turno pendiente antes de registrar ingreso' : undefined}
           >
@@ -201,6 +233,23 @@ export function EmpleadoAsistenciaCard({
             </Button>
           ) : null}
         </div>
+
+        {ingresoDisponible ? (
+          <label
+            htmlFor={`feriado-${empleado.id}`}
+            className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground"
+          >
+            <Checkbox
+              id={`feriado-${empleado.id}`}
+              checked={esFeriado}
+              onCheckedChange={(checked) => setEsFeriado(checked === true)}
+              disabled={empleado.loadingAccion}
+            />
+            <span>
+              Feriado <span className="font-semibold text-orange-600">(pago x2)</span>
+            </span>
+          </label>
+        ) : null}
       </CardContent>
     </Card>
   );

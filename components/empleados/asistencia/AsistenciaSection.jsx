@@ -26,7 +26,6 @@ const ESTADO_OPTIONS = [
   { value: 'turno_pendiente', label: 'Turno pendiente' },
   { value: 'en_turno', label: 'En turno' },
   { value: 'entre_turnos', label: 'Entre turnos' },
-  { value: 'turno_cerrado', label: 'Turno cerrado' },
 ];
 
 const formatHours = (hours) => `${(Number(hours) || 0).toFixed(2)} hs`;
@@ -89,8 +88,8 @@ export function AsistenciaSection() {
     });
   }, [empleadosConEstado, estadoFiltro, searchTerm]);
 
-  const handleIngreso = async (empleadoId) => {
-    const response = await registrarIngreso(empleadoId);
+  const handleIngreso = async (empleadoId, { esFeriado = false } = {}) => {
+    const response = await registrarIngreso(empleadoId, { esFeriado });
     if (response.success) {
       toast.success('Ingreso registrado');
       await cargarAsistencia({ silent: true });

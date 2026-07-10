@@ -40,6 +40,24 @@ const buildIsoFromDateAndTime = (fechaYmd, timeHm) => {
   return localDate.toISOString();
 };
 
+const addDaysToYmd = (fechaYmd, days) => {
+  const [year, month, day] = fechaYmd.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + days);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const resolveEgresoIso = (fechaYmd, horaIngresoTime, horaEgresoTime) => {
+  const ingresoHm = horaIngresoTime instanceof Date
+    ? `${String(horaIngresoTime.getHours()).padStart(2, '0')}:${String(horaIngresoTime.getMinutes()).padStart(2, '0')}`
+    : '';
+  const egresoFecha = horaEgresoTime < ingresoHm ? addDaysToYmd(fechaYmd, 1) : fechaYmd;
+  return buildIsoFromDateAndTime(egresoFecha, horaEgresoTime);
+};
+
 const validate = (form, asistencia) => {
   const errors = {};
   const fechaYmd = toDateYmd(asistencia?.fechaAsistencia) || toDateYmd(asistencia?.ingreso);
@@ -55,9 +73,16 @@ const validate = (form, asistencia) => {
     return errors;
   }
 
-  const egreso = new Date(buildIsoFromDateAndTime(fechaYmd, form.horaEgreso));
-  if (egreso <= ingreso) {
-    errors.horaEgreso = 'El egreso debe ser posterior al ingreso';
+  const egresoIso = resolveEgresoIso(fechaYmd, ingreso, form.horaEgreso);
+  const egreso = new Date(egresoIso);
+  const diffHoras = (egreso.getTime() - ingreso.getTime()) / (1000 * 60 * 60);
+
+  if (diffHoras <= 0 || diffHoras > 16) {
+    errors.horaEgreso = 'El egreso debe ser posterior al ingreso y dentro de las 16 horas de turno';
+  }
+
+  if (egreso > new Date()) {
+    errors.horaEgreso = 'La hora de egreso no puede ser futura';
   }
 
   return errors;
@@ -90,6 +115,11 @@ export function CerrarTurnoPendienteModal({
     setErrors({});
   }, [isOpen, asistencia?.id]);
 
+  const ingresoHm = asistencia?.ingreso
+    ? `${String(asistencia.ingreso.getHours()).padStart(2, '0')}:${String(asistencia.ingreso.getMinutes()).padStart(2, '0')}`
+    : '';
+  const cruzaMedianoche = horaEgreso && ingresoHm ? horaEgreso < ingresoHm : false;
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     const validationErrors = validate({ horaEgreso }, asistencia);
@@ -98,7 +128,7 @@ export function CerrarTurnoPendienteModal({
 
     await onSubmit({
       empleado_id: Number(empleado?.id || asistencia?.empleadoId),
-      hora_egreso: buildIsoFromDateAndTime(fechaYmd, horaEgreso),
+      hora_egreso: resolveEgresoIso(fechaYmd, asistencia.ingreso, horaEgreso),
     });
   };
 
@@ -117,7 +147,8 @@ export function CerrarTurnoPendienteModal({
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <p>
                 Este turno quedó abierto de un día anterior. Indique la hora real de egreso
-                del mismo día del turno para calcular correctamente las horas trabajadas.
+                para calcular correctamente las horas trabajadas. Si el egreso fue después de
+                la medianoche, ingreselo normalmente (ej.: ingreso 22:00, egreso 02:00).
               </p>
             </div>
           </div>
@@ -152,6 +183,12 @@ export function CerrarTurnoPendienteModal({
               ) : null}
             </div>
           </div>
+
+          {cruzaMedianoche ? (
+            <p className="text-xs font-medium text-blue-700">
+              Se registrara el egreso al dia siguiente del turno.
+            </p>
+          ) : null}
 
           <DialogFooter className="border-t pt-3 sm:pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>

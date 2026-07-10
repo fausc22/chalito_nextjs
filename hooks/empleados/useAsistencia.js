@@ -145,6 +145,7 @@ const normalizeAsistencia = (asistencia) => {
     estado: getFirstDefined(asistencia?.estado, asistencia?.status) || null,
     estaLiquidado: liquidacionFlags.estaLiquidado,
     puedeAjustarIngreso: liquidacionFlags.puedeAjustarIngreso,
+    esFeriado: Boolean(getFirstDefined(asistencia?.es_feriado, asistencia?.esFeriado)),
     raw: asistencia,
   };
 };
@@ -205,8 +206,16 @@ const getRecordSortTs = (record) => {
   return Number.isFinite(id) ? id : 0;
 };
 
+const HORAS_MAX_TURNO_ACTIVO = 16;
+
+const esTurnoNocturnoActivo = (record, now) => {
+  if (!record?.ingreso) return false;
+  const horas = (now.getTime() - record.ingreso.getTime()) / (1000 * 60 * 60);
+  return horas > 0 && horas <= HORAS_MAX_TURNO_ACTIVO;
+};
+
 const isTurnoPendiente = (record, now) =>
-  isTurnoAbierto(record) && !isRecordToday(record, now);
+  isTurnoAbierto(record) && !isRecordToday(record, now) && !esTurnoNocturnoActivo(record, now);
 
 const mergeAsistencias = (items) => {
   const byId = new Map();
@@ -229,6 +238,21 @@ const calcularHorasTurnos = (turnos, now) => {
       return acc + diffHours(turno.ingreso, now);
     }
     return acc;
+  }, 0);
+};
+
+const calcularEstimadoTurnos = (turnos, now, valorHora) => {
+  return turnos.reduce((acc, turno) => {
+    let horas = 0;
+    if (isTurnoCerrado(turno)) {
+      horas = turno.minutosTrabajados > 0
+        ? turno.minutosTrabajados / 60
+        : diffHours(turno.ingreso, turno.egreso);
+    } else if (isTurnoAbierto(turno)) {
+      horas = diffHours(turno.ingreso, now);
+    }
+    const multiplicador = turno.esFeriado ? 2 : 1;
+    return acc + horas * (valorHora || 0) * multiplicador;
   }, 0);
 };
 
@@ -366,24 +390,40 @@ export const useAsistencia = () => {
         const turnosHoy = turnosHoyPorEmpleado.get(empleado.id) || [];
         const turnoPendiente = turnosPendientes.find((item) => item.empleadoId === empleado.id) || null;
         const turnoAbiertoHoy = turnosHoy.find(isTurnoAbierto) || null;
-        const asistenciaActual = turnoPendiente || turnoAbiertoHoy || null;
-        const estado = resolverEstadoEmpleado({ turnosHoy, turnoPendiente, turnoAbiertoHoy });
-        const horasTurno = calcularHorasTurnos(turnosHoy, now);
+        const turnoNocturnoActivo = asistencias.find(
+          (record) => record.empleadoId === empleado.id
+            && isTurnoAbierto(record)
+            && !isRecordToday(record, now)
+            && esTurnoNocturnoActivo(record, now)
+        ) || null;
+        const turnoAbiertoActual = turnoAbiertoHoy || turnoNocturnoActivo || null;
+        const asistenciaActual = turnoAbiertoActual || turnoPendiente || null;
+        const estado = resolverEstadoEmpleado({
+          turnosHoy,
+          turnoPendiente,
+          turnoAbiertoHoy: turnoAbiertoActual,
+        });
+        const turnosParaHoras = turnoNocturnoActivo
+          && !turnosHoy.some((turno) => turno.id === turnoNocturnoActivo.id)
+          ? [...turnosHoy, turnoNocturnoActivo]
+          : turnosHoy;
+        const horasTurno = calcularHorasTurnos(turnosParaHoras, now);
 
         return {
           ...empleado,
           estado,
           asistenciaActual,
-          turnosHoy,
+          turnosHoy: turnosParaHoras,
           turnoPendiente,
+          turnoNocturnoActivo,
           horasTurno,
-          estimadoTurno: horasTurno * (empleado.valorHora || 0),
+          estimadoTurno: calcularEstimadoTurnos(turnosParaHoras, now, empleado.valorHora),
           puedeAjustarIngreso: Boolean(asistenciaActual?.puedeAjustarIngreso),
           estaLiquidado: Boolean(asistenciaActual?.estaLiquidado),
           loadingAccion: Boolean(accionesCargando[empleado.id]),
         };
       });
-  }, [accionesCargando, empleados, turnosHoyPorEmpleado, turnosPendientes]);
+  }, [accionesCargando, asistencias, empleados, turnosHoyPorEmpleado, turnosPendientes]);
 
   const metricas = useMemo(() => {
     const activosHoy = empleadosConEstado.filter((item) => (item.turnosHoy?.length || 0) > 0).length;
@@ -433,11 +473,11 @@ export const useAsistencia = () => {
     setAccionesCargando((prev) => ({ ...prev, [key]: isLoading }));
   };
 
-  const registrarIngreso = useCallback(async (empleadoId) => {
+  const registrarIngreso = useCallback(async (empleadoId, { esFeriado = false } = {}) => {
     aplicarCargaAccion(empleadoId, true);
 
     try {
-      const response = await empleadosService.registrarIngreso(empleadoId);
+      const response = await empleadosService.registrarIngreso(empleadoId, { es_feriado: esFeriado });
       if (!response.success) {
         return {
           success: false,

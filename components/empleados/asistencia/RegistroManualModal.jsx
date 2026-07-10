@@ -1,16 +1,36 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { getManualDateBounds } from '@/hooks/empleados/useAsistencia';
 
+const HORAS_MAX_TURNO = 16;
+
 const buildIsoFromDateAndTime = (fechaYmd, timeHm) => {
   const [year, month, day] = fechaYmd.split('-').map(Number);
   const [hours, minutes] = timeHm.split(':').map(Number);
   const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
   return localDate.toISOString();
+};
+
+const addDaysToYmd = (fechaYmd, days) => {
+  const [year, month, day] = fechaYmd.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + days);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const resolveHorariosTurno = (fecha, horaIngreso, horaEgreso) => {
+  const ingresoIso = buildIsoFromDateAndTime(fecha, horaIngreso);
+  const egresoFecha = horaEgreso < horaIngreso ? addDaysToYmd(fecha, 1) : fecha;
+  const egresoIso = buildIsoFromDateAndTime(egresoFecha, horaEgreso);
+  return { ingresoIso, egresoIso, cruzaMedianoche: horaEgreso < horaIngreso };
 };
 
 const validate = (form) => {
@@ -37,11 +57,17 @@ const validate = (form) => {
   }
 
   if (form.fecha && form.horaIngreso && form.horaEgreso) {
-    const ingreso = new Date(buildIsoFromDateAndTime(form.fecha, form.horaIngreso));
-    const egreso = new Date(buildIsoFromDateAndTime(form.fecha, form.horaEgreso));
+    const { ingresoIso, egresoIso } = resolveHorariosTurno(
+      form.fecha,
+      form.horaIngreso,
+      form.horaEgreso
+    );
+    const ingreso = new Date(ingresoIso);
+    const egreso = new Date(egresoIso);
+    const diffHoras = (egreso.getTime() - ingreso.getTime()) / (1000 * 60 * 60);
 
-    if (egreso <= ingreso) {
-      errors.horaEgreso = 'El egreso debe ser posterior al ingreso';
+    if (diffHoras <= 0 || diffHoras > HORAS_MAX_TURNO) {
+      errors.horaEgreso = `El turno debe durar entre 1 minuto y ${HORAS_MAX_TURNO} horas`;
     }
 
     if (ingreso > now || egreso > now) {
@@ -67,8 +93,13 @@ export function RegistroManualModal({
     horaIngreso: '',
     horaEgreso: '',
     motivo: '',
+    esFeriado: false,
   });
   const [errors, setErrors] = useState({});
+
+  const cruzaMedianoche = form.horaIngreso && form.horaEgreso
+    ? form.horaEgreso < form.horaIngreso
+    : false;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -78,6 +109,7 @@ export function RegistroManualModal({
       horaIngreso: '',
       horaEgreso: '',
       motivo: '',
+      esFeriado: false,
     });
     setErrors({});
   }, [isOpen, empleadoPreseleccionado, maxDate]);
@@ -88,12 +120,19 @@ export function RegistroManualModal({
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) return;
 
+    const { ingresoIso, egresoIso } = resolveHorariosTurno(
+      form.fecha,
+      form.horaIngreso,
+      form.horaEgreso
+    );
+
     await onSubmit({
       empleado_id: Number(form.empleadoId),
       fecha: form.fecha,
-      hora_ingreso: buildIsoFromDateAndTime(form.fecha, form.horaIngreso),
-      hora_egreso: buildIsoFromDateAndTime(form.fecha, form.horaEgreso),
+      hora_ingreso: ingresoIso,
+      hora_egreso: egresoIso,
       motivo: form.motivo.trim() || null,
+      es_feriado: form.esFeriado,
     });
   };
 
@@ -175,6 +214,15 @@ export function RegistroManualModal({
             </div>
           </div>
 
+          <p className="text-xs text-muted-foreground">
+            Si el egreso es despues de la medianoche, ingresalo normalmente. Ej.: ingreso 22:00, egreso 02:00.
+          </p>
+          {cruzaMedianoche ? (
+            <p className="text-xs font-medium text-blue-700">
+              Se registrara el egreso al dia siguiente del turno.
+            </p>
+          ) : null}
+
           <div className="space-y-1.5">
             <Label htmlFor="manual-motivo">Motivo (opcional)</Label>
             <Textarea
@@ -186,6 +234,21 @@ export function RegistroManualModal({
               disabled={isSubmitting}
             />
           </div>
+
+          <label
+            htmlFor="manual-feriado"
+            className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground"
+          >
+            <Checkbox
+              id="manual-feriado"
+              checked={form.esFeriado}
+              onCheckedChange={(checked) => setForm((prev) => ({ ...prev, esFeriado: checked === true }))}
+              disabled={isSubmitting}
+            />
+            <span>
+              Turno en feriado <span className="font-semibold text-orange-600">(pago x2)</span>
+            </span>
+          </label>
 
           <DialogFooter className="border-t pt-3 sm:pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
