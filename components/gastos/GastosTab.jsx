@@ -275,9 +275,6 @@ export function GastosTab({
         if (!formulario.categoria_id) {
             return 'La categoría es obligatoria';
         }
-        if (!formulario.descripcion?.trim()) {
-            return 'La descripción es obligatoria';
-        }
         if (!formulario.monto || parseFloat(formulario.monto) <= 0) {
             return 'El monto debe ser mayor a 0';
         }

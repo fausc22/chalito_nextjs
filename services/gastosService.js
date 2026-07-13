@@ -104,7 +104,7 @@ export const gastosService = {
             
             const payload = {
                 categoria_id: parseInt(gastoData.categoria_id),
-                descripcion: gastoData.descripcion,
+                descripcion: gastoData.descripcion?.trim() || '',
                 monto: parseFloat(gastoData.monto),
                 forma_pago: gastoData.forma_pago || 'EFECTIVO',
                 observaciones: gastoData.observaciones || null,
@@ -151,7 +151,7 @@ export const gastosService = {
                 payload.categoria_id = parseInt(gastoData.categoria_id);
             }
             if (gastoData.descripcion !== undefined) {
-                payload.descripcion = gastoData.descripcion;
+                payload.descripcion = gastoData.descripcion?.trim() || '';
             }
             if (gastoData.monto !== undefined) {
                 payload.monto = parseFloat(gastoData.monto);

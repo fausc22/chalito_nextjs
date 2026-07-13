@@ -57,7 +57,6 @@ export function GastosForm({
 
         if (!formulario.categoria_id) nextErrors.categoria_id = 'La categoría es obligatoria';
         if (!formulario.fecha) nextErrors.fecha = 'La fecha del gasto es obligatoria';
-        if (!formulario.descripcion?.trim()) nextErrors.descripcion = 'La descripción es obligatoria';
         if (!formulario.monto || parseFloat(formulario.monto) <= 0) nextErrors.monto = 'El monto debe ser mayor a 0';
 
         setErrors(nextErrors);
@@ -123,19 +122,16 @@ export function GastosForm({
                     {/* Descripción */}
                     <div>
                         <Label htmlFor="descripcion" className="text-sm font-medium">
-                            Descripción <span className="text-red-500">*</span>
+                            Descripción
                         </Label>
                         <Input
                             id="descripcion"
                             value={formulario.descripcion || ''}
                             onChange={(e) => handleChange('descripcion', e.target.value)}
-                            placeholder="Ej: Compra de harina para producción"
+                            placeholder="Ej: Compra de harina para producción (opcional)"
                             className="mt-1"
                             maxLength={255}
-                            error={Boolean(errors.descripcion)}
-                            aria-invalid={Boolean(errors.descripcion)}
                         />
-                        <FieldError error={errors.descripcion} />
                     </div>
 
                     {/* Monto */}
