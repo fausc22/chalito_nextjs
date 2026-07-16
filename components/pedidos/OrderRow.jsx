@@ -7,6 +7,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { calcularEstadoTemporalPedido } from '@/lib/pedidoTimeUtils';
 import { isPedidoMercadoPagoPendiente, isPedidoPaid } from '@/lib/pedidoPaymentUtils';
+import { getComandaImpresaLabel, isComandaImpresa } from '@/lib/pedidoPrintUtils';
 import { ROW_INLINE_MIN, useContainerWidth } from '@/hooks/useContainerWidth';
 import { PedidoAcciones } from './PedidoAcciones';
 
@@ -126,6 +127,8 @@ function OrderRowComponent({
   // Feedback visual temporal para pedidos actualizados recientemente (2 segundos) o nuevos WEB
   const isActualizadoRecientemente = pedido.actualizadoRecientemente === true;
   const showHighlight = isHighlighted || isActualizadoRecientemente;
+  const comandaYaImpresa = isComandaImpresa(pedido);
+  const comandaImpresaLabel = getComandaImpresaLabel(pedido);
   const isPaid = isPedidoPaid(pedido);
   const isMercadoPagoPendiente = isPedidoMercadoPagoPendiente(pedido);
   const splitLabel = (() => {
@@ -157,7 +160,11 @@ function OrderRowComponent({
       className={`
         group relative bg-card rounded-lg overflow-hidden
         hover:shadow-md transition-all mb-3 flex flex-col
-        ${showHighlight ? 'bg-amber-100 border-amber-500 ring-1 ring-amber-300 animate-breathe' : 'border border-border'}
+        ${showHighlight
+          ? 'bg-amber-100 border-amber-500 ring-1 ring-amber-300 animate-breathe'
+          : comandaYaImpresa
+            ? 'bg-primary/10 border-blue-400 ring-1 ring-blue-200'
+            : 'border border-border'}
         ${isDragging ? 'select-none' : ''}
         w-full min-h-[100px]
       `}
@@ -235,6 +242,11 @@ function OrderRowComponent({
                 {isActualizadoRecientemente && (
                   <Badge className="bg-amber-500/100 text-white text-[10px] px-1.5 py-0.5 font-semibold animate-pulse whitespace-nowrap flex-shrink-0">
                     Actualizado
+                  </Badge>
+                )}
+                {comandaYaImpresa && comandaImpresaLabel && (
+                  <Badge className="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 font-semibold whitespace-nowrap flex-shrink-0">
+                    {comandaImpresaLabel}
                   </Badge>
                 )}
               </div>

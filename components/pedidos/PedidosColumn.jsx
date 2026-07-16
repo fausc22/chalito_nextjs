@@ -6,7 +6,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { OrderCard } from './OrderCard';
 import { OrderRow } from './OrderRow';
 import { pedidosService } from '../../services/pedidosService';
-import { isPedidoMercadoPagoPendiente } from '@/lib/pedidoPaymentUtils';
+import { isPedidoBloqueadoPorPagoOperativo } from '@/lib/pedidoPaymentUtils';
 import {
   Pagination,
   PaginationContent,
@@ -34,6 +34,7 @@ function PedidosColumnComponent({
   highlightedPedidoIds = new Set(),
   newWebOrderIds = new Set(),
   newAnimatedPedidoIds = new Set(),
+  capacidadCocinaSocket = null,
 }) {
   const [paginaActual, setPaginaActual] = useState(1);
   const [infoCapacidad, setInfoCapacidad] = useState(null);
@@ -58,6 +59,13 @@ function PedidosColumnComponent({
       return () => clearInterval(interval);
     }
   }, [estado, titulo, cargarCapacidad]);
+
+  // Refresco inmediato vía WebSocket (capacidad:actualizada)
+  useEffect(() => {
+    if (!(estado === 'en_cocina' || titulo === 'EN PREPARACIÓN')) return;
+    if (!capacidadCocinaSocket || typeof capacidadCocinaSocket !== 'object') return;
+    setInfoCapacidad(capacidadCocinaSocket);
+  }, [capacidadCocinaSocket, estado, titulo]);
   
   // Rastrear el número anterior de pedidos para detectar cambios
   const prevPedidosCountRef = useRef(null);
@@ -223,7 +231,7 @@ function PedidosColumnComponent({
                     isHighlighted={highlightedPedidoIds.has(String(pedido.id))}
                     isNewWebOrder={newWebOrderIds.has(String(pedido.id))}
                     isNew={newAnimatedPedidoIds.has(String(pedido.id))}
-                    isDraggable={estado === 'recibido' && !isPedidoMercadoPagoPendiente(pedido)}
+                    isDraggable={estado === 'recibido' && !isPedidoBloqueadoPorPagoOperativo(pedido)}
                   />
                 </motion.div>
               ))}
@@ -258,7 +266,7 @@ function PedidosColumnComponent({
                     isHighlighted={highlightedPedidoIds.has(String(pedido.id))}
                     isNewWebOrder={newWebOrderIds.has(String(pedido.id))}
                     isNew={newAnimatedPedidoIds.has(String(pedido.id))}
-                    isDraggable={estado === 'recibido' && !isPedidoMercadoPagoPendiente(pedido)}
+                    isDraggable={estado === 'recibido' && !isPedidoBloqueadoPorPagoOperativo(pedido)}
                   />
                 </motion.div>
               ))}

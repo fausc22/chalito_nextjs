@@ -22,7 +22,7 @@ import { useEditarPedido } from '@/hooks/pedidos/useEditarPedido';
 import { useWebOrderAlerts } from '../../contexts/WebOrderAlertsContext';
 import { ventasService } from '../../services/ventasService';
 import { pedidosService } from '../../services/pedidosService';
-import { isPedidoMercadoPagoPendiente } from '../../lib/pedidoPaymentUtils';
+import { isPedidoBloqueadoPorPagoOperativo } from '../../lib/pedidoPaymentUtils';
 import { calculateLineSubtotalFromSnapshot } from '../../lib/pedidoTotals';
 import { toast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -81,6 +81,7 @@ export function PedidosPageContent() {
     actualizarPedido,
     recargarPedidos,
     highlightedWebOrderIds,
+    capacidadCocina,
   } = usePedidos();
 
   const nuevoPedido = useNuevoPedido();
@@ -165,6 +166,21 @@ export function PedidosPageContent() {
       estado: pedido?.estado ?? null,
     });
   }, []);
+
+  const handleComandaImpresa = useCallback((pedidoId, data) => {
+    if (pedidoId == null) return;
+    const impresiones = Number(data?.comanda_impresiones ?? data?.comandaImpresiones ?? 0);
+    actualizarPedido(String(pedidoId), {
+      comandaImpresiones: Number.isFinite(impresiones) ? impresiones : 0,
+      comandaImpresaEn: data?.comanda_impresa_en
+        ? new Date(data.comanda_impresa_en).getTime()
+        : Date.now(),
+      comandaUltimaImpresionUsuario:
+        data?.comanda_ultima_impresion_usuario_nombre ||
+        data?.comandaUltimaImpresionUsuario ||
+        null,
+    });
+  }, [actualizarPedido]);
 
   const handleModalImprimirOpenChange = useCallback((nextOpen) => {
     setPrintDialogState((prev) => {
@@ -345,7 +361,7 @@ export function PedidosPageContent() {
 
     // Solo permitir flujo manual: RECIBIDO -> EN PREPARACION
     if (estadoActual === 'recibido' && isEnPreparacionTarget) {
-      if (isPedidoMercadoPagoPendiente(pedido)) {
+      if (isPedidoBloqueadoPorPagoOperativo(pedido)) {
         toast.warning('Pedido bloqueado', {
           description: 'Esperando pago Mercado Pago. No se puede mover a preparación todavía.',
         });
@@ -552,6 +568,7 @@ export function PedidosPageContent() {
                       cobrandoPedidoId={pedidoACobrar && pedidoACobrar.id !== 'nuevo' ? pedidoACobrar.id : null}
                       highlightedPedidoIds={highlightedWebOrderIds}
                       newWebOrderIds={highlightedWebOrderIds}
+                      capacidadCocinaSocket={capacidadCocina}
                     />
                   </div>
                 </div>
@@ -771,6 +788,7 @@ export function PedidosPageContent() {
           pedido={printDialogState.pedido}
           open={printDialogState.open}
           onOpenChange={handleModalImprimirOpenChange}
+          onComandaImpresa={handleComandaImpresa}
         />
       )}
 

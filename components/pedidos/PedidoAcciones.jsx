@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import {
-  isPedidoMercadoPagoPendiente,
+  isPedidoBloqueadoPorPagoOperativo,
   isPedidoPaid,
   shouldShowPrepararYa,
   shouldShowCambiarHorario,
@@ -32,7 +32,7 @@ import { getActionDensity, useContainerWidth } from '@/hooks/useContainerWidth';
  * LISTO: visible solo en EN PREPARACION (en_cocina).
  * COBRAR: visible si el pedido aun no esta pago (incluye MP pendiente: Postnet / cobro manual).
  * ENTREGAR: visible solo en LISTO y PAGADO.
- * Si es MERCADOPAGO y no esta PAGADO, se bloquean cocina/listo/entregar/programado; COBRAR sigue disponible.
+ * Pedidos WEB con MP/transferencia pendientes: se bloquean cocina/listo/entregar/programado; COBRAR sigue disponible.
  */
 export function shouldShowListo(pedido) {
   const e = pedido?.estado;
@@ -216,7 +216,7 @@ function PedidoAccionesComponent({
 
   const estado = pedido.estado;
   const isPaid = isPedidoPaid(pedido);
-  const isOperativamenteBloqueado = isPedidoMercadoPagoPendiente(pedido);
+  const isOperativamenteBloqueado = isPedidoBloqueadoPorPagoOperativo(pedido);
   const isUpdatingState = Boolean(pedido?.uiPendingStateUpdate);
 
   const showListo = !isOperativamenteBloqueado && shouldShowListo(pedido);

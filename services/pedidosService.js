@@ -227,6 +227,12 @@ const transformarPedidoBackendAFrontend = (pedidoBackend, articulos = []) => {
     horaListo: pedidoBackend.hora_listo ? new Date(pedidoBackend.hora_listo).getTime() : null,
     prioridad: pedidoBackend.prioridad ? pedidoBackend.prioridad.toLowerCase() : 'normal',
     transicionAutomatica: pedidoBackend.transicion_automatica !== undefined ? pedidoBackend.transicion_automatica : true,
+    comandaImpresaEn: pedidoBackend.comanda_impresa_en
+      ? new Date(pedidoBackend.comanda_impresa_en).getTime()
+      : null,
+    comandaImpresiones: Number(pedidoBackend.comanda_impresiones) || 0,
+    comandaUltimaImpresionUsuario:
+      pedidoBackend.comanda_ultima_impresion_usuario_nombre || null,
     updated_at: updatedAtIso,
     updatedAt: updatedAtIso,
     version
@@ -1089,6 +1095,39 @@ export const pedidosService = {
           error.response?.data?.mensaje ||
           error.message ||
           'Error al obtener comanda'
+      };
+    }
+  },
+
+  /**
+   * Registra impresión exitosa de comanda (post-agente o confirmación browser).
+   */
+  registrarComandaImpresa: async (id, { origen } = {}) => {
+    try {
+      const response = await apiRequest.post(API_CONFIG.ENDPOINTS.PEDIDOS.COMANDA_IMPRESA(id), {
+        ...(origen ? { origen } : {})
+      });
+      if (response.data?.success === false) {
+        return {
+          success: false,
+          error: response.data?.message || 'No se pudo registrar la impresión',
+          code: response.data?.code
+        };
+      }
+      return {
+        success: true,
+        data: response.data?.data || response.data
+      };
+    } catch (error) {
+      console.error('Error al registrar comanda impresa:', error);
+      return {
+        success: false,
+        code: error.response?.data?.code || 'REGISTER_PRINT_FAILED',
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.mensaje ||
+          error.message ||
+          'Error al registrar impresión'
       };
     }
   },

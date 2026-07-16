@@ -102,6 +102,8 @@ const buildPedidoFingerprint = (pedido) => {
     pedido.horaListo,
     pedido.horaEntrega ? new Date(pedido.horaEntrega).getTime() : '',
     pedido.transicionAutomatica,
+    pedido.comandaImpresiones ?? 0,
+    pedido.comandaImpresaEn ?? '',
     itemsFingerprint,
   ].join('::');
 };
@@ -111,6 +113,7 @@ export const usePedidos = () => {
   const [busquedaPedidos, setBusquedaPedidos] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [capacidadCocina, setCapacidadCocina] = useState(null);
   /** IDs de pedidos WEB a resaltar / animar entrada (mapa estable para React state). */
   const [webOrderFlashMap, setWebOrderFlashMap] = useState({});
   const pedidosByIdRef = useRef({});
@@ -604,8 +607,9 @@ export const usePedidos = () => {
 
   const handleCapacidadActualizada = useCallback((data) => {
     console.log('📊 [usePedidos] Capacidad actualizada via WebSocket:', data);
-    // La capacidad se maneja en PedidosColumn, que recarga automáticamente
-    // Los eventos WebSocket ayudan a actualizar en tiempo real
+    if (data?.capacidad) {
+      setCapacidadCocina(data.capacidad);
+    }
   }, []);
 
   const handlePedidosAtrasados = useCallback((data) => {
@@ -613,6 +617,28 @@ export const usePedidos = () => {
     // Se pueden mostrar notificaciones o actualizar visualmente
     // Por ahora solo logueamos
   }, []);
+
+  const handlePedidoComandaImpresa = useCallback((data) => {
+    if (data?.pedidoId == null) return;
+    const impresiones = Number(
+      data.comanda_impresiones ?? data.comandaImpresiones ?? 0
+    );
+    const impresaEn = data.comanda_impresa_en || data.comandaImpresaEn || null;
+    const usuario =
+      data.comanda_ultima_impresion_usuario_nombre ||
+      data.comandaUltimaImpresionUsuario ||
+      null;
+
+    patchPedido(
+      data.pedidoId,
+      {
+        comandaImpresiones: Number.isFinite(impresiones) ? impresiones : 0,
+        comandaImpresaEn: impresaEn ? new Date(impresaEn).getTime() : Date.now(),
+        comandaUltimaImpresionUsuario: usuario,
+      },
+      'websocket'
+    );
+  }, [patchPedido]);
 
   const handlePedidoActualizado = useCallback((data) => {
     debugPedidos('socket_pedido_actualizado', {
@@ -670,7 +696,8 @@ export const usePedidos = () => {
     handlePedidosAtrasados,
     handlePedidoActualizado,
     markWorkerHeartbeat,
-    handleMpPaymentUpdated
+    handleMpPaymentUpdated,
+    handlePedidoComandaImpresa
   );
 
   // Actualizar estado de conexión cuando cambia el WebSocket
@@ -1142,6 +1169,7 @@ export const usePedidos = () => {
     recargarPedidos: cargarPedidos,
     socketConnected, // Exponer estado de conexión WebSocket
     highlightedWebOrderIds,
+    capacidadCocina,
   };
 };
 

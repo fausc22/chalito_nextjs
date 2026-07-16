@@ -7,6 +7,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { calcularEstadoTemporalPedido } from '@/lib/pedidoTimeUtils';
 import { isPedidoMercadoPagoPendiente, isPedidoPaid } from '@/lib/pedidoPaymentUtils';
+import { getComandaImpresaLabel, isComandaImpresa } from '@/lib/pedidoPrintUtils';
 import { PedidoAcciones } from './PedidoAcciones';
 
 function OrderCardComponent({
@@ -91,9 +92,13 @@ function OrderCardComponent({
     return null;
   })();
   const isPendingUpdate = Boolean(pedido.uiPendingStateUpdate);
+  const comandaYaImpresa = isComandaImpresa(pedido);
+  const comandaImpresaLabel = getComandaImpresaLabel(pedido);
   const cardStateClassName = showHighlight
     ? 'bg-amber-100 border-amber-500 ring-1 ring-amber-300 animate-breathe'
-    : 'border-border';
+    : comandaYaImpresa
+      ? 'bg-primary/10 border-blue-400 ring-1 ring-blue-200'
+      : 'border-border';
   const cardClassName = `group relative mb-2 shadow-sm hover:shadow-md transition-all border rounded-lg overflow-hidden flex flex-col h-full min-h-[210px] sm:min-h-[220px] ${
     isDragging ? 'select-none' : ''
   } ${cardStateClassName}`;
@@ -176,6 +181,11 @@ function OrderCardComponent({
                 {isActualizadoRecientemente && (
                   <Badge className="bg-amber-500/100 text-white text-[10px] px-1.5 py-0.5 font-semibold animate-pulse">
                     Actualizado
+                  </Badge>
+                )}
+                {comandaYaImpresa && comandaImpresaLabel && (
+                  <Badge className="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 font-semibold">
+                    {comandaImpresaLabel}
                   </Badge>
                 )}
               </div>

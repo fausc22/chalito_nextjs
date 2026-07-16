@@ -14,7 +14,8 @@ export const useSocket = (
     onPedidosAtrasados,
     onPedidoActualizado,
     onWorkerHeartbeat,
-    onMpPaymentUpdated
+    onMpPaymentUpdated,
+    onPedidoComandaImpresa
 ) => {
     const socketRef = useRef(null);
     const [isConnected, setIsConnected] = useState(false);
@@ -27,6 +28,7 @@ export const useSocket = (
         onPedidoActualizado,
         onWorkerHeartbeat,
         onMpPaymentUpdated,
+        onPedidoComandaImpresa,
     });
 
     // Mantener referencias actualizadas sin recrear la conexión
@@ -40,6 +42,7 @@ export const useSocket = (
             onPedidoActualizado,
             onWorkerHeartbeat,
             onMpPaymentUpdated,
+            onPedidoComandaImpresa,
         };
     }, [
         onPedidoCreado,
@@ -49,7 +52,8 @@ export const useSocket = (
         onPedidosAtrasados,
         onPedidoActualizado,
         onWorkerHeartbeat,
-        onMpPaymentUpdated
+        onMpPaymentUpdated,
+        onPedidoComandaImpresa
     ]);
 
     useEffect(() => {
@@ -147,6 +151,16 @@ export const useSocket = (
             }
             if (handlersRef.current.onPedidoActualizado) {
                 handlersRef.current.onPedidoActualizado(data);
+            }
+        });
+
+        socket.on('pedido:comanda-impresa', (data) => {
+            console.log('🖨️ [WebSocket] Comanda impresa:', data);
+            if (handlersRef.current.onWorkerHeartbeat) {
+                handlersRef.current.onWorkerHeartbeat({ active: true, timestamp: Date.now(), source: 'pedido:comanda-impresa' });
+            }
+            if (handlersRef.current.onPedidoComandaImpresa) {
+                handlersRef.current.onPedidoComandaImpresa(data);
             }
         });
 

@@ -11,10 +11,11 @@ import {
 import { printPayloadBrowser } from '@/lib/printUtilsBrowser';
 import { isBrowserPrintFallbackEnabled } from '@/lib/printConfig';
 import { buildPrintIncidentReport, copyPrintIncidentReport, openSupportEmail } from '@/lib/printIncidentReport';
+import { pedidosService } from '@/services/pedidosService';
 
 const PRINT_REQUEST_TIMEOUT_MS = 20000;
 
-export function ModalImprimir({ pedido, open, onOpenChange }) {
+export function ModalImprimir({ pedido, open, onOpenChange, onComandaImpresa }) {
   const [phase, setPhase] = useState('idle');
   const [errorInfo, setErrorInfo] = useState(null);
   const [lastPayload, setLastPayload] = useState(null);
@@ -55,6 +56,20 @@ export function ModalImprimir({ pedido, open, onOpenChange }) {
     onOpenChange(false);
   };
 
+  const registrarImpresionKitchen = async (origen) => {
+    if (!pedido?.id) return;
+    try {
+      const reg = await pedidosService.registrarComandaImpresa(pedido.id, { origen });
+      if (reg.success && typeof onComandaImpresa === 'function') {
+        onComandaImpresa(pedido.id, reg.data);
+      } else if (!reg.success) {
+        console.warn('No se pudo registrar impresión de comanda:', reg.error || reg.code);
+      }
+    } catch (err) {
+      console.warn('Error registrando impresión de comanda:', err);
+    }
+  };
+
   const runThermalPrint = async (kind) => {
     if (!pedido) return;
 
@@ -82,6 +97,9 @@ export function ModalImprimir({ pedido, open, onOpenChange }) {
       if (!isMountedRef.current || activeRequestIdRef.current !== requestId) return;
 
       if (result.success) {
+        if (kind === 'kitchen') {
+          await registrarImpresionKitchen('agent');
+        }
         setPhase('success');
         setLastPayload(result.payload);
         toast.success(kind === 'kitchen' ? 'Ticket impreso' : 'Factura impresa', {
@@ -113,7 +131,7 @@ export function ModalImprimir({ pedido, open, onOpenChange }) {
     }
   };
 
-  const handleBrowserFallback = () => {
+  const handleBrowserFallback = async () => {
     if (!lastPayload) {
       toast.error('Sin datos para imprimir', {
         description: 'Reintentá la impresión primero.'
@@ -121,16 +139,28 @@ export function ModalImprimir({ pedido, open, onOpenChange }) {
       return;
     }
     const ok = printPayloadBrowser(lastPayload);
-    if (ok) {
-      toast.info('Impresión por navegador', {
-        description: 'Elegí la ticketera en el diálogo del sistema.'
-      });
-      onOpenChange(false);
-    } else {
+    if (!ok) {
       toast.error('No se pudo abrir la ventana de impresión', {
         description: 'Habilitá popups en el navegador.'
       });
+      return;
     }
+
+    toast.info('Impresión por navegador', {
+      description: 'Elegí la ticketera en el diálogo del sistema.'
+    });
+
+    if (lastKind === 'kitchen') {
+      const confirmed = window.confirm(
+        '¿Se imprimió correctamente la comanda? Confirmá solo si salió el ticket.'
+      );
+      if (confirmed) {
+        await registrarImpresionKitchen('browser');
+        toast.success('Comanda marcada como impresa');
+      }
+    }
+
+    onOpenChange(false);
   };
 
   const handleCopyReport = async () => {

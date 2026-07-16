@@ -31,6 +31,7 @@ export const API_CONFIG = {
       FORZAR_ESTADO: (id) => `/pedidos/${id}/forzar-estado`,
       COBRAR: (id) => `/pedidos/${id}/cobrar`,
       COMANDA_PRINT: (id) => `/pedidos/${id}/comanda-print`,
+      COMANDA_IMPRESA: (id) => `/pedidos/${id}/comanda-impresa`,
       TICKET_PRINT: (id) => `/pedidos/${id}/ticket-print`,
       INICIAR_PREPARACION_MANUAL: (id) => `/pedidos/${id}/iniciar-preparacion-manual`,
       ENTREGADOS: '/pedidos/entregados',
