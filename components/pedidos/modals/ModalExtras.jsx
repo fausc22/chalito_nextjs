@@ -29,9 +29,18 @@ export function ModalExtras({
   const isEditarProductoTitulo =
     producto?._editarProductoTitulo === true &&
     (!producto.extrasDisponibles || producto.extrasDisponibles.length === 0);
-  const dobleExtra = opcionesPresentacion.find((e) => /hacela\s*doble/i.test(e.nombre || e.adicional_nombre || e.name || ''));
-  const tripleExtra = opcionesPresentacion.find((e) => /hacela\s*triple/i.test(e.nombre || e.adicional_nombre || e.name || ''));
-  const cuadrupleExtra = opcionesPresentacion.find((e) => /hacela\s*cu[aá]druple/i.test(e.nombre || e.adicional_nombre || e.name || ''));
+  const dobleExtra = opcionesPresentacion.find((e) => {
+    const n = e.nombre || e.adicional_nombre || e.name || '';
+    return /^(hacela\s*)?doble$/i.test(String(n).trim()) || /hacela\s*doble/i.test(n);
+  });
+  const tripleExtra = opcionesPresentacion.find((e) => {
+    const n = e.nombre || e.adicional_nombre || e.name || '';
+    return /^(hacela\s*)?triple$/i.test(String(n).trim()) || /hacela\s*triple/i.test(n);
+  });
+  const cuadrupleExtra = opcionesPresentacion.find((e) => {
+    const n = e.nombre || e.adicional_nombre || e.name || '';
+    return /^(hacela\s*)?cu[aá]druple$/i.test(String(n).trim()) || /hacela\s*cu[aá]druple/i.test(n);
+  });
 
   const presentacionSeleccionada = extrasSeleccionados.find((e) => e.id === cuadrupleExtra?.id)
     ? 'cuadruple'
