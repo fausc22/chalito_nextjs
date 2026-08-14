@@ -26,6 +26,7 @@ const formatHour = (date) => {
 const getActionBadgeClass = (accion) => {
   if (accion === 'Ingreso') return 'border-blue-200 bg-blue-100 text-blue-700';
   if (accion === 'Egreso') return 'border-green-200 bg-green-100 text-green-700';
+  if (accion === 'Ingreso anulado') return 'border-red-200 bg-red-100 text-red-700';
   return 'border-border bg-muted text-foreground';
 };
 

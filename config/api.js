@@ -170,6 +170,7 @@ export const API_CONFIG = {
         INGRESO: '/empleados/asistencias/ingreso',
         EGRESO: '/empleados/asistencias/egreso',
         AJUSTAR_INGRESO: (id) => `/empleados/asistencias/${id}/ajustar-ingreso`,
+        ANULAR: (id) => `/empleados/asistencias/${id}/anular`,
         MANUAL: '/empleados/asistencias/manual',
       },
       MOVIMIENTOS: {

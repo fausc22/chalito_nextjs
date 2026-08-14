@@ -216,6 +216,15 @@ export const empleadosService = {
     })
   ),
 
+  anularAsistencia: async (asistenciaId, payload = {}) => withNumericId(
+    asistenciaId,
+    'El ID de asistencia debe ser un numero positivo',
+    (id) => executeRequest('patch', API_CONFIG.ENDPOINTS.EMPLEADOS.ASISTENCIAS.ANULAR(id), {
+      data: payload,
+      fallbackError: 'No se pudo cancelar el fichaje',
+    })
+  ),
+
   registrarAsistenciaManual: async (payload) => executeRequest('post', API_CONFIG.ENDPOINTS.EMPLEADOS.ASISTENCIAS.MANUAL, {
     data: payload,
     fallbackError: 'No se pudo registrar la asistencia manual',

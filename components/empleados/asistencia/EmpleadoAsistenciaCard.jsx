@@ -90,8 +90,10 @@ export function EmpleadoAsistenciaCard({
   onRegistrarIngreso,
   onRegistrarEgreso,
   onAjustarIngreso,
+  onCancelarFichaje,
   showHourlyRate = true,
   canAdjustIngreso = false,
+  canCancelarFichaje = false,
 }) {
   const [esFeriado, setEsFeriado] = useState(false);
   const estadoUi = ESTADO_UI[empleado.estado] || ESTADO_UI.sin_ingreso;
@@ -106,6 +108,13 @@ export function EmpleadoAsistenciaCard({
     && !asistencia?.egreso
     && asistencia?.estado === 'ABIERTO'
     && empleado.puedeAjustarIngreso
+    && !empleado.estaLiquidado;
+  const mostrarAnular = canCancelarFichaje
+    && ['en_turno', 'turno_pendiente'].includes(empleado.estado)
+    && Boolean(asistencia?.ingreso)
+    && !asistencia?.egreso
+    && asistencia?.estado === 'ABIERTO'
+    && empleado.puedeAnular
     && !empleado.estaLiquidado;
 
   const badgeLabel = empleado.estado === 'turno_pendiente' && asistencia
@@ -227,9 +236,20 @@ export function EmpleadoAsistenciaCard({
               variant="outline"
               disabled={empleado.loadingAccion}
               onClick={() => onAjustarIngreso?.(empleado)}
-              className="border-blue-300 bg-white text-blue-700 hover:bg-blue-50 hover:text-blue-800 sm:col-span-2"
+              className={`border-blue-300 bg-white text-blue-700 hover:bg-blue-50 hover:text-blue-800 ${mostrarAnular ? '' : 'sm:col-span-2'}`}
             >
               Ajustar ingreso
+            </Button>
+          ) : null}
+          {mostrarAnular ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={empleado.loadingAccion}
+              onClick={() => onCancelarFichaje?.(empleado)}
+              className={`border-red-300 bg-white text-red-700 hover:bg-red-50 hover:text-red-800 ${mostrarAjuste ? '' : 'sm:col-span-2'}`}
+            >
+              Cancelar fichaje
             </Button>
           ) : null}
         </div>

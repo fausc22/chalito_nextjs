@@ -61,13 +61,10 @@ const resolveAsistenciaLiquidacionFlags = (asistencia) => {
     asistencia?.puede_ajustar_ingreso,
     asistencia?.puedeAjustarIngreso,
   ));
-
-  if (puedeAjustarIngreso !== null) {
-    return {
-      estaLiquidado: estaLiquidado === true,
-      puedeAjustarIngreso,
-    };
-  }
+  const puedeAnular = toBoolOrNull(getFirstDefined(
+    asistencia?.puede_anular,
+    asistencia?.puedeAnular,
+  ));
 
   const tieneIngreso = Boolean(getFirstDefined(
     asistencia?.ingreso,
@@ -81,10 +78,12 @@ const resolveAsistenciaLiquidacionFlags = (asistencia) => {
   ));
   const estado = getFirstDefined(asistencia?.estado, asistencia?.status);
   const turnoAbierto = estado === 'ABIERTO' && !tieneEgreso;
+  const fallbackPuedeEditarAbierto = tieneIngreso && turnoAbierto && estaLiquidado !== true;
 
   return {
     estaLiquidado: estaLiquidado === true,
-    puedeAjustarIngreso: tieneIngreso && turnoAbierto && estaLiquidado !== true,
+    puedeAjustarIngreso: puedeAjustarIngreso !== null ? puedeAjustarIngreso : fallbackPuedeEditarAbierto,
+    puedeAnular: puedeAnular !== null ? puedeAnular : fallbackPuedeEditarAbierto,
   };
 };
 
@@ -145,6 +144,7 @@ const normalizeAsistencia = (asistencia) => {
     estado: getFirstDefined(asistencia?.estado, asistencia?.status) || null,
     estaLiquidado: liquidacionFlags.estaLiquidado,
     puedeAjustarIngreso: liquidacionFlags.puedeAjustarIngreso,
+    puedeAnular: liquidacionFlags.puedeAnular,
     esFeriado: Boolean(getFirstDefined(asistencia?.es_feriado, asistencia?.esFeriado)),
     raw: asistencia,
   };
@@ -370,7 +370,7 @@ export const useAsistencia = () => {
     const now = new Date();
     const map = new Map();
     asistencias.forEach((record) => {
-      if (!record.empleadoId || !isRecordToday(record, now)) return;
+      if (!record.empleadoId || !isRecordToday(record, now) || record.estado === 'ANULADO') return;
       const lista = map.get(record.empleadoId) || [];
       lista.push(record);
       map.set(record.empleadoId, lista);
@@ -419,6 +419,7 @@ export const useAsistencia = () => {
           horasTurno,
           estimadoTurno: calcularEstimadoTurnos(turnosParaHoras, now, empleado.valorHora),
           puedeAjustarIngreso: Boolean(asistenciaActual?.puedeAjustarIngreso),
+          puedeAnular: Boolean(asistenciaActual?.puedeAnular),
           estaLiquidado: Boolean(asistenciaActual?.estaLiquidado),
           loadingAccion: Boolean(accionesCargando[empleado.id]),
         };
@@ -444,6 +445,23 @@ export const useAsistencia = () => {
   const actividadReciente = useMemo(() => {
     return asistenciaHoy.flatMap((item) => {
       const entries = [];
+      if (item.estado === 'ANULADO') {
+        const fechaAnulacion = toDate(getFirstDefined(
+          item?.raw?.fecha_actualizacion,
+          item?.raw?.updated_at,
+          item.ingreso,
+        )) || item.ingreso;
+        if (!fechaAnulacion) return entries;
+        entries.push({
+          id: `${item.id}-anulado`,
+          fecha: fechaAnulacion,
+          empleadoNombre: item.empleadoNombre,
+          accion: 'Ingreso anulado',
+          registradoPor: item.registradoPor,
+          estado: 'Anulado',
+        });
+        return entries;
+      }
       if (item.ingreso) {
         entries.push({
           id: `${item.id}-ingreso`,
@@ -550,6 +568,42 @@ export const useAsistencia = () => {
     }
   }, []);
 
+  const anularAsistencia = useCallback(async (asistenciaId, payload = {}, empleadoId = null) => {
+    const key = `anular-${asistenciaId}`;
+    const empleadoKey = empleadoId != null ? String(empleadoId) : null;
+    setAccionesCargando((prev) => ({
+      ...prev,
+      [key]: true,
+      ...(empleadoKey ? { [empleadoKey]: true } : {}),
+    }));
+
+    try {
+      const response = await empleadosService.anularAsistencia(asistenciaId, payload);
+      if (!response.success) {
+        return {
+          success: false,
+          error: response.error || 'No se pudo cancelar el fichaje',
+        };
+      }
+
+      const backendRecord = response.data ? normalizeAsistencia(response.data) : null;
+      if (backendRecord?.empleadoId) {
+        setAsistencias((prev) => mergeAsistencias([backendRecord, ...prev]));
+      }
+
+      return { success: true, data: backendRecord };
+    } catch (errorRequest) {
+      console.error('Error al anular asistencia:', errorRequest);
+      return { success: false, error: 'No se pudo cancelar el fichaje' };
+    } finally {
+      setAccionesCargando((prev) => ({
+        ...prev,
+        [key]: false,
+        ...(empleadoKey ? { [empleadoKey]: false } : {}),
+      }));
+    }
+  }, []);
+
   const registrarManual = useCallback(async (payload) => {
     const key = `manual-${payload?.empleado_id || 'x'}`;
     setAccionesCargando((prev) => ({ ...prev, [key]: true }));
@@ -589,6 +643,7 @@ export const useAsistencia = () => {
     registrarIngreso,
     registrarEgreso,
     ajustarIngreso,
+    anularAsistencia,
     registrarManual,
     accionesCargando,
     manualDateBounds: getManualDateBounds(),

@@ -19,6 +19,7 @@ import { AjustarIngresoModal } from './AjustarIngresoModal';
 import { RegistroManualModal } from './RegistroManualModal';
 import { TurnosPendientesBanner } from './TurnosPendientesBanner';
 import { CerrarTurnoPendienteModal } from './CerrarTurnoPendienteModal';
+import { CancelarFichajeDialog } from './CancelarFichajeDialog';
 
 const ESTADO_OPTIONS = [
   { value: 'all', label: 'Todos los estados' },
@@ -50,6 +51,7 @@ export function AsistenciaSection() {
     registrarIngreso,
     registrarEgreso,
     ajustarIngreso,
+    anularAsistencia,
     registrarManual,
     accionesCargando,
   } = useAsistencia();
@@ -61,6 +63,8 @@ export function AsistenciaSection() {
   const [empleadoManual, setEmpleadoManual] = useState(null);
   const [cierrePendienteModalOpen, setCierrePendienteModalOpen] = useState(false);
   const [empleadoCierrePendiente, setEmpleadoCierrePendiente] = useState(null);
+  const [empleadoAnular, setEmpleadoAnular] = useState(null);
+  const [anularModalOpen, setAnularModalOpen] = useState(false);
   const showHourlyRate = useMemo(() => canViewEmployeeHourlyRate(userRole), [userRole]);
   const showHoursSummary = useMemo(() => canViewEmployeeHoursSummary(userRole), [userRole]);
   const showEstimatedTotal = useMemo(() => canViewEmployeeEstimatedTotal(userRole), [userRole]);
@@ -70,6 +74,9 @@ export function AsistenciaSection() {
     : false;
   const cierrePendienteSubmitting = empleadoCierrePendiente
     ? Boolean(accionesCargando[empleadoCierrePendiente.id])
+    : false;
+  const anularSubmitting = empleadoAnular?.asistenciaActual?.id
+    ? Boolean(accionesCargando[`anular-${empleadoAnular.asistenciaActual.id}`])
     : false;
   const manualSubmitting = Object.entries(accionesCargando).some(
     ([key, loading]) => key.startsWith('manual-') && loading
@@ -129,6 +136,31 @@ export function AsistenciaSection() {
       await cargarAsistencia({ silent: true });
     } else {
       toast.error('No se pudo cerrar el turno pendiente', { description: response.error });
+    }
+  };
+
+  const handleCerrarAnular = () => {
+    setAnularModalOpen(false);
+    setEmpleadoAnular(null);
+  };
+
+  const handleAbrirAnular = (empleado) => {
+    if (!empleado?.asistenciaActual) return;
+    setEmpleadoAnular(empleado);
+    setAnularModalOpen(true);
+  };
+
+  const handleConfirmarAnular = async () => {
+    const asistenciaId = empleadoAnular?.asistenciaActual?.id;
+    if (!asistenciaId) return;
+
+    const response = await anularAsistencia(asistenciaId, {}, empleadoAnular.id);
+    if (response.success) {
+      toast.success('Fichaje cancelado');
+      handleCerrarAnular();
+      await cargarAsistencia({ silent: true });
+    } else {
+      toast.error('No se pudo cancelar el fichaje', { description: response.error });
     }
   };
 
@@ -301,8 +333,10 @@ export function AsistenciaSection() {
               onRegistrarIngreso={handleIngreso}
               onRegistrarEgreso={handleEgreso}
               onAjustarIngreso={handleAbrirAjuste}
+              onCancelarFichaje={handleAbrirAnular}
               showHourlyRate={showHourlyRate}
               canAdjustIngreso={canOperateAttendance}
+              canCancelarFichaje={canOperateAttendance}
             />
           ))}
         </div>
@@ -335,6 +369,14 @@ export function AsistenciaSection() {
         empleado={empleadoCierrePendiente}
         onSubmit={handleGuardarCierrePendiente}
         isSubmitting={cierrePendienteSubmitting}
+      />
+
+      <CancelarFichajeDialog
+        isOpen={anularModalOpen}
+        onClose={handleCerrarAnular}
+        empleado={empleadoAnular}
+        onConfirm={handleConfirmarAnular}
+        isSubmitting={anularSubmitting}
       />
     </div>
   );
