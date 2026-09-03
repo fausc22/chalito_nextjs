@@ -89,7 +89,7 @@ function ReportesContent() {
       safeNumber(resumen.totalVendido),
       safeNumber(resumen.cantidadVentas),
       safeNumber(resumen.ticketPromedio),
-      safeNumber(resumen.descuentoTotal),
+        safeNumber(resumen.cantidadProductosVendidos),
       safeNumber(resumen.ventaMaxima),
       safeNumber(resumen.ventaMinima),
     ].reduce((acc, value) => acc + value, 0);

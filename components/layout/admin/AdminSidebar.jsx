@@ -98,7 +98,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
             </div>
 
             <nav
-              className={`min-h-0 flex-1 space-y-2 overflow-x-hidden overflow-y-hidden transition-all duration-300 ${
+              className={`min-h-0 flex-1 space-y-2 overflow-x-hidden overflow-y-auto scrollbar-hide transition-all duration-300 ${
                 collapsed ? 'px-2 py-4' : 'px-3 py-4'
               }`}
             >

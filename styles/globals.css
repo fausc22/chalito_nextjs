@@ -544,3 +544,12 @@ input[type="date"].date-input::-webkit-calendar-picker-indicator {
 input[type="date"].date-input::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
+
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
