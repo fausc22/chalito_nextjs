@@ -529,7 +529,7 @@ export function PedidosPageContent() {
             >
               <div className="flex-1 w-full h-full px-2 sm:px-4 lg:px-6 py-2 sm:py-3 min-h-0 flex flex-col">
                 <div className="flex gap-3 flex-1 min-h-0 w-full transition-all duration-300 flex-col lg:flex-row lg:h-full">
-                  <div className="w-full min-h-[320px] lg:min-h-0 lg:h-full lg:flex-[4_4_0%] transition-all duration-300">
+                  <div className="w-full min-h-[320px] lg:min-h-0 lg:h-full lg:flex-[7_7_0%] transition-all duration-300">
                     <PedidosColumn
                       titulo="RECIBIDOS"
                       pedidos={pedidosRecibidos}
@@ -550,7 +550,7 @@ export function PedidosPageContent() {
                     />
                   </div>
 
-                  <div className="w-full min-h-[320px] lg:min-h-0 lg:h-full lg:flex-[6_6_0%] transition-all duration-300">
+                  <div className="w-full min-h-[320px] lg:min-h-0 lg:h-full lg:flex-[3_3_0%] transition-all duration-300">
                     <PedidosColumn
                       titulo="EN PREPARACIÓN"
                       pedidos={pedidosEnCocina}
