@@ -1,4 +1,6 @@
-import { Tag, Check } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
+import { Tag, Check, X, Image as ImageIcon, Upload } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -13,7 +15,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { FieldError } from '@/components/ui/field-error';
-import { getInputErrorProps } from '@/lib/form-errors';
+import { clearFieldError, getInputErrorProps } from '@/lib/form-errors';
+import { toast } from '@/hooks/use-toast';
+
+const TIPOS_IMAGEN_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_IMAGEN_BYTES = 5 * 1024 * 1024;
 
 /**
  * Componente de formulario para crear/editar categorías con shadcn/ui
@@ -24,13 +30,67 @@ export const CategoriasForm = ({
   formulario,
   onFieldChange,
   errors = {},
+  setErrors,
   onSubmit,
   isEditing = false,
   loading = false,
 }) => {
+  const fileInputRef = useRef(null);
+  const [filePreview, setFilePreview] = useState(null);
+
+  useEffect(() => {
+    if (!formulario.imagenFile) {
+      setFilePreview(null);
+      return undefined;
+    }
+    const objectUrl = URL.createObjectURL(formulario.imagenFile);
+    setFilePreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [formulario.imagenFile]);
+
+  useEffect(() => {
+    if (!isOpen && fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [isOpen]);
+
+  const imagenPreview = filePreview || formulario.imagen_url || null;
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit();
+  };
+
+  const rechazarImagen = (e, mensaje, titulo) => {
+    setErrors?.((prev) => ({ ...prev, imagen: mensaje }));
+    toast({ variant: 'destructive', title: titulo, description: mensaje });
+    e.target.value = '';
+  };
+
+  const handleImagenChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!TIPOS_IMAGEN_PERMITIDOS.includes(file.type)) {
+      rechazarImagen(e, 'Solo se permiten imágenes JPG, PNG o WebP', 'Formato no válido');
+      return;
+    }
+    if (file.size > MAX_IMAGEN_BYTES) {
+      rechazarImagen(e, 'La imagen no debe superar los 5MB', 'Archivo muy grande');
+      return;
+    }
+
+    setErrors?.((prev) => clearFieldError(prev, 'imagen'));
+    onFieldChange('imagenFile', file);
+  };
+
+  const handleQuitarImagen = () => {
+    onFieldChange('imagenFile', null);
+    onFieldChange('imagen_url', null);
+    setErrors?.((prev) => clearFieldError(prev, 'imagen'));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -78,6 +138,67 @@ export const CategoriasForm = ({
               rows={3}
               className="border-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 resize-none"
             />
+          </div>
+
+          {/* Imagen de la card en la carta online */}
+          <div className="border-2 border-dashed border-blue-200 rounded-lg p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5 text-blue-600" />
+              <Label className="text-sm font-medium text-foreground">
+                Imagen en la carta online (Opcional)
+              </Label>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <label htmlFor="categoria-imagen-input" className="flex-1 cursor-pointer">
+                <div className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-blue-300 bg-card rounded-lg hover:bg-accent hover:border-blue-400 transition-colors">
+                  <Upload className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-foreground">
+                    {imagenPreview ? 'Cambiar imagen' : 'Seleccionar imagen'}
+                  </span>
+                </div>
+                <input
+                  id="categoria-imagen-input"
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleImagenChange}
+                  className="hidden"
+                />
+              </label>
+
+              {imagenPreview && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleQuitarImagen}
+                  className="sm:w-auto border-red-300 text-red-600 hover:bg-destructive/10 hover:text-red-700"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Quitar
+                </Button>
+              )}
+            </div>
+
+            {imagenPreview && (
+              <div className="relative w-full h-32 bg-muted rounded-lg overflow-hidden border-2 border-border">
+                <Image
+                  src={imagenPreview}
+                  alt="Vista previa de la categoría"
+                  fill
+                  className="object-cover"
+                  sizes="500px"
+                  unoptimized={imagenPreview.startsWith('blob:')}
+                />
+              </div>
+            )}
+
+            <p className="text-xs text-muted-foreground">
+              {imagenPreview
+                ? 'Formatos: JPG, PNG, WebP • Tamaño máximo: 5MB'
+                : 'Sin imagen: la carta usa automáticamente la foto de un artículo de esta categoría.'}
+            </p>
+            <FieldError error={errors?.imagen} id="imagen-error" />
           </div>
 
           {/* Checkbox activo */}

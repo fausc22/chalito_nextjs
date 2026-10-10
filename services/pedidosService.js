@@ -789,6 +789,42 @@ export const pedidosService = {
   },
 
   /**
+   * Cierre del día: pasa a LISTO → ENTREGADO todos los pedidos activos y pagados.
+   * Devuelve { finalizados: number[], sinCobrar: [], errores: [] }.
+   */
+  finalizarTodosLosPedidos: async () => {
+    try {
+      const response = await apiRequest.post(API_CONFIG.ENDPOINTS.PEDIDOS.FINALIZAR_TODOS, {});
+
+      if (response.data?.error === true || response.data?.success === false) {
+        const errData = response.data.data || response.data;
+        return {
+          success: false,
+          error:
+            response.data.message ||
+            response.data.mensaje ||
+            errData?.message ||
+            errData?.mensaje ||
+            'Error al finalizar los pedidos',
+          status: response.data.status,
+          rateLimit: response.data.rateLimit === true || response.data.status === 429,
+        };
+      }
+
+      return {
+        success: true,
+        data: response.data?.data || { finalizados: [], sinCobrar: [], errores: [] },
+      };
+    } catch (error) {
+      console.error('❌ Error al finalizar todos los pedidos:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || 'Error al finalizar los pedidos',
+      };
+    }
+  },
+
+  /**
    * Iniciar preparación manual (RECIBIDO/PROGRAMADO → EN_PREPARACION).
    * Usa lock en backend y setea transicion_automatica = false.
    */

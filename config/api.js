@@ -35,6 +35,7 @@ export const API_CONFIG = {
       TICKET_PRINT: (id) => `/pedidos/${id}/ticket-print`,
       INICIAR_PREPARACION_MANUAL: (id) => `/pedidos/${id}/iniciar-preparacion-manual`,
       ENTREGADOS: '/pedidos/entregados',
+      FINALIZAR_TODOS: '/pedidos/finalizar-todos',
       HORARIO_ENTREGA: (id) => `/pedidos/${id}/horario-entrega`,
     },
     CONFIGURACION: {

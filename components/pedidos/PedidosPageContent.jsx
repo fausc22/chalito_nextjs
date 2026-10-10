@@ -22,7 +22,7 @@ import { useEditarPedido } from '@/hooks/pedidos/useEditarPedido';
 import { useWebOrderAlerts } from '../../contexts/WebOrderAlertsContext';
 import { ventasService } from '../../services/ventasService';
 import { pedidosService } from '../../services/pedidosService';
-import { isPedidoBloqueadoPorPagoOperativo } from '../../lib/pedidoPaymentUtils';
+import { isPedidoBloqueadoPorPagoOperativo, isPedidoPaid } from '../../lib/pedidoPaymentUtils';
 import { calculateLineSubtotalFromSnapshot } from '../../lib/pedidoTotals';
 import { toast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -65,6 +65,8 @@ export function PedidosPageContent() {
   const [pedidoDragConfirm, setPedidoDragConfirm] = useState(null);
   const [pedidoCambiarHorario, setPedidoCambiarHorario] = useState(null);
   const [dragConfirmLoading, setDragConfirmLoading] = useState(false);
+  const [finalizarTodosOpen, setFinalizarTodosOpen] = useState(false);
+  const [finalizarTodosLoading, setFinalizarTodosLoading] = useState(false);
   const [vistaTabla, setVistaTabla] = useState(false); // Estado para alternar entre vista de cards y tabla
 
   const {
@@ -399,6 +401,54 @@ export function PedidosPageContent() {
     dragStartedAtRef.current = null;
   }, []);
 
+  const resumenFinalizarTodos = useMemo(() => {
+    const recibidosPagados = pedidosRecibidos.filter(isPedidoPaid);
+    const enCocinaPagados = pedidosEnCocina.filter(isPedidoPaid);
+    const sinCobrar = [...pedidosRecibidos, ...pedidosEnCocina].filter((p) => !isPedidoPaid(p));
+    return {
+      recibidos: recibidosPagados.length,
+      enCocina: enCocinaPagados.length,
+      total: recibidosPagados.length + enCocinaPagados.length,
+      sinCobrar,
+    };
+  }, [pedidosRecibidos, pedidosEnCocina]);
+
+  const abrirFinalizarTodos = useCallback(() => {
+    // Las columnas vienen filtradas por la búsqueda; sin limpiarla el resumen quedaría incompleto
+    setBusquedaPedidos('');
+    setFinalizarTodosOpen(true);
+  }, [setBusquedaPedidos]);
+
+  const confirmarFinalizarTodos = async () => {
+    setFinalizarTodosLoading(true);
+    try {
+      const response = await pedidosService.finalizarTodosLosPedidos();
+      if (!response.success) {
+        toast.error('No se pudieron finalizar los pedidos', { description: response.error });
+        return;
+      }
+
+      const { finalizados = [], sinCobrar = [], errores = [] } = response.data;
+      const detalles = [];
+      if (sinCobrar.length > 0) detalles.push(`${sinCobrar.length} sin cobrar quedaron pendientes`);
+      if (errores.length > 0) {
+        detalles.push(`${errores.length} con error: ${errores.map((e) => `#${e.id}`).join(', ')}`);
+      }
+
+      const titulo = `${finalizados.length} pedido(s) finalizado(s)`;
+      if (errores.length > 0) {
+        toast.warning(titulo, { description: detalles.join(' · ') });
+      } else {
+        toast.success(titulo, detalles.length > 0 ? { description: detalles.join(' · ') } : undefined);
+      }
+
+      await recargarPedidos?.();
+    } finally {
+      setFinalizarTodosLoading(false);
+      setFinalizarTodosOpen(false);
+    }
+  };
+
   const confirmarDragManual = async () => {
     if (!pedidoDragConfirm) return;
     setDragConfirmLoading(true);
@@ -501,6 +551,7 @@ export function PedidosPageContent() {
             <PedidosSidebar
               onNuevoPedido={handleNuevoPedido}
               onVerPedidosEntregados={() => setModalPedidosEntregados(true)}
+              onFinalizarTodos={abrirFinalizarTodos}
               busquedaPedidos={busquedaPedidos}
               setBusquedaPedidos={setBusquedaPedidos}
               soundEnabled={soundEnabled}
@@ -605,6 +656,7 @@ export function PedidosPageContent() {
             <PedidosSidebar
               onNuevoPedido={handleNuevoPedido}
               onVerPedidosEntregados={() => setModalPedidosEntregados(true)}
+              onFinalizarTodos={abrirFinalizarTodos}
               busquedaPedidos={busquedaPedidos}
               setBusquedaPedidos={setBusquedaPedidos}
               soundEnabled={soundEnabled}
@@ -881,6 +933,68 @@ export function PedidosPageContent() {
               className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-70"
             >
               {dragConfirmLoading ? 'Procesando…' : 'Aceptar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cierre del día: finalizar todos los pedidos pagados */}
+      <AlertDialog
+        open={finalizarTodosOpen}
+        onOpenChange={(open) => {
+          if (!open && !finalizarTodosLoading) {
+            setFinalizarTodosOpen(false);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Finalizar todos los pedidos?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-muted-foreground">
+                {resumenFinalizarTodos.total > 0 ? (
+                  <div>
+                    <p>
+                      Se marcarán como <strong>ENTREGADOS</strong>{' '}
+                      <strong>{resumenFinalizarTodos.total}</strong> pedido(s) pagado(s):
+                    </p>
+                    <ul className="mt-1 list-disc pl-5">
+                      <li>{resumenFinalizarTodos.enCocina} en EN PREPARACIÓN</li>
+                      <li>{resumenFinalizarTodos.recibidos} en RECIBIDOS</li>
+                    </ul>
+                  </div>
+                ) : (
+                  <p>No hay pedidos pagados para finalizar.</p>
+                )}
+
+                {resumenFinalizarTodos.sinCobrar.length > 0 && (
+                  <div className="rounded-md border border-amber-300 bg-amber-50 p-2 text-amber-900">
+                    <p className="font-semibold">
+                      {resumenFinalizarTodos.sinCobrar.length} pedido(s) todavía no están cobrados y no se van a finalizar:
+                    </p>
+                    <p className="mt-1 text-xs">
+                      {resumenFinalizarTodos.sinCobrar
+                        .map((p) => `#${p.id}${p.clienteNombre ? ` ${p.clienteNombre}` : ''}`)
+                        .join(', ')}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={finalizarTodosLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmarFinalizarTodos();
+              }}
+              disabled={finalizarTodosLoading || resumenFinalizarTodos.total === 0}
+              className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-70"
+            >
+              {finalizarTodosLoading
+                ? 'Finalizando…'
+                : `Finalizar ${resumenFinalizarTodos.total} pedido(s)`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

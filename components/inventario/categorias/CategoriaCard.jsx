@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { Pencil, Trash2, Tag } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,17 @@ export const CategoriaCard = ({ categoria, onEditar, onEliminar }) => {
 
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col rounded-t-xl rounded-b-none overflow-hidden">
+      {categoria.imagen_url && (
+        <div className="relative w-full h-24 bg-muted">
+          <Image
+            src={categoria.imagen_url}
+            alt=""
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 100vw, 320px"
+          />
+        </div>
+      )}
       <CardHeader className="pb-3 flex-grow">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">

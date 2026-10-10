@@ -1,5 +1,21 @@
 import { apiRequest } from './api';
 import { API_CONFIG } from '../config/api';
+import { articulosService } from './articulosService';
+
+/**
+ * Resuelve la imagen_url a enviar: sube el archivo nuevo si hay,
+ * o null si el usuario quitó la imagen (vuelve a la imagen automática).
+ */
+const resolverImagenCategoria = async (categoriaData) => {
+  if (categoriaData.imagenFile) {
+    const uploadResult = await articulosService.subirImagenArticulo(categoriaData.imagenFile);
+    if (!uploadResult.success || !uploadResult.imagen_url) {
+      return { success: false, error: uploadResult.error || 'No se pudo subir la imagen' };
+    }
+    return { success: true, imagen_url: uploadResult.imagen_url };
+  }
+  return { success: true, imagen_url: categoriaData.imagen_url || null };
+};
 
 export const categoriasService = {
   // Obtener todas las categorías
@@ -46,11 +62,17 @@ export const categoriasService = {
   // Crear nueva categoría
   crearCategoria: async (categoriaData) => {
     try {
+      const imagen = await resolverImagenCategoria(categoriaData);
+      if (!imagen.success) {
+        return { success: false, error: imagen.error };
+      }
+
       const dataToSend = {
         nombre: categoriaData.nombre,
         descripcion: categoriaData.descripcion || null,
         activo: categoriaData.activo ? 1 : 0,
-        visible_carta: categoriaData.visible_carta !== false && categoriaData.visible_carta !== 0 ? 1 : 0
+        visible_carta: categoriaData.visible_carta !== false && categoriaData.visible_carta !== 0 ? 1 : 0,
+        imagen_url: imagen.imagen_url
       };
 
       const response = await apiRequest.post(
@@ -84,11 +106,17 @@ export const categoriasService = {
   // Actualizar categoría existente
   actualizarCategoria: async (id, categoriaData) => {
     try {
+      const imagen = await resolverImagenCategoria(categoriaData);
+      if (!imagen.success) {
+        return { success: false, error: imagen.error };
+      }
+
       const dataToSend = {
         nombre: categoriaData.nombre,
         descripcion: categoriaData.descripcion || null,
         activo: categoriaData.activo ? 1 : 0,
-        visible_carta: categoriaData.visible_carta !== false && categoriaData.visible_carta !== 0 ? 1 : 0
+        visible_carta: categoriaData.visible_carta !== false && categoriaData.visible_carta !== 0 ? 1 : 0,
+        imagen_url: imagen.imagen_url
       };
 
       const response = await apiRequest.put(

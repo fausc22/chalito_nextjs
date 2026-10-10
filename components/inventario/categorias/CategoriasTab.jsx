@@ -43,6 +43,8 @@ export function CategoriasTab({
     descripcion: '',
     activo: true,
     visible_carta: true,
+    imagen_url: null,
+    imagenFile: null,
   });
   const [errors, setErrors] = useState({});
 
@@ -104,6 +106,8 @@ export function CategoriasTab({
       descripcion: '',
       activo: true,
       visible_carta: true,
+      imagen_url: null,
+      imagenFile: null,
     });
     setErrors({});
     setModalAbierto(true);
@@ -117,6 +121,8 @@ export function CategoriasTab({
       descripcion: categoria.descripcion || '',
       activo: (categoria.activo === 1 || categoria.activo === "1" || categoria.activo === true) ? 1 : 0,
       visible_carta: (categoria.visible_carta === undefined || categoria.visible_carta === 1 || categoria.visible_carta === "1" || categoria.visible_carta === true) ? 1 : 0,
+      imagen_url: categoria.imagen_url || null,
+      imagenFile: null,
     });
     setErrors({});
     setModalAbierto(true);
@@ -131,6 +137,8 @@ export function CategoriasTab({
       descripcion: '',
       activo: true,
       visible_carta: true,
+      imagen_url: null,
+      imagenFile: null,
     });
     setErrors({});
   };
@@ -361,6 +369,7 @@ export function CategoriasTab({
         formulario={formulario}
         onFieldChange={handleFieldChange}
         errors={errors}
+        setErrors={setErrors}
         onSubmit={handleSubmit}
         isEditing={!!categoriaEditando}
         loading={loadingSubmit}

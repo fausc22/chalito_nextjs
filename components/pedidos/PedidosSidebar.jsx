@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Plus, Search, X, ChevronLeft, ChevronRight, ClipboardCheck, Store, LayoutGrid, List, ChefHat, Volume2, VolumeX } from 'lucide-react';
+import { Plus, Search, X, ChevronLeft, ChevronRight, ClipboardCheck, CheckCheck, Store, LayoutGrid, List, ChefHat, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { PrinterStatusIndicator } from './PrinterStatusIndicator';
 export function PedidosSidebar({
   onNuevoPedido,
   onVerPedidosEntregados,
+  onFinalizarTodos,
   busquedaPedidos,
   setBusquedaPedidos,
   soundEnabled = false,
@@ -226,6 +227,18 @@ export function PedidosSidebar({
                 <ClipboardCheck className="mr-1.5 h-4 w-4" />
                 PEDIDOS ENTREGADOS
               </Button>
+
+              {onFinalizarTodos && (
+                <Button
+                  onClick={onFinalizarTodos}
+                  className="h-9 w-full bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700"
+                  size="sm"
+                  title="Marcar como entregados todos los pedidos pagados (cierre del día)"
+                >
+                  <CheckCheck className="mr-1.5 h-4 w-4" />
+                  FINALIZAR TODOS
+                </Button>
+              )}
             </div>
           </>
         )}
@@ -295,6 +308,17 @@ export function PedidosSidebar({
               >
                 <ClipboardCheck className="h-4 w-4" />
               </Button>
+
+              {onFinalizarTodos && (
+                <Button
+                  onClick={onFinalizarTodos}
+                  className="h-9 w-full bg-blue-600 text-white hover:bg-blue-700"
+                  size="sm"
+                  title="Finalizar todos los pedidos pagados"
+                >
+                  <CheckCheck className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </>
         )}
